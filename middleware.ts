@@ -25,7 +25,8 @@ export async function middleware(req: NextRequest) {
     const emailOk = Boolean(
       (token as { emailVerified?: boolean }).emailVerified,
     );
-    if (role === ROLES.CUSTOMER && !emailOk) {
+    // Literal "CUSTOMER" (no enum/ROLES) para que el build no falle si JWT tipa `role` distinto.
+    if (role === "CUSTOMER" && !emailOk) {
       return NextResponse.redirect(new URL("/cuenta/verificar-email", req.url));
     }
     return NextResponse.next();
