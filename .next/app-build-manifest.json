@@ -18,19 +18,19 @@
       "static/chunks/72-273f0fef21d95547.js",
       "static/chunks/app/layout-55d6c39aa3e7ae84.js"
     ],
-    "/api/admin/products/route": [
-      "static/chunks/webpack-4772d34723bd25e0.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-4f212684648fcab9.js",
-      "static/chunks/main-app-d3b4168a294ce1ab.js",
-      "static/chunks/app/api/admin/products/route-e249a8ec40952a73.js"
-    ],
     "/api/admin/products/[id]/route": [
       "static/chunks/webpack-4772d34723bd25e0.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
       "static/chunks/255-4f212684648fcab9.js",
       "static/chunks/main-app-d3b4168a294ce1ab.js",
       "static/chunks/app/api/admin/products/[id]/route-e249a8ec40952a73.js"
+    ],
+    "/api/admin/products/route": [
+      "static/chunks/webpack-4772d34723bd25e0.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-4f212684648fcab9.js",
+      "static/chunks/main-app-d3b4168a294ce1ab.js",
+      "static/chunks/app/api/admin/products/route-e249a8ec40952a73.js"
     ],
     "/api/auth/[...nextauth]/route": [
       "static/chunks/webpack-4772d34723bd25e0.js",
@@ -60,13 +60,6 @@
       "static/chunks/main-app-d3b4168a294ce1ab.js",
       "static/chunks/app/api/retail-orders/route-e249a8ec40952a73.js"
     ],
-    "/admin/finanzas/page": [
-      "static/chunks/webpack-4772d34723bd25e0.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-4f212684648fcab9.js",
-      "static/chunks/main-app-d3b4168a294ce1ab.js",
-      "static/chunks/app/admin/finanzas/page-e249a8ec40952a73.js"
-    ],
     "/admin/page": [
       "static/chunks/webpack-4772d34723bd25e0.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
@@ -74,6 +67,13 @@
       "static/chunks/main-app-d3b4168a294ce1ab.js",
       "static/chunks/619-ba102abea3e3d0e4.js",
       "static/chunks/app/admin/page-1fc3031293133b98.js"
+    ],
+    "/admin/finanzas/page": [
+      "static/chunks/webpack-4772d34723bd25e0.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-4f212684648fcab9.js",
+      "static/chunks/main-app-d3b4168a294ce1ab.js",
+      "static/chunks/app/admin/finanzas/page-e249a8ec40952a73.js"
     ],
     "/admin/productos/page": [
       "static/chunks/webpack-4772d34723bd25e0.js",
