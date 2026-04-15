@@ -41,10 +41,40 @@ export async function getCatalogData(filters: CatalogFilters) {
   return { products, categories };
 }
 
-export function getProductDisplayPrice(
-  product: { retailPrice: unknown; wholesalePrice: unknown },
+export function getFinalUnitPrice(
+  product: {
+    retailPrice: unknown;
+    wholesalePrice: unknown;
+    discountRetailPercent: number;
+    discountWholesalePercent: number;
+  },
   mode: PriceMode,
 ) {
-  const value = mode === "wholesale" ? product.wholesalePrice : product.retailPrice;
-  return Number(value).toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+  const base =
+    mode === "wholesale" ? Number(product.wholesalePrice) : Number(product.retailPrice);
+  const pct =
+    mode === "wholesale" ? product.discountWholesalePercent : product.discountRetailPercent;
+  return base * (1 - Math.min(100, Math.max(0, pct)) / 100);
+}
+
+export function getProductDisplayPrice(
+  product: {
+    retailPrice: unknown;
+    wholesalePrice: unknown;
+    discountRetailPercent: number;
+    discountWholesalePercent: number;
+  },
+  mode: PriceMode,
+) {
+  return getFinalUnitPrice(product, mode).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  });
+}
+
+export function getDiscountPercentForMode(
+  product: { discountRetailPercent: number; discountWholesalePercent: number },
+  mode: PriceMode,
+) {
+  return mode === "wholesale" ? product.discountWholesalePercent : product.discountRetailPercent;
 }

@@ -2,12 +2,12 @@ import { prisma } from "@/lib/prisma";
 
 export default async function FinancialDashboardPage() {
   let retailOrders: Awaited<ReturnType<typeof prisma.retailOrder.findMany>> = [];
-  let wholesaleLeads = 0;
+  let wholesaleRequests = 0;
 
   try {
-    [retailOrders, wholesaleLeads] = await Promise.all([
+    [retailOrders, wholesaleRequests] = await Promise.all([
       prisma.retailOrder.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-      prisma.wholesaleLead.count(),
+      prisma.wholesaleRequest.count(),
     ]);
   } catch (error) {
     console.error("No se pudieron cargar metricas financieras:", error);
@@ -30,8 +30,8 @@ export default async function FinancialDashboardPage() {
           <p className="text-xl font-semibold">{retailOrders.length}</p>
         </article>
         <article className="rounded-xl border bg-white p-4">
-          <p className="text-sm text-slate-500">Leads mayoristas</p>
-          <p className="text-xl font-semibold">{wholesaleLeads}</p>
+          <p className="text-sm text-slate-500">Solicitudes mayoristas</p>
+          <p className="text-xl font-semibold">{wholesaleRequests}</p>
         </article>
       </div>
     </section>

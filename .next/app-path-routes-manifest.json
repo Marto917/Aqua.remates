@@ -3,14 +3,17 @@
   "/api/admin/products/[id]/route": "/api/admin/products/[id]",
   "/api/admin/products/route": "/api/admin/products",
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/auth/verify-email/route": "/api/auth/verify-email",
   "/api/retail-orders/route": "/api/retail-orders",
-  "/api/wholesale-contact/route": "/api/wholesale-contact",
   "/admin/finanzas/page": "/admin/finanzas",
   "/admin/page": "/admin",
   "/admin/productos/page": "/admin/productos",
-  "/catalog/page": "/catalog",
   "/checkout/page": "/checkout",
+  "/catalog/page": "/catalog",
+  "/cuenta/verificar-email/page": "/cuenta/verificar-email",
   "/login/page": "/login",
   "/mayorista/contacto/page": "/mayorista/contacto",
-  "/page": "/"
+  "/page": "/",
+  "/registro/page": "/registro"
 }

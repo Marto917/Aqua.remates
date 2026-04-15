@@ -14,7 +14,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || ![UserRole.OWNER, UserRole.EMPLOYEE].includes(session.user.role)) {
+  const canManage =
+    session?.user.role === UserRole.OWNER || session?.user.role === UserRole.EMPLOYEE;
+  if (!session || !canManage) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

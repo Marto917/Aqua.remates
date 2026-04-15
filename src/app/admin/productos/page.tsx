@@ -58,12 +58,21 @@ export default async function AdminProductsPage() {
             className="rounded-md border px-3 py-2"
           />
           <input
-            name="discountPercent"
+            name="discountRetailPercent"
             type="number"
             min="0"
             max="100"
             defaultValue={0}
-            placeholder="Descuento (%)"
+            placeholder="Descuento minorista (%)"
+            className="rounded-md border px-3 py-2"
+          />
+          <input
+            name="discountWholesalePercent"
+            type="number"
+            min="0"
+            max="100"
+            defaultValue={0}
+            placeholder="Descuento mayorista (%)"
             className="rounded-md border px-3 py-2"
           />
         </div>

@@ -14,7 +14,8 @@ const productSchema = z.object({
   listPrice: z.coerce.number().positive(),
   retailPrice: z.coerce.number().positive(),
   wholesalePrice: z.coerce.number().positive(),
-  discountPercent: z.coerce.number().int().min(0).max(100).default(0),
+  discountRetailPercent: z.coerce.number().int().min(0).max(100).default(0),
+  discountWholesalePercent: z.coerce.number().int().min(0).max(100).default(0),
   isBestSeller: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -31,7 +32,9 @@ function slugify(value: string) {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || ![UserRole.OWNER, UserRole.EMPLOYEE].includes(session.user.role)) {
+  const canManage =
+    session?.user.role === UserRole.OWNER || session?.user.role === UserRole.EMPLOYEE;
+  if (!session || !canManage) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
@@ -57,7 +60,8 @@ export async function POST(req: Request) {
       listPrice: parsed.data.listPrice,
       retailPrice: parsed.data.retailPrice,
       wholesalePrice: parsed.data.wholesalePrice,
-      discountPercent: parsed.data.discountPercent,
+      discountRetailPercent: parsed.data.discountRetailPercent,
+      discountWholesalePercent: parsed.data.discountWholesalePercent,
       isBestSeller: parsed.data.isBestSeller,
       isActive: parsed.data.isActive,
       category: {

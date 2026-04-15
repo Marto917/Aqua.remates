@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,6 +13,7 @@ datasource db {
 enum UserRole {
   OWNER
   EMPLOYEE
+  CUSTOMER
 }
 
 enum RetailOrderStatus {
@@ -24,14 +23,50 @@ enum RetailOrderStatus {
   CANCELLED
 }
 
+enum BillingMode {
+  NEGRO
+  BLANCO
+}
+
+enum PriceModeCart {
+  RETAIL
+  WHOLESALE
+}
+
+enum WholesaleRequestStatus {
+  NUEVO
+  CONTACTADO
+  COTIZADO
+  CERRADO
+  CANCELADO
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
   role         UserRole
+  /// Clientes deben verificar email antes de comprar; staff suele tener fecha fijada en el alta.
+  emailVerified            DateTime?
+  emailVerificationTokenHash String?
+  emailVerificationExpires   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  cart                     Cart?
+  retailOrders             RetailOrder[]              @relation("CustomerRetailOrders")
+  wholesaleRequests        WholesaleRequest[]         @relation("CustomerWholesaleRequests")
+  assignedWholesaleRequests WholesaleRequest[]        @relation("AssignedWholesaleRequests")
+  wholesaleRequestEvents   WholesaleRequestEvent[]
+  approvalRequestsCreated  ApprovalRequest[]         @relation("ApprovalRequester")
+  approvalRequestsResolved ApprovalRequest[]         @relation("ApprovalResolver")
 }
 
 model Category {
@@ -44,57 +79,149 @@ model Category {
 }
 
 model Product {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
-  description     String
-  imageUrl        String
-  listPrice       Decimal          @db.Decimal(10, 2)
-  retailPrice     Decimal          @db.Decimal(10, 2)
-  wholesalePrice  Decimal          @db.Decimal(10, 2)
-  discountPercent Int              @default(0)
-  isActive        Boolean          @default(true)
-  isBestSeller    Boolean          @default(false)
-  categoryId      String
-  category        Category         @relation(fields: [categoryId], references: [id])
-  retailItems     RetailOrderItem[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  description            String
+  imageUrl               String
+  listPrice              Decimal  @db.Decimal(10, 2)
+  retailPrice            Decimal  @db.Decimal(10, 2)
+  wholesalePrice         Decimal  @db.Decimal(10, 2)
+  discountRetailPercent  Int      @default(0)
+  discountWholesalePercent Int    @default(0)
+  isActive               Boolean  @default(true)
+  isBestSeller           Boolean  @default(false)
+  categoryId             String
+  category               Category @relation(fields: [categoryId], references: [id])
+  retailItems            RetailOrderItem[]
+  cartItems              CartItem[]
+  wholesaleRequestItems  WholesaleRequestItem[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
+model Cart {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode      PriceModeCart @default(RETAIL)
+  items     CartItem[]
+  updatedAt DateTime      @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+
+  @@unique([cartId, productId])
+}
+
+/// Pedido minorista (transferencia). Sin envío de mail al cliente en flujo final.
 model RetailOrder {
-  id             String           @id @default(cuid())
+  id             String            @id @default(cuid())
+  customerId     String?
+  customer       User?             @relation("CustomerRetailOrders", fields: [customerId], references: [id])
   buyerName      String
   buyerEmail     String
   buyerPhone     String?
   notes          String?
-  totalAmount    Decimal          @db.Decimal(10, 2)
+  billingMode    BillingMode       @default(BLANCO)
+  totalAmount    Decimal           @db.Decimal(10, 2)
   status         RetailOrderStatus @default(PENDING_TRANSFER)
   transferAlias  String
   transferCbu    String
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   items          RetailOrderItem[]
 }
 
 model RetailOrderItem {
-  id           String      @id @default(cuid())
-  orderId      String
-  productId    String
-  productName  String
-  unitPrice    Decimal     @db.Decimal(10, 2)
-  quantity     Int         @default(1)
-  subtotal     Decimal     @db.Decimal(10, 2)
-  order        RetailOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product      Product     @relation(fields: [productId], references: [id])
+  id          String      @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String
+  unitPrice   Decimal     @db.Decimal(10, 2)
+  quantity    Int         @default(1)
+  subtotal    Decimal     @db.Decimal(10, 2)
+  order       RetailOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
 }
 
-model WholesaleLead {
-  id            String   @id @default(cuid())
-  companyName   String
-  contactName   String
-  email         String
-  phone         String?
-  requestedInfo String
-  createdAt     DateTime @default(now())
+/// Solicitud mayorista con ítems; gestión en pantalla empleado/owner.
+model WholesaleRequest {
+  id             String                 @id @default(cuid())
+  status         WholesaleRequestStatus   @default(NUEVO)
+  customerId     String
+  customer       User                   @relation("CustomerWholesaleRequests", fields: [customerId], references: [id])
+  companyName    String
+  cuit           String
+  contactName    String
+  email          String
+  phone          String?
+  address        String?
+  notes          String?
+  assignedToId   String?
+  assignedTo     User?                  @relation("AssignedWholesaleRequests", fields: [assignedToId], references: [id])
+  items          WholesaleRequestItem[]
+  events         WholesaleRequestEvent[]
+  approvals      ApprovalRequest[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+model WholesaleRequestItem {
+  id                  String             @id @default(cuid())
+  requestId           String
+  request             WholesaleRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product            @relation(fields: [productId], references: [id])
+  productNameSnapshot String
+  unitPrice           Decimal            @db.Decimal(10, 2)
+  quantity            Int                @default(1)
+  subtotal            Decimal            @db.Decimal(10, 2)
+}
+
+model WholesaleRequestEvent {
+  id         String             @id @default(cuid())
+  requestId  String
+  request    WholesaleRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?              @relation(fields: [userId], references: [id])
+  action     String
+  payload    Json?
+  createdAt  DateTime           @default(now())
+}
+
+model ApprovalRequest {
+  id                   String              @id @default(cuid())
+  wholesaleRequestId   String
+  wholesaleRequest     WholesaleRequest    @relation(fields: [wholesaleRequestId], references: [id], onDelete: Cascade)
+  requestedById        String
+  requestedBy          User                @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  type                 String
+  note                 String?
+  status               ApprovalStatus      @default(PENDING)
+  resolvedById         String?
+  resolvedBy           User?               @relation("ApprovalResolver", fields: [resolvedById], references: [id])
+  resolutionNote       String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+/// Carrusel / banners administrables desde backoffice.
+model Banner {
+  id        String    @id @default(cuid())
+  title     String?
+  imageUrl  String
+  linkUrl   String?
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

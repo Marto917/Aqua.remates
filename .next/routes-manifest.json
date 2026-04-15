@@ -80,6 +80,12 @@
       "namedRegex": "^/checkout(?:/)?$"
     },
     {
+      "page": "/cuenta/verificar-email",
+      "regex": "^/cuenta/verificar\\-email(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cuenta/verificar\\-email(?:/)?$"
+    },
+    {
       "page": "/login",
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
@@ -90,6 +96,12 @@
       "regex": "^/mayorista/contacto(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/mayorista/contacto(?:/)?$"
+    },
+    {
+      "page": "/registro",
+      "regex": "^/registro(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/registro(?:/)?$"
     }
   ],
   "dataRoutes": [],

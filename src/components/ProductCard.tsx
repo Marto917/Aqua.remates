@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getProductDisplayPrice, type PriceMode } from "@/lib/catalog";
+import { getDiscountPercentForMode, getProductDisplayPrice, type PriceMode } from "@/lib/catalog";
 
 type ProductCardProps = {
   product: {
@@ -8,13 +8,15 @@ type ProductCardProps = {
     imageUrl: string;
     retailPrice: unknown;
     wholesalePrice: unknown;
-    discountPercent: number;
+    discountRetailPercent: number;
+    discountWholesalePercent: number;
     category: { name: string };
   };
   mode: PriceMode;
 };
 
 export function ProductCard({ product, mode }: ProductCardProps) {
+  const discountPct = getDiscountPercentForMode(product, mode);
   return (
     <article className="overflow-hidden rounded-xl border bg-white shadow-sm">
       <div className="relative h-44 w-full">
@@ -25,8 +27,8 @@ export function ProductCard({ product, mode }: ProductCardProps) {
         <h3 className="font-semibold">{product.name}</h3>
         <p className="line-clamp-2 text-sm text-slate-600">{product.description}</p>
         <p className="text-lg font-bold text-brand">{getProductDisplayPrice(product, mode)}</p>
-        {product.discountPercent > 0 && (
-          <p className="text-xs text-emerald-700">Incluye {product.discountPercent}% de descuento</p>
+        {discountPct > 0 && (
+          <p className="text-xs text-emerald-700">Incluye {discountPct}% de descuento</p>
         )}
       </div>
     </article>
