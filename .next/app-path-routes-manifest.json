@@ -1,0 +1,16 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/admin/products/[id]/route": "/api/admin/products/[id]",
+  "/api/admin/products/route": "/api/admin/products",
+  "/api/retail-orders/route": "/api/retail-orders",
+  "/api/wholesale-contact/route": "/api/wholesale-contact",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/admin/finanzas/page": "/admin/finanzas",
+  "/admin/page": "/admin",
+  "/admin/productos/page": "/admin/productos",
+  "/checkout/page": "/checkout",
+  "/login/page": "/login",
+  "/catalog/page": "/catalog",
+  "/mayorista/contacto/page": "/mayorista/contacto",
+  "/page": "/"
+}

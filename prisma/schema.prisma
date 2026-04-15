@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  EMPLOYEE
+}
+
+enum RetailOrderStatus {
+  PENDING_TRANSFER
+  TRANSFER_REPORTED
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  description     String
+  imageUrl        String
+  listPrice       Decimal          @db.Decimal(10, 2)
+  retailPrice     Decimal          @db.Decimal(10, 2)
+  wholesalePrice  Decimal          @db.Decimal(10, 2)
+  discountPercent Int              @default(0)
+  isActive        Boolean          @default(true)
+  isBestSeller    Boolean          @default(false)
+  categoryId      String
+  category        Category         @relation(fields: [categoryId], references: [id])
+  retailItems     RetailOrderItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model RetailOrder {
+  id             String           @id @default(cuid())
+  buyerName      String
+  buyerEmail     String
+  buyerPhone     String?
+  notes          String?
+  totalAmount    Decimal          @db.Decimal(10, 2)
+  status         RetailOrderStatus @default(PENDING_TRANSFER)
+  transferAlias  String
+  transferCbu    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  items          RetailOrderItem[]
+}
+
+model RetailOrderItem {
+  id           String      @id @default(cuid())
+  orderId      String
+  productId    String
+  productName  String
+  unitPrice    Decimal     @db.Decimal(10, 2)
+  quantity     Int         @default(1)
+  subtotal     Decimal     @db.Decimal(10, 2)
+  order        RetailOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product     @relation(fields: [productId], references: [id])
+}
+
+model WholesaleLead {
+  id            String   @id @default(cuid())
+  companyName   String
+  contactName   String
+  email         String
+  phone         String?
+  requestedInfo String
+  createdAt     DateTime @default(now())
+}
