@@ -1,30 +1,42 @@
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
+import { Prisma, type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
 
+type HomeProduct = PrismaTypes.ProductGetPayload<{
+  include: { category: true; variants: true };
+}>;
+
 export default async function HomePage() {
-  let bestSellers: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
+  let homeProducts: HomeProduct[] = [];
   let categories: { name: string; slug: string }[] = [];
 
   try {
-    const [products, cats] = await Promise.all([
-      prisma.product.findMany({
-        where: { isActive: true, isBestSeller: true },
+    const [idRows, cats] = await Promise.all([
+      prisma.$queryRaw<Array<{ id: string }>>(
+        Prisma.sql`SELECT id FROM "Product" WHERE "isActive" = true ORDER BY RANDOM() LIMIT 4`,
+      ),
+      prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
+    ]);
+    categories = cats;
+
+    if (idRows.length > 0) {
+      const ids = idRows.map((r) => r.id);
+      const orderMap = new Map(ids.map((id, i) => [id, i]));
+      const fetched = await prisma.product.findMany({
+        where: { id: { in: ids } },
         include: {
           category: true,
           variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
         },
-        take: 8,
-        orderBy: { updatedAt: "desc" },
-      }),
-      prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
-    ]);
-    bestSellers = products;
-    categories = cats;
+      });
+      homeProducts = [...fetched].sort(
+        (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
+      );
+    }
   } catch (error) {
     console.error("No se pudieron cargar datos del home:", error);
   }
@@ -58,8 +70,10 @@ export default async function HomePage() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Los más elegidos</h2>
-            <p className="mt-1 text-sm text-slate-500">Productos destacados esta temporada</p>
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Descubrí hoy</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Cuatro productos al azar del catálogo (cambian al recargar la página)
+            </p>
           </div>
           <Link
             href="/catalog?priceMode=retail"
@@ -69,8 +83,8 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {bestSellers.length > 0 ? (
-            bestSellers.map((product) => <ProductCard key={product.id} product={product} mode="retail" />)
+          {homeProducts.length > 0 ? (
+            homeProducts.map((product) => <ProductCard key={product.id} product={product} mode="retail" />)
           ) : (
             <p className="col-span-full rounded-xl border border-dashed border-slate-200 bg-white py-12 text-center text-slate-500">
               Todavía no hay productos destacados. Entrá al{" "}

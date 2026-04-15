@@ -19,7 +19,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "owner@aqua.local" },
-    update: { emailVerified: verifiedAt },
+    update: {
+      emailVerified: verifiedAt,
+      passwordHash: ownerPassword,
+    },
     create: {
       name: "Duenio Aqua",
       email: "owner@aqua.local",
@@ -31,7 +34,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "empleado@aqua.local" },
-    update: { emailVerified: verifiedAt },
+    update: {
+      emailVerified: verifiedAt,
+      passwordHash: employeePassword,
+    },
     create: {
       name: "Empleado Aqua",
       email: "empleado@aqua.local",
@@ -44,7 +50,10 @@ async function main() {
   const customerPassword = await bcrypt.hash("Cliente1234", 10);
   await prisma.user.upsert({
     where: { email: "cliente@aqua.local" },
-    update: { emailVerified: verifiedAt },
+    update: {
+      emailVerified: verifiedAt,
+      passwordHash: customerPassword,
+    },
     create: {
       name: "Cliente demo",
       email: "cliente@aqua.local",
@@ -98,6 +107,85 @@ async function main() {
       sortOrder: i,
     })),
   });
+
+  const catOrg = await prisma.category.findUnique({ where: { slug: "organizacion" } });
+  const catDeco = await prisma.category.findUnique({ where: { slug: "decoracion" } });
+  const catBano = await prisma.category.findUnique({ where: { slug: "bano" } });
+  if (!catOrg || !catDeco || !catBano) {
+    throw new Error("Categorias demo incompletas");
+  }
+
+  const extraProducts = [
+    {
+      slug: "set-organizadores-apilables",
+      name: "Set organizadores apilables",
+      description: "Tres cajas para ordenar el placard o la cocina.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1584622650111-993a426c6a78?auto=format&fit=crop&w=1200&q=80",
+      listPrice: 28900,
+      retailPrice: 24900,
+      wholesalePrice: 19800,
+      categoryId: catOrg.id,
+      colors: ["Gris", "Beige"],
+    },
+    {
+      slug: "maceta-ceramica-nordica",
+      name: "Maceta cerámica nórdica",
+      description: "Ideal para plantas medianas en living o balcón.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1200&q=80",
+      listPrice: 15900,
+      retailPrice: 12900,
+      wholesalePrice: 9900,
+      categoryId: catDeco.id,
+      colors: ["Blanco", "Terracota"],
+    },
+    {
+      slug: "toallero-acero-inox",
+      name: "Toallero acero inoxidable",
+      description: "Barra adhesiva o tornillos; acabado satinado.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80",
+      listPrice: 22000,
+      retailPrice: 18900,
+      wholesalePrice: 15200,
+      categoryId: catBano.id,
+      colors: ["Cromo"],
+    },
+  ];
+
+  for (const p of extraProducts) {
+    const { colors, ...data } = p;
+    const created = await prisma.product.upsert({
+      where: { slug: data.slug },
+      update: {
+        name: data.name,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        listPrice: data.listPrice,
+        retailPrice: data.retailPrice,
+        wholesalePrice: data.wholesalePrice,
+        categoryId: data.categoryId,
+        isActive: true,
+        isBestSeller: true,
+      },
+      create: {
+        ...data,
+        discountRetailPercent: 5,
+        discountWholesalePercent: 10,
+        isActive: true,
+        isBestSeller: true,
+      },
+    });
+    await prisma.productVariant.deleteMany({ where: { productId: created.id } });
+    await prisma.productVariant.createMany({
+      data: colors.map((colorLabel, i) => ({
+        productId: created.id,
+        colorLabel,
+        sortOrder: i,
+      })),
+    });
+  }
 
   console.log("Seed ejecutado correctamente.");
 }
