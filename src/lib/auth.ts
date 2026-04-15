@@ -10,6 +10,10 @@ const credentialsSchema = z.object({
   password: z.string().min(6),
 });
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
@@ -29,8 +33,9 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
+        const email = normalizeEmail(parsed.data.email);
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: "insensitive" } },
         });
 
         if (!user) {

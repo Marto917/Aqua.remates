@@ -116,6 +116,12 @@
       "regex": "^/registro(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/registro(?:/)?$"
+    },
+    {
+      "page": "/setup-demo",
+      "regex": "^/setup\\-demo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup\\-demo(?:/)?$"
     }
   ],
   "dataRoutes": [],

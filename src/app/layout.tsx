@@ -48,9 +48,6 @@ export default async function RootLayout({
               <Link href="/carrito" className="hover:text-brand-dark">
                 Carrito
               </Link>
-              <Link href="/checkout" className="hover:text-brand-dark">
-                Pagar
-              </Link>
               <Link href="/mayorista/contacto" className="hidden hover:text-brand-dark sm:inline">
                 Mayorista
               </Link>

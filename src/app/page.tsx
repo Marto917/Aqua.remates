@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import Link from "next/link";
 import { Prisma, type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
@@ -10,21 +11,45 @@ type HomeProduct = PrismaTypes.ProductGetPayload<{
   include: { category: true; variants: true };
 }>;
 
+function shuffleIds(ids: string[]): string[] {
+  const a = [...ids];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    const t = a[i]!;
+    a[i] = a[j]!;
+    a[j] = t;
+  }
+  return a;
+}
+
 export default async function HomePage() {
   let homeProducts: HomeProduct[] = [];
   let categories: { name: string; slug: string }[] = [];
 
   try {
-    const [idRows, cats] = await Promise.all([
-      prisma.$queryRaw<Array<{ id: string }>>(
-        Prisma.sql`SELECT id FROM "Product" WHERE "isActive" = true ORDER BY RANDOM() LIMIT 4`,
-      ),
-      prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
-    ]);
-    categories = cats;
+    categories = await prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 });
 
-    if (idRows.length > 0) {
-      const ids = idRows.map((r) => r.id);
+    let ids: string[] = [];
+    try {
+      const idRows = await prisma.$queryRaw<Array<{ id: string }>>(
+        Prisma.sql`SELECT id FROM "Product" WHERE "isActive" = true ORDER BY RANDOM() LIMIT 4`,
+      );
+      ids = idRows.map((r) => r.id);
+    } catch (rawErr) {
+      console.warn("[home] ORDER BY RANDOM no disponible o falló, usando mezcla en memoria:", rawErr);
+    }
+
+    if (ids.length === 0) {
+      const pool = await prisma.product.findMany({
+        where: { isActive: true },
+        select: { id: true },
+        take: 40,
+        orderBy: { updatedAt: "desc" },
+      });
+      ids = shuffleIds(pool.map((p) => p.id)).slice(0, 4);
+    }
+
+    if (ids.length > 0) {
       const orderMap = new Map(ids.map((id, i) => [id, i]));
       const fetched = await prisma.product.findMany({
         where: { id: { in: ids } },
@@ -87,11 +112,17 @@ export default async function HomePage() {
             homeProducts.map((product) => <ProductCard key={product.id} product={product} mode="retail" />)
           ) : (
             <p className="col-span-full rounded-xl border border-dashed border-slate-200 bg-white py-12 text-center text-slate-500">
-              Todavía no hay productos destacados. Entrá al{" "}
-              <Link href="/admin/productos" className="font-medium text-brand underline">
-                panel de empleado
+              No hay productos en la base todavía. Si es un entorno nuevo, cargá el demo en{" "}
+              <Link href="/setup-demo" className="font-medium text-brand underline">
+                /setup-demo
               </Link>{" "}
-              para cargar el catálogo.
+              o ejecutá <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">npm run db:seed</code> con tu{" "}
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">DATABASE_URL</code>. Con usuario staff
+              también podés cargar desde{" "}
+              <Link href="/admin/productos" className="font-medium text-brand underline">
+                /admin/productos
+              </Link>
+              .
             </p>
           )}
         </div>
