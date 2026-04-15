@@ -1,0 +1,136 @@
+"use client";
+
+import Image from "next/image";
+import { useMemo, useState } from "react";
+import { useCart } from "@/contexts/cart-context";
+import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
+import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+
+type Variant = {
+  id: string;
+  colorLabel: string;
+  imageUrl: string | null;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  retailPrice: unknown;
+  wholesalePrice: unknown;
+  discountRetailPercent: number;
+  discountWholesalePercent: number;
+};
+
+type ProductAddToCartProps = {
+  product: Product;
+  variants: Variant[];
+};
+
+export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
+  const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
+  const [qty, setQty] = useState(1);
+  const { addLine, mode, lines } = useCart();
+
+  const selected = variants.find((v) => v.id === variantId) ?? variants[0];
+  const displayImage = selected?.imageUrl || product.imageUrl;
+
+  const retail = Number(product.retailPrice);
+  const wholesale = Number(product.wholesalePrice);
+  const dr = product.discountRetailPercent;
+  const dw = product.discountWholesalePercent;
+
+  const totalUnitsThisProduct = useMemo(() => {
+    const forProduct = lines.filter((l) => l.productId === product.id);
+    const sum = forProduct.reduce((a, l) => a + l.quantity, 0);
+    const line = forProduct.find((l) => l.variantId === variantId);
+    if (line) return sum - line.quantity + qty;
+    return sum + qty;
+  }, [lines, product.id, variantId, qty]);
+
+  const previewTotals = useMemo(() => {
+    const m = quantityByProductId(lines.map((l) => ({ productId: l.productId, quantity: l.quantity })));
+    m.set(product.id, totalUnitsThisProduct);
+    return m;
+  }, [lines, product.id, totalUnitsThisProduct]);
+
+  const effectiveMode: PriceMode = getEffectivePriceModeForProduct(mode, product.id, previewTotals);
+  const unitLabel = getFinalUnitPrice(
+    {
+      retailPrice: retail,
+      wholesalePrice: wholesale,
+      discountRetailPercent: dr,
+      discountWholesalePercent: dw,
+    },
+    effectiveMode,
+  ).toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+
+  if (!selected) {
+    return <p className="text-sm text-rose-600">No hay variantes disponibles.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-xl bg-slate-100">
+        <Image src={displayImage} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium text-slate-700">Color</p>
+        <div className="flex flex-wrap gap-2">
+          {variants.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setVariantId(v.id)}
+              className={`rounded-full border px-4 py-2 text-sm font-medium ${
+                v.id === variantId ? "border-brand bg-brand-muted text-brand-dark" : "border-slate-200 bg-white text-slate-700"
+              }`}
+            >
+              {v.colorLabel}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          Cantidad
+          <input
+            type="number"
+            min={1}
+            value={qty}
+            onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+            className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-center text-base"
+          />
+        </label>
+        <div>
+          <p className="text-xs text-slate-500">Precio unitario (según modo y reglas del carrito)</p>
+          <p className="text-xl font-bold text-brand-dark">{unitLabel}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          addLine({
+            variantId: selected.id,
+            productId: product.id,
+            productName: product.name,
+            colorLabel: selected.colorLabel,
+            imageUrl: displayImage,
+            retailPrice: retail,
+            wholesalePrice: wholesale,
+            discountRetailPercent: dr,
+            discountWholesalePercent: dw,
+            quantity: qty,
+          });
+          setQty(1);
+        }}
+        className="w-full max-w-md rounded-full bg-brand py-4 text-base font-semibold text-white shadow-md hover:bg-brand-dark"
+      >
+        Agregar al carrito
+      </button>
+    </div>
+  );
+}

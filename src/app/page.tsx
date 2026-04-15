@@ -5,11 +5,14 @@ import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
-  let bestSellers: Prisma.ProductGetPayload<{ include: { category: true } }>[] = [];
+  let bestSellers: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
   try {
     bestSellers = await prisma.product.findMany({
       where: { isActive: true, isBestSeller: true },
-      include: { category: true },
+      include: {
+        category: true,
+        variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+      },
       take: 4,
       orderBy: { updatedAt: "desc" },
     });

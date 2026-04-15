@@ -51,7 +51,15 @@ export async function POST(req: Request) {
   }
 
   const categorySlug = slugify(parsed.data.categoryName);
-  await prisma.product.create({
+
+  const colorRaw = String(formData.get("colorLabels") ?? "");
+  const colorLabels = colorRaw
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const labels = colorLabels.length > 0 ? colorLabels : ["Único"];
+
+  const product = await prisma.product.create({
     data: {
       name: parsed.data.name,
       slug: slugify(parsed.data.slug),
@@ -74,6 +82,14 @@ export async function POST(req: Request) {
         },
       },
     },
+  });
+
+  await prisma.productVariant.createMany({
+    data: labels.map((colorLabel, i) => ({
+      productId: product.id,
+      colorLabel,
+      sortOrder: i,
+    })),
   });
 
   return NextResponse.redirect(new URL("/admin/productos", req.url));

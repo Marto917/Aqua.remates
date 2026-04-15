@@ -2,10 +2,10 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminProductsPage() {
-  let products: Prisma.ProductGetPayload<{ include: { category: true } }>[] = [];
+  let products: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
   try {
     products = await prisma.product.findMany({
-      include: { category: true },
+      include: { category: true, variants: { orderBy: { sortOrder: "asc" } } },
       orderBy: { updatedAt: "desc" },
     });
   } catch (error) {
@@ -83,6 +83,15 @@ export default async function AdminProductsPage() {
           placeholder="Descripcion de producto"
           className="w-full rounded-md border px-3 py-2"
         />
+        <div>
+          <label className="text-sm text-slate-600">Colores (uno por línea o separados por coma)</label>
+          <textarea
+            name="colorLabels"
+            rows={2}
+            placeholder="Ej: Azul&#10;Rosa&#10;Negro"
+            className="mt-1 w-full rounded-md border px-3 py-2"
+          />
+        </div>
         <div className="flex gap-4 text-sm">
           <label className="inline-flex items-center gap-2">
             <input type="checkbox" name="isBestSeller" />
@@ -106,6 +115,7 @@ export default async function AdminProductsPage() {
               <th className="px-3 py-2 text-left">Categoria</th>
               <th className="px-3 py-2 text-left">Minorista</th>
               <th className="px-3 py-2 text-left">Mayorista</th>
+              <th className="px-3 py-2 text-left">Colores</th>
               <th className="px-3 py-2 text-left">Disponibilidad</th>
             </tr>
           </thead>
@@ -116,6 +126,9 @@ export default async function AdminProductsPage() {
                 <td className="px-3 py-2">{product.category.name}</td>
                 <td className="px-3 py-2">{Number(product.retailPrice).toFixed(2)}</td>
                 <td className="px-3 py-2">{Number(product.wholesalePrice).toFixed(2)}</td>
+                <td className="px-3 py-2 text-xs text-slate-600">
+                  {product.variants.map((v) => v.colorLabel).join(", ") || "—"}
+                </td>
                 <td className="px-3 py-2">
                   <form method="post" action={`/api/admin/products/${product.id}`}>
                     <input type="hidden" name="isActive" value={product.isActive ? "false" : "true"} />

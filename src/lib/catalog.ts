@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { MIN_UNITS_FOR_WHOLESALE_PRICE } from "@/lib/pricing-constants";
 
 export type PriceMode = "retail" | "wholesale";
 
@@ -26,6 +27,10 @@ export async function getCatalogData(filters: CatalogFilters) {
     },
     include: {
       category: true,
+      variants: {
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -77,4 +82,18 @@ export function getDiscountPercentForMode(
   mode: PriceMode,
 ) {
   return mode === "wholesale" ? product.discountWholesalePercent : product.discountRetailPercent;
+}
+
+/** Texto de precio en grilla: en modo mayorista muestra referencia mayorista + aclaración de regla. */
+export function getListingPriceLabel(
+  product: Parameters<typeof getProductDisplayPrice>[0],
+  catalogMode: PriceMode,
+): { main: string; hint?: string } {
+  if (catalogMode === "retail") {
+    return { main: getProductDisplayPrice(product, "retail") };
+  }
+  return {
+    main: getProductDisplayPrice(product, "wholesale"),
+    hint: `Precio mayorista si llevás ${MIN_UNITS_FOR_WHOLESALE_PRICE}+ unidades del mismo producto (entre colores).`,
+  };
 }

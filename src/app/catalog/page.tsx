@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CatalogPriceModeSync } from "@/components/CatalogPriceModeSync";
 import { CatalogToolbar } from "@/components/CatalogToolbar";
 import { PriceModeSwitch } from "@/components/PriceModeSwitch";
 import { ProductCard } from "@/components/ProductCard";
@@ -26,9 +28,14 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        <CatalogPriceModeSync />
+      </Suspense>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Catalogo de productos</h1>
-        <PriceModeSwitch value={priceMode} />
+        <h1 className="text-2xl font-semibold text-brand-dark">Catálogo</h1>
+        <Suspense fallback={null}>
+          <PriceModeSwitch />
+        </Suspense>
       </div>
 
       <CatalogToolbar

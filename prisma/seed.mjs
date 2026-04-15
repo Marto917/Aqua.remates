@@ -63,8 +63,11 @@ async function main() {
   }
 
   const category = await prisma.category.findUnique({ where: { slug: "cocina" } });
+  if (!category) {
+    throw new Error("Categoria cocina no encontrada");
+  }
 
-  await prisma.product.upsert({
+  const product = await prisma.product.upsert({
     where: { slug: "botella-termica-pro" },
     update: {
       discountRetailPercent: 10,
@@ -85,6 +88,15 @@ async function main() {
       isBestSeller: true,
       categoryId: category.id,
     },
+  });
+
+  await prisma.productVariant.deleteMany({ where: { productId: product.id } });
+  await prisma.productVariant.createMany({
+    data: ["Azul", "Rosa", "Negro"].map((colorLabel, i) => ({
+      productId: product.id,
+      colorLabel,
+      sortOrder: i,
+    })),
   });
 
   console.log("Seed ejecutado correctamente.");

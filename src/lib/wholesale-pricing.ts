@@ -1,24 +1,26 @@
-/**
- * Regla de negocio (v1): el precio mayorista aplica cuando hay
- * al menos 2 unidades del mismo producto en el carrito (mismo `productId`).
- * Variantes de color: si son filas distintas en catálogo, conviene que compartan `productId`
- * o un modelo de variantes; mientras tanto, "mismo ítem" = mismo id de producto.
- */
-export const MIN_UNITS_FOR_WHOLESALE_PRICE = 2;
+import type { PriceMode } from "@/lib/catalog";
+import { MIN_UNITS_FOR_WHOLESALE_PRICE } from "@/lib/pricing-constants";
 
-export function wholesalePriceAppliesForLine(quantity: number): boolean {
-  return quantity >= MIN_UNITS_FOR_WHOLESALE_PRICE;
+export { MIN_UNITS_FOR_WHOLESALE_PRICE };
+
+export type CartLineForTotals = { productId: string; quantity: number };
+
+/** Cantidad total por producto (suma todos los colores / variantes). */
+export function quantityByProductId(lines: CartLineForTotals[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const line of lines) {
+    map.set(line.productId, (map.get(line.productId) ?? 0) + line.quantity);
+  }
+  return map;
 }
 
-export type CartLine = { productId: string; quantity: number };
-
-/** Devuelve productIds cuyas líneas califican para precio mayorista. */
-export function productIdsEligibleForWholesale(lines: CartLine[]): Set<string> {
-  const eligible = new Set<string>();
-  for (const line of lines) {
-    if (wholesalePriceAppliesForLine(line.quantity)) {
-      eligible.add(line.productId);
-    }
-  }
-  return eligible;
+/** Si el carrito está en mayorista, este producto usa precio mayorista solo si hay 2+ unidades del mismo producto en total. */
+export function getEffectivePriceModeForProduct(
+  cartMode: PriceMode,
+  productId: string,
+  totals: Map<string, number>,
+): PriceMode {
+  if (cartMode === "retail") return "retail";
+  const n = totals.get(productId) ?? 0;
+  return n >= MIN_UNITS_FOR_WHOLESALE_PRICE ? "wholesale" : "retail";
 }

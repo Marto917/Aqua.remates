@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import "./globals.css";
+import { MobileCartBar } from "@/components/MobileCartBar";
+import { Providers } from "@/app/providers";
 import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -20,6 +22,7 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <body>
+        <Providers>
         <header className="sticky top-0 z-40 border-b border-teal-100 bg-white shadow-sm">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
             <Link href="/" className="flex items-center gap-2 font-semibold text-brand-dark">
@@ -39,8 +42,11 @@ export default async function RootLayout({
               <Link href="/catalog" className="hover:text-brand-dark">
                 Catálogo
               </Link>
+              <Link href="/carrito" className="hover:text-brand-dark">
+                Carrito
+              </Link>
               <Link href="/checkout" className="hover:text-brand-dark">
-                Carrito / Pagar
+                Pagar
               </Link>
               <Link href="/mayorista/contacto" className="hidden hover:text-brand-dark sm:inline">
                 Mayorista
@@ -69,7 +75,9 @@ export default async function RootLayout({
             </div>
           </nav>
         </header>
-        <main className="mx-auto min-h-[calc(100vh-64px)] max-w-6xl px-4 py-6 pb-24 sm:py-8">{children}</main>
+        <main className="mx-auto min-h-[calc(100vh-64px)] max-w-6xl px-4 py-6 pb-28 sm:py-8">{children}</main>
+        <MobileCartBar />
+        </Providers>
       </body>
     </html>
   );

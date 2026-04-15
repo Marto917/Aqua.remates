@@ -21,7 +21,11 @@ export async function middleware(req: NextRequest) {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (token.role === ROLES.CUSTOMER && !token.emailVerified) {
+    const role = typeof token.role === "string" ? token.role : "";
+    const emailOk = Boolean(
+      (token as { emailVerified?: boolean }).emailVerified,
+    );
+    if (role === ROLES.CUSTOMER && !emailOk) {
       return NextResponse.redirect(new URL("/cuenta/verificar-email", req.url));
     }
     return NextResponse.next();

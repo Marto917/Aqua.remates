@@ -7,13 +7,15 @@
   "/api/auth/verify-email/route": "/api/auth/verify-email",
   "/api/retail-orders/route": "/api/retail-orders",
   "/admin/finanzas/page": "/admin/finanzas",
-  "/admin/page": "/admin",
   "/admin/productos/page": "/admin/productos",
-  "/checkout/page": "/checkout",
+  "/admin/page": "/admin",
+  "/carrito/page": "/carrito",
   "/catalog/page": "/catalog",
-  "/cuenta/verificar-email/page": "/cuenta/verificar-email",
   "/login/page": "/login",
+  "/checkout/page": "/checkout",
   "/mayorista/contacto/page": "/mayorista/contacto",
+  "/cuenta/verificar-email/page": "/cuenta/verificar-email",
   "/page": "/",
+  "/product/[slug]/page": "/product/[slug]",
   "/registro/page": "/registro"
 }
