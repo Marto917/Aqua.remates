@@ -6,10 +6,10 @@
   "/api/retail-orders/route": "/api/retail-orders",
   "/api/wholesale-contact/route": "/api/wholesale-contact",
   "/admin/finanzas/page": "/admin/finanzas",
-  "/admin/productos/page": "/admin/productos",
   "/admin/page": "/admin",
-  "/checkout/page": "/checkout",
+  "/admin/productos/page": "/admin/productos",
   "/catalog/page": "/catalog",
+  "/checkout/page": "/checkout",
   "/login/page": "/login",
   "/mayorista/contacto/page": "/mayorista/contacto",
   "/page": "/"
