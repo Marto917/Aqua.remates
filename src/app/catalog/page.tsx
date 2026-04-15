@@ -13,7 +13,16 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const category = typeof params.category === "string" ? params.category : undefined;
   const priceMode: PriceMode = params.priceMode === "wholesale" ? "wholesale" : "retail";
 
-  const { products, categories } = await getCatalogData({ q, category, priceMode });
+  let products: Awaited<ReturnType<typeof getCatalogData>>["products"] = [];
+  let categories: Awaited<ReturnType<typeof getCatalogData>>["categories"] = [];
+
+  try {
+    const data = await getCatalogData({ q, category, priceMode });
+    products = data.products;
+    categories = data.categories;
+  } catch (error) {
+    console.error("No se pudo cargar el catalogo:", error);
+  }
 
   return (
     <div className="space-y-6">

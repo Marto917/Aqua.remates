@@ -1,10 +1,13 @@
-import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
 const EMPLOYEE_PATHS = ["/admin", "/admin/productos"];
 const OWNER_ONLY_PATHS = ["/admin/finanzas"];
+const ROLES = {
+  OWNER: "OWNER",
+  EMPLOYEE: "EMPLOYEE",
+} as const;
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -20,11 +23,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && token.role !== UserRole.OWNER) {
+  if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && token.role !== ROLES.OWNER) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  if (!Object.values(UserRole).includes(token.role as UserRole)) {
+  if (token.role !== ROLES.OWNER && token.role !== ROLES.EMPLOYEE) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

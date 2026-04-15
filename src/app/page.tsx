@@ -1,15 +1,21 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
-  const bestSellers = await prisma.product.findMany({
-    where: { isActive: true, isBestSeller: true },
-    include: { category: true },
-    take: 4,
-    orderBy: { updatedAt: "desc" },
-  });
+  let bestSellers: Prisma.ProductGetPayload<{ include: { category: true } }>[] = [];
+  try {
+    bestSellers = await prisma.product.findMany({
+      where: { isActive: true, isBestSeller: true },
+      include: { category: true },
+      take: 4,
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (error) {
+    console.error("No se pudieron cargar productos destacados:", error);
+  }
 
   return (
     <div className="space-y-8">

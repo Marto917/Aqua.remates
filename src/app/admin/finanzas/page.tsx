@@ -1,10 +1,17 @@
 import { prisma } from "@/lib/prisma";
 
 export default async function FinancialDashboardPage() {
-  const [retailOrders, wholesaleLeads] = await Promise.all([
-    prisma.retailOrder.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-    prisma.wholesaleLead.count(),
-  ]);
+  let retailOrders: Awaited<ReturnType<typeof prisma.retailOrder.findMany>> = [];
+  let wholesaleLeads = 0;
+
+  try {
+    [retailOrders, wholesaleLeads] = await Promise.all([
+      prisma.retailOrder.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
+      prisma.wholesaleLead.count(),
+    ]);
+  } catch (error) {
+    console.error("No se pudieron cargar metricas financieras:", error);
+  }
 
   const totalSales = retailOrders.reduce((acc, order) => acc + Number(order.totalAmount), 0);
 

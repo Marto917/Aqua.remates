@@ -2,15 +2,15 @@
   "/_not-found/page": "app/_not-found/page.js",
   "/api/admin/products/[id]/route": "app/api/admin/products/[id]/route.js",
   "/api/admin/products/route": "app/api/admin/products/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/api/retail-orders/route": "app/api/retail-orders/route.js",
   "/api/wholesale-contact/route": "app/api/wholesale-contact/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/admin/finanzas/page": "app/admin/finanzas/page.js",
-  "/admin/page": "app/admin/page.js",
   "/admin/productos/page": "app/admin/productos/page.js",
+  "/admin/page": "app/admin/page.js",
   "/checkout/page": "app/checkout/page.js",
-  "/login/page": "app/login/page.js",
   "/catalog/page": "app/catalog/page.js",
+  "/login/page": "app/login/page.js",
   "/mayorista/contacto/page": "app/mayorista/contacto/page.js",
   "/page": "app/page.js"
 }

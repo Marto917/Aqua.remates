@@ -1,10 +1,16 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminProductsPage() {
-  const products = await prisma.product.findMany({
-    include: { category: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  let products: Prisma.ProductGetPayload<{ include: { category: true } }>[] = [];
+  try {
+    products = await prisma.product.findMany({
+      include: { category: true },
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (error) {
+    console.error("No se pudieron cargar productos del backoffice:", error);
+  }
 
   return (
     <section className="space-y-6">
