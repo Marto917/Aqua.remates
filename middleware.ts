@@ -21,12 +21,12 @@ export async function middleware(req: NextRequest) {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    const role = typeof token.role === "string" ? token.role : "";
+    // Forzar string: si no, TS infiere UserRole y puede excluir CUSTOMER en el build de Vercel.
+    const roleStr = String((token as { role?: unknown }).role ?? "");
     const emailOk = Boolean(
       (token as { emailVerified?: boolean }).emailVerified,
     );
-    // Literal "CUSTOMER" (no enum/ROLES) para que el build no falle si JWT tipa `role` distinto.
-    if (role === "CUSTOMER" && !emailOk) {
+    if (roleStr === "CUSTOMER" && !emailOk) {
       return NextResponse.redirect(new URL("/cuenta/verificar-email", req.url));
     }
     return NextResponse.next();
@@ -43,11 +43,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && token.role !== ROLES.OWNER) {
+  const staffRole = String((token as { role?: unknown }).role ?? "");
+
+  if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && staffRole !== ROLES.OWNER) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  if (token.role !== ROLES.OWNER && token.role !== ROLES.EMPLOYEE) {
+  if (staffRole !== ROLES.OWNER && staffRole !== ROLES.EMPLOYEE) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
