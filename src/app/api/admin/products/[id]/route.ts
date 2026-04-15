@@ -1,8 +1,7 @@
 import { UserRole } from "@prisma/client";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
 const updateAvailabilitySchema = z.object({
@@ -13,7 +12,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await getSafeSession();
   const canManage =
     session?.user.role === UserRole.OWNER || session?.user.role === UserRole.EMPLOYEE;
   if (!session || !canManage) {

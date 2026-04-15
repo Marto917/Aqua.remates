@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSafeSession } from "@/lib/get-session";
 
 export default async function AdminHomePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSafeSession();
 
   return (
     <section className="space-y-4">

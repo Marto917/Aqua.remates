@@ -1,8 +1,7 @@
 import { UserRole } from "@prisma/client";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
 const productSchema = z.object({
@@ -31,7 +30,7 @@ function slugify(value: string) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getSafeSession();
   const canManage =
     session?.user.role === UserRole.OWNER || session?.user.role === UserRole.EMPLOYEE;
   if (!session || !canManage) {

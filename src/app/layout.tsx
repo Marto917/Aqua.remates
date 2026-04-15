@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+
+/** Sesión en el layout usa headers; evita fallos de prerender / CSR bailout en Vercel. */
+export const dynamic = "force-dynamic";
 import "./globals.css";
 import { MobileCartBar } from "@/components/MobileCartBar";
 import { Providers } from "@/app/providers";
-import { authOptions } from "@/lib/auth";
+import { getSafeSession } from "@/lib/get-session";
 
 export const metadata: Metadata = {
   title: "AQUA — Tienda",
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getServerSession(authOptions);
+  const session = await getSafeSession();
   const isStaff =
     session?.user?.role === "OWNER" || session?.user?.role === "EMPLOYEE";
 
@@ -26,14 +28,15 @@ export default async function RootLayout({
         <header className="sticky top-0 z-40 border-b border-teal-100 bg-white shadow-sm">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
             <Link href="/" className="flex items-center gap-2 font-semibold text-brand-dark">
-              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-brand">
+              <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand">
                 <Image
                   src="/logo-aqua.png"
                   alt="AQUA"
                   width={40}
                   height={40}
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                   priority
+                  unoptimized
                 />
               </span>
               <span className="text-lg tracking-tight">AQUA</span>
