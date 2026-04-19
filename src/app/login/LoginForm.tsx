@@ -18,15 +18,25 @@ export function LoginForm() {
         setLoading(true);
         setError(null);
         const form = new FormData(event.currentTarget);
+        const email = String(form.get("email") ?? "").trim();
+        const password = String(form.get("password") ?? "");
         const result = await signIn("credentials", {
-          email: form.get("email"),
-          password: form.get("password"),
+          email,
+          password,
           callbackUrl,
           redirect: false,
         });
 
         if (result?.error) {
-          setError("Credenciales invalidas.");
+          const detail =
+            process.env.NODE_ENV === "development" && result.error !== "CredentialsSignin"
+              ? ` (${result.error})`
+              : "";
+          setError(
+            result.error === "Configuration"
+              ? "Error de configuración del servidor (revisá NEXTAUTH_SECRET y variables en el hosting)."
+              : `Credenciales inválidas o no se pudo conectar a la base de datos.${detail}`,
+          );
           setLoading(false);
           return;
         }

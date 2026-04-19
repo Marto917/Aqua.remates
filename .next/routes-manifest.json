@@ -122,6 +122,12 @@
       "regex": "^/setup\\-demo(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/setup\\-demo(?:/)?$"
+    },
+    {
+      "page": "/vendedor",
+      "regex": "^/vendedor(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vendedor(?:/)?$"
     }
   ],
   "dataRoutes": [],

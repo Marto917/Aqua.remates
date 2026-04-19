@@ -1,6 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
@@ -32,8 +33,10 @@ function slugify(value: string) {
 export async function POST(req: Request) {
   const session = await getSafeSession();
   const canManage =
-    session?.user.role === UserRole.OWNER || session?.user.role === UserRole.EMPLOYEE;
-  if (!session || !canManage) {
+    isBackofficePreview() ||
+    session?.user.role === UserRole.OWNER ||
+    session?.user.role === UserRole.EMPLOYEE;
+  if (!canManage) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

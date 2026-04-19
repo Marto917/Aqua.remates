@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
-const EMPLOYEE_PATHS = ["/admin", "/admin/productos"];
 const OWNER_ONLY_PATHS = ["/admin/finanzas"];
 const ROLES = {
   OWNER: "OWNER",
@@ -13,6 +12,14 @@ const ROLES = {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
+
+  const preview = process.env.BACKOFFICE_PREVIEW === "true";
+  if (
+    preview &&
+    (pathname.startsWith("/admin") || pathname.startsWith("/vendedor"))
+  ) {
+    return NextResponse.next();
+  }
 
   if (pathname.startsWith("/checkout")) {
     const token = await getToken({ req, secret });
@@ -29,10 +36,6 @@ export async function middleware(req: NextRequest) {
     if (roleStr === "CUSTOMER" && !emailOk) {
       return NextResponse.redirect(new URL("/cuenta/verificar-email", req.url));
     }
-    return NextResponse.next();
-  }
-
-  if (![...EMPLOYEE_PATHS, ...OWNER_ONLY_PATHS].some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
@@ -57,5 +60,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/checkout/:path*"],
+  matcher: ["/admin/:path*", "/vendedor/:path*", "/checkout/:path*"],
 };

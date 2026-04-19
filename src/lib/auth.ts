@@ -6,7 +6,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .email(),
   password: z.string().min(6),
 });
 
@@ -16,6 +19,7 @@ function normalizeEmail(email: string) {
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -28,24 +32,33 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = credentialsSchema.safeParse(credentials);
+        const raw = {
+          email: typeof credentials?.email === "string" ? credentials.email : "",
+          password: typeof credentials?.password === "string" ? credentials.password : "",
+        };
+        const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) {
           return null;
         }
 
         const email = normalizeEmail(parsed.data.email);
-        const user = await prisma.user.findFirst({
-          where: { email: { equals: email, mode: "insensitive" } },
-        });
+        const password = parsed.data.password.trimEnd();
+
+        let user;
+        try {
+          user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: "insensitive" } },
+          });
+        } catch (e) {
+          console.error("[auth] Error al consultar usuario (¿DATABASE_URL o red?):", e);
+          return null;
+        }
 
         if (!user) {
           return null;
         }
 
-        const isValidPassword = await bcrypt.compare(
-          parsed.data.password,
-          user.passwordHash,
-        );
+        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
         if (!isValidPassword) {
           return null;

@@ -17,9 +17,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getSafeSession();
-  const isStaff =
-    session?.user?.role === "OWNER" || session?.user?.role === "EMPLOYEE";
+  await getSafeSession();
 
   return (
     <html lang="es">
@@ -51,27 +49,18 @@ export default async function RootLayout({
               <Link href="/mayorista/contacto" className="hidden hover:text-brand-dark sm:inline">
                 Mayorista
               </Link>
-              {isStaff ? (
-                <Link href="/admin" className="rounded-full bg-brand px-3 py-1.5 text-white hover:bg-brand-dark">
-                  Backoffice
-                </Link>
-              ) : session?.user ? (
-                <Link href="/login" className="hover:text-brand-dark">
-                  Cuenta
-                </Link>
-              ) : (
-                <>
-                  <Link href="/registro" className="hover:text-brand-dark">
-                    Registro
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="rounded-full bg-brand px-3 py-1.5 text-white hover:bg-brand-dark"
-                  >
-                    Ingresar
-                  </Link>
-                </>
-              )}
+              <Link
+                href="/admin"
+                className="rounded-full border border-brand bg-white px-3 py-1.5 font-semibold text-brand-dark hover:bg-brand-muted/50"
+              >
+                Admin
+              </Link>
+              <Link
+                href="/vendedor"
+                className="rounded-full bg-brand px-3 py-1.5 text-white hover:bg-brand-dark"
+              >
+                Vendedor
+              </Link>
             </div>
           </nav>
         </header>

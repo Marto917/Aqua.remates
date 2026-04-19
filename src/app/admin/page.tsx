@@ -1,13 +1,23 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { getSafeSession } from "@/lib/get-session";
+import { isBackofficePreview } from "@/lib/backoffice-preview";
 
 export default async function AdminHomePage() {
   const session = await getSafeSession();
+  const preview = isBackofficePreview();
+  const showFinanzas =
+    preview || session?.user.role === UserRole.OWNER;
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Backoffice</h1>
+      <h1 className="text-2xl font-semibold">Panel administrador</h1>
+      {preview ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Modo preview activo (<code className="rounded bg-white px-1">BACKOFFICE_PREVIEW=true</code>): sin login.
+          Desactivá esta variable en producción.
+        </p>
+      ) : null}
       <p className="text-sm text-slate-600">
         Perfil actual: <strong>{session?.user.role ?? "sin sesion"}</strong>
       </p>
@@ -16,7 +26,7 @@ export default async function AdminHomePage() {
         <Link href="/admin/productos" className="rounded-xl border bg-white p-4 hover:border-brand">
           Gestion de productos
         </Link>
-        {session?.user.role === UserRole.OWNER ? (
+        {showFinanzas ? (
           <Link href="/admin/finanzas" className="rounded-xl border bg-white p-4 hover:border-brand">
             Dashboard financiero
           </Link>
