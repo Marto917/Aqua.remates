@@ -28,6 +28,21 @@ export default async function VendedorHomePage() {
         </div>
       </div>
 
+      <div className="rounded-xl border border-brand/30 bg-brand-muted/30 p-4">
+        <p className="font-semibold text-slate-900">Exportar todo para el proyecto final</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Genera un ZIP con <code className="rounded bg-white px-1">catalog-aqua.json</code>, las imágenes en{" "}
+          <code className="rounded bg-white px-1">public/uploads/products/</code> e instrucciones. Descargalo antes
+          de que otro deploy borre archivos en el servidor de prueba.
+        </p>
+        <a
+          href="/api/admin/export-catalog"
+          className="mt-3 inline-flex rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+        >
+          Descargar ZIP del catalogo
+        </a>
+      </div>
+
       <p className="text-xs text-slate-500">
         El panel financiero y la configuracion global siguen en{" "}
         <Link href="/admin" className="font-medium text-brand underline">

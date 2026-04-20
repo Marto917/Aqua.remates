@@ -1,7 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export default async function AdminProductsPage() {
+type PageProps = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+export default async function AdminProductsPage({ searchParams }: PageProps) {
+  const { error } = await searchParams;
   let products: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
   try {
     products = await prisma.product.findMany({
@@ -14,19 +19,43 @@ export default async function AdminProductsPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">Gestion de catalogo</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Gestion de catalogo</h1>
+        <a
+          href="/api/admin/export-catalog"
+          className="inline-flex shrink-0 rounded-md border border-brand bg-white px-3 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
+        >
+          Exportar ZIP (JSON + imagenes)
+        </a>
+      </div>
 
-      <form method="post" action="/api/admin/products" className="space-y-3 rounded-xl border bg-white p-5">
+      {error ? (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+      ) : null}
+
+      <form
+        method="post"
+        action="/api/admin/products"
+        encType="multipart/form-data"
+        className="space-y-3 rounded-xl border bg-white p-5"
+      >
         <h2 className="text-lg font-semibold">Crear producto</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <input name="name" required placeholder="Nombre" className="rounded-md border px-3 py-2" />
           <input name="slug" required placeholder="Slug" className="rounded-md border px-3 py-2" />
-          <input
-            name="imageUrl"
-            required
-            placeholder="URL de imagen (Cloudinary o Supabase)"
-            className="rounded-md border px-3 py-2"
-          />
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700">Imagen del producto</label>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Se guarda en la carpeta public (WebP comprimido, hasta ~1600 px, buena calidad).
+            </p>
+            <input
+              name="imageFile"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              required
+              className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+            />
+          </div>
           <input
             name="categoryName"
             required

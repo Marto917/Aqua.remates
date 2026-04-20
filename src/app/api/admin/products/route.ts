@@ -4,12 +4,14 @@ import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { saveCompressedProductImage } from "@/lib/save-product-image";
+
+export const runtime = "nodejs";
 
 const productSchema = z.object({
   name: z.string().min(2),
   slug: z.string().min(2),
   description: z.string().min(10),
-  imageUrl: z.string().url(),
   categoryName: z.string().min(2),
   listPrice: z.coerce.number().positive(),
   retailPrice: z.coerce.number().positive(),
@@ -49,7 +51,27 @@ export async function POST(req: Request) {
 
   const parsed = productSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Datos invalidos." }, { status: 400 });
+    const url = new URL("/admin/productos", req.url);
+    url.searchParams.set("error", "Datos invalidos.");
+    return NextResponse.redirect(url);
+  }
+
+  const file = formData.get("imageFile");
+  let imageUrl: string;
+  if (file instanceof File && file.size > 0) {
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      imageUrl = await saveCompressedProductImage(buffer);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudo procesar la imagen.";
+      const url = new URL("/admin/productos", req.url);
+      url.searchParams.set("error", msg);
+      return NextResponse.redirect(url);
+    }
+  } else {
+    const url = new URL("/admin/productos", req.url);
+    url.searchParams.set("error", "Subi una imagen del producto.");
+    return NextResponse.redirect(url);
   }
 
   const categorySlug = slugify(parsed.data.categoryName);
@@ -66,7 +88,7 @@ export async function POST(req: Request) {
       name: parsed.data.name,
       slug: slugify(parsed.data.slug),
       description: parsed.data.description,
-      imageUrl: parsed.data.imageUrl,
+      imageUrl,
       listPrice: parsed.data.listPrice,
       retailPrice: parsed.data.retailPrice,
       wholesalePrice: parsed.data.wholesalePrice,

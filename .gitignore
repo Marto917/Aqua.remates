@@ -3,3 +3,7 @@ node_modules
 .env
 
 /generated/prisma
+
+# Imágenes subidas desde el admin (regenerables; no versionar binarios)
+/public/uploads/products/*
+!/public/uploads/products/.gitkeep
