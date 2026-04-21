@@ -5,12 +5,13 @@ import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
+import { slugify } from "@/lib/slugify";
+import { ensureUniqueProductSlug } from "@/lib/unique-product-slug";
 
 export const runtime = "nodejs";
 
 const productSchema = z.object({
   name: z.string().min(2),
-  slug: z.string().min(2),
   description: z.string().min(10),
   categoryName: z.string().min(2),
   listPrice: z.coerce.number().positive(),
@@ -22,16 +23,6 @@ const productSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 export async function POST(req: Request) {
   const session = await getSafeSession();
   const canManage =
@@ -39,7 +30,12 @@ export async function POST(req: Request) {
     session?.user.role === UserRole.OWNER ||
     session?.user.role === UserRole.EMPLOYEE;
   if (!canManage) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const url = new URL("/admin/productos", req.url);
+    url.searchParams.set(
+      "error",
+      "No autorizado. En el hosting definí BACKOFFICE_PREVIEW=true (o NEXT_PUBLIC_BACKOFFICE_PREVIEW=true) y redeploy, o iniciá sesión con un usuario staff.",
+    );
+    return NextResponse.redirect(url);
   }
 
   const formData = await req.formData();
@@ -74,7 +70,7 @@ export async function POST(req: Request) {
     return NextResponse.redirect(url);
   }
 
-  const categorySlug = slugify(parsed.data.categoryName);
+  const categorySlug = slugify(parsed.data.categoryName) || `categoria-${Date.now()}`;
 
   const colorRaw = String(formData.get("colorLabels") ?? "");
   const colorLabels = colorRaw
@@ -83,10 +79,12 @@ export async function POST(req: Request) {
     .filter(Boolean);
   const labels = colorLabels.length > 0 ? colorLabels : ["Único"];
 
+  const productSlug = await ensureUniqueProductSlug(prisma, parsed.data.name);
+
   const product = await prisma.product.create({
     data: {
       name: parsed.data.name,
-      slug: slugify(parsed.data.slug),
+      slug: productSlug,
       description: parsed.data.description,
       imageUrl,
       listPrice: parsed.data.listPrice,

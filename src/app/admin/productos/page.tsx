@@ -41,8 +41,12 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       >
         <h2 className="text-lg font-semibold">Crear producto</h2>
         <div className="grid gap-3 md:grid-cols-2">
-          <input name="name" required placeholder="Nombre" className="rounded-md border px-3 py-2" />
-          <input name="slug" required placeholder="Slug" className="rounded-md border px-3 py-2" />
+          <input
+            name="name"
+            required
+            placeholder="Nombre del producto"
+            className="rounded-md border px-3 py-2 md:col-span-2"
+          />
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700">Imagen del producto</label>
             <p className="mt-0.5 text-xs text-slate-500">

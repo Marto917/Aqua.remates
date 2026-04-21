@@ -19,7 +19,12 @@ export async function POST(
     session?.user.role === UserRole.OWNER ||
     session?.user.role === UserRole.EMPLOYEE;
   if (!canManage) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const url = new URL("/admin/productos", req.url);
+    url.searchParams.set(
+      "error",
+      "No autorizado. Configurá BACKOFFICE_PREVIEW en el hosting o iniciá sesión como staff.",
+    );
+    return NextResponse.redirect(url);
   }
 
   const { id } = await params;

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
 import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+import { swatchColorForLabel } from "@/lib/color-swatch";
 
 type Variant = {
   id: string;
@@ -71,25 +72,37 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-xl bg-slate-100">
-        <Image src={displayImage} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
-      </div>
+      <div className="max-w-md space-y-3">
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
+          <Image src={displayImage} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
+        </div>
 
-      <div>
-        <p className="mb-2 text-sm font-medium text-slate-700">Color</p>
-        <div className="flex flex-wrap gap-2">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setVariantId(v.id)}
-              className={`rounded-full border px-4 py-2 text-sm font-medium ${
-                v.id === variantId ? "border-brand bg-brand-muted text-brand-dark" : "border-slate-200 bg-white text-slate-700"
-              }`}
-            >
-              {v.colorLabel}
-            </button>
-          ))}
+        <div>
+          <p className="mb-2 text-sm font-medium text-slate-700">Color</p>
+          <div className="flex flex-wrap items-center gap-3">
+            {variants.map((v) => {
+              const bg = swatchColorForLabel(v.colorLabel);
+              const isPicked = v.id === variantId;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVariantId(v.id)}
+                  title={v.colorLabel}
+                  aria-label={`Elegir color ${v.colorLabel}`}
+                  className={`relative h-10 w-10 shrink-0 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
+                    isPicked
+                      ? "border-brand-dark ring-2 ring-brand/50 ring-offset-2"
+                      : "border-slate-200 hover:border-slate-400"
+                  }`}
+                  style={{ backgroundColor: bg }}
+                />
+              );
+            })}
+          </div>
+          <p className="mt-2 text-sm text-slate-600">
+            Seleccionado: <span className="font-medium text-slate-900">{selected.colorLabel}</span>
+          </p>
         </div>
       </div>
 

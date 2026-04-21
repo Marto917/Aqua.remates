@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+// Import relativo: en algunos entornos el alias @/ falla al empaquetar el middleware (Edge).
+import { isBackofficePreview } from "./src/lib/backoffice-preview";
 
 const OWNER_ONLY_PATHS = ["/admin/finanzas"];
 const ROLES = {
@@ -13,7 +15,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
 
-  const preview = process.env.BACKOFFICE_PREVIEW === "true";
+  const preview = isBackofficePreview();
   if (
     preview &&
     (pathname.startsWith("/admin") || pathname.startsWith("/vendedor"))
