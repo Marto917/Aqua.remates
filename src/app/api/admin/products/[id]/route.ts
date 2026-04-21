@@ -22,7 +22,7 @@ export async function POST(
     const url = new URL("/admin/productos", req.url);
     url.searchParams.set(
       "error",
-      "No autorizado. Configurá BACKOFFICE_PREVIEW en el hosting o iniciá sesión como staff.",
+      "No autorizado. Configura BACKOFFICE_PREVIEW en el hosting o inicia sesion como staff.",
     );
     return NextResponse.redirect(url);
   }

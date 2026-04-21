@@ -1,5 +1,6 @@
 /**
- * Color aproximado para mostrar un círculo según el nombre del color (español).
+ * Color aproximado para mostrar un círculo según etiqueta.
+ * Si la etiqueta ya es hexadecimal (#RRGGBB), se usa tal cual.
  * Si no coincide, genera un tono estable a partir del texto.
  */
 const MAP: Record<string, string> = {
@@ -32,8 +33,12 @@ function simpleHue(s: string): number {
 }
 
 export function swatchColorForLabel(label: string): string {
-  const key = label
-    .trim()
+  const raw = label.trim();
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) {
+    return raw;
+  }
+
+  const key = raw
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");

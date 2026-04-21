@@ -23,6 +23,21 @@ const productSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+function wantsJson(req: Request): boolean {
+  const accept = req.headers.get("accept")?.toLowerCase() ?? "";
+  const requestedWith = req.headers.get("x-requested-with")?.toLowerCase() ?? "";
+  return requestedWith === "xmlhttprequest" || accept.includes("application/json");
+}
+
+function errorResponse(req: Request, status: number, message: string) {
+  if (wantsJson(req)) {
+    return NextResponse.json({ error: message }, { status });
+  }
+  const url = new URL("/admin/productos", req.url);
+  url.searchParams.set("error", message);
+  return NextResponse.redirect(url);
+}
+
 export async function POST(req: Request) {
   const session = await getSafeSession();
   const canManage =
@@ -30,12 +45,11 @@ export async function POST(req: Request) {
     session?.user.role === UserRole.OWNER ||
     session?.user.role === UserRole.EMPLOYEE;
   if (!canManage) {
-    const url = new URL("/admin/productos", req.url);
-    url.searchParams.set(
-      "error",
-      "No autorizado. En el hosting definí BACKOFFICE_PREVIEW=true (o NEXT_PUBLIC_BACKOFFICE_PREVIEW=true) y redeploy, o iniciá sesión con un usuario staff.",
+    return errorResponse(
+      req,
+      401,
+      "No autorizado. En el hosting defini BACKOFFICE_PREVIEW=true (o NEXT_PUBLIC_BACKOFFICE_PREVIEW=true) y redeploy, o inicia sesion con un usuario staff.",
     );
-    return NextResponse.redirect(url);
   }
 
   const formData = await req.formData();
@@ -47,9 +61,7 @@ export async function POST(req: Request) {
 
   const parsed = productSchema.safeParse(payload);
   if (!parsed.success) {
-    const url = new URL("/admin/productos", req.url);
-    url.searchParams.set("error", "Datos invalidos.");
-    return NextResponse.redirect(url);
+    return errorResponse(req, 400, "Datos invalidos. Revisa nombre, descripcion y precios.");
   }
 
   const file = formData.get("imageFile");
@@ -60,27 +72,21 @@ export async function POST(req: Request) {
       imageUrl = await saveCompressedProductImage(buffer);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "No se pudo procesar la imagen.";
-      const url = new URL("/admin/productos", req.url);
-      url.searchParams.set("error", msg);
-      return NextResponse.redirect(url);
+      return errorResponse(req, 400, msg);
     }
   } else {
-    const url = new URL("/admin/productos", req.url);
-    url.searchParams.set("error", "Subi una imagen del producto.");
-    return NextResponse.redirect(url);
+    return errorResponse(req, 400, "Subi una imagen del producto.");
   }
 
   const categorySlug = slugify(parsed.data.categoryName) || `categoria-${Date.now()}`;
-
   const colorRaw = String(formData.get("colorLabels") ?? "");
   const colorLabels = colorRaw
     .split(/[,;\n]/)
     .map((s) => s.trim())
     .filter(Boolean);
-  const labels = colorLabels.length > 0 ? colorLabels : ["Único"];
+  const labels = colorLabels.length > 0 ? colorLabels : ["#64748b"];
 
   const productSlug = await ensureUniqueProductSlug(prisma, parsed.data.name);
-
   const product = await prisma.product.create({
     data: {
       name: parsed.data.name,
@@ -114,5 +120,9 @@ export async function POST(req: Request) {
     })),
   });
 
-  return NextResponse.redirect(new URL("/admin/productos", req.url));
+  if (wantsJson(req)) {
+    return NextResponse.json({ ok: true, productId: product.id, slug: product.slug });
+  }
+
+  return NextResponse.redirect(new URL("/admin/productos?ok=1", req.url));
 }
