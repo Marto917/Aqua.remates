@@ -95,9 +95,50 @@ export async function POST(req: Request) {
   };
 
   const parsed = productSchema.safeParse(payload);
-  if (!parsed.success) {
-    return errorResponse(req, 400, "Datos invalidos. Revisá categoría y precios.");
+
+  const rawName = String(formData.get("name") ?? "").trim();
+  const rawDescription = String(formData.get("description") ?? "").trim();
+  const rawCategory = String(formData.get("categoryName") ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!rawName) {
+    return errorResponse(req, 400, "Falta el nombre del producto.");
   }
+
+  const listPriceCandidate = parseNumericInput(formData.get("listPrice"));
+  const retailPriceCandidate = parseNumericInput(formData.get("retailPrice"));
+  const wholesalePriceCandidate = parseNumericInput(formData.get("wholesalePrice"));
+
+  const normalizedData = parsed.success
+    ? parsed.data
+    : {
+        name: rawName,
+        description: rawDescription,
+        categoryName: CATEGORY_NAMES.includes(rawCategory as CategoryName)
+          ? (rawCategory as CategoryName)
+          : CATEGORY_NAMES[0],
+        listPrice: listPriceCandidate && listPriceCandidate > 0 ? listPriceCandidate : 1,
+        retailPrice:
+          retailPriceCandidate && retailPriceCandidate > 0
+            ? retailPriceCandidate
+            : listPriceCandidate && listPriceCandidate > 0
+              ? listPriceCandidate
+              : 1,
+        wholesalePrice:
+          wholesalePriceCandidate && wholesalePriceCandidate > 0
+            ? wholesalePriceCandidate
+            : retailPriceCandidate && retailPriceCandidate > 0
+              ? retailPriceCandidate
+              : 1,
+        discountRetailPercent: Math.max(0, Math.min(100, Math.round(parseNumericInput(formData.get("discountRetailPercent")) ?? 0))),
+        discountWholesalePercent: Math.max(
+          0,
+          Math.min(100, Math.round(parseNumericInput(formData.get("discountWholesalePercent")) ?? 0)),
+        ),
+        isBestSeller: formData.get("isBestSeller") === "on",
+        isActive: formData.get("isActive") === "on",
+      };
 
   const file = formData.get("imageFile");
   let imageUrl = DEFAULT_PRODUCT_IMAGE;
@@ -111,7 +152,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const categorySlug = categorySlugFromName(parsed.data.categoryName) || `categoria-${Date.now()}`;
+  const categorySlug = categorySlugFromName(normalizedData.categoryName) || `categoria-${Date.now()}`;
   const colorRaw = String(formData.get("colorLabels") ?? "");
   const colorLabels = colorRaw
     .split(/[,;\n]/)
@@ -121,25 +162,25 @@ export async function POST(req: Request) {
     .filter(Boolean);
   const labels = colorLabels.length > 0 ? colorLabels : ["#64748b"];
 
-  const productSlug = await ensureUniqueProductSlug(prisma, parsed.data.name);
+  const productSlug = await ensureUniqueProductSlug(prisma, normalizedData.name);
   const product = await prisma.product.create({
     data: {
-      name: parsed.data.name,
+      name: normalizedData.name,
       slug: productSlug,
-      description: parsed.data.description,
+      description: normalizedData.description,
       imageUrl,
-      listPrice: parsed.data.listPrice,
-      retailPrice: parsed.data.retailPrice,
-      wholesalePrice: parsed.data.wholesalePrice,
-      discountRetailPercent: parsed.data.discountRetailPercent,
-      discountWholesalePercent: parsed.data.discountWholesalePercent,
-      isBestSeller: parsed.data.isBestSeller,
-      isActive: parsed.data.isActive,
+      listPrice: normalizedData.listPrice,
+      retailPrice: normalizedData.retailPrice,
+      wholesalePrice: normalizedData.wholesalePrice,
+      discountRetailPercent: normalizedData.discountRetailPercent,
+      discountWholesalePercent: normalizedData.discountWholesalePercent,
+      isBestSeller: normalizedData.isBestSeller,
+      isActive: normalizedData.isActive,
       category: {
         connectOrCreate: {
           where: { slug: categorySlug },
           create: {
-            name: parsed.data.categoryName,
+            name: normalizedData.categoryName,
             slug: categorySlug,
           },
         },
