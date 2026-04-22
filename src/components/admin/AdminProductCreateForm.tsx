@@ -13,13 +13,14 @@ export function AdminProductCreateForm({ initialError }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
-    { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.label ?? "Blanco" },
+    { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.hex ?? "#2563eb" },
   ]);
 
   function addVariant() {
+    const nextColor = COLOR_OPTIONS[variants.length % COLOR_OPTIONS.length]?.hex ?? "#2563eb";
     setVariants((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.label ?? "Blanco" },
+      { id: crypto.randomUUID(), colorLabel: nextColor },
     ]);
   }
 
@@ -27,6 +28,16 @@ export function AdminProductCreateForm({ initialError }: Props) {
     setVariants((prev) =>
       prev.map((item) => (item.id === id ? { ...item, colorLabel } : item)),
     );
+  }
+
+  function normalizeHex(value: string): string {
+    const v = value.trim();
+    if (!v) return "";
+    const prefixed = v.startsWith("#") ? v : `#${v}`;
+    if (/^#([0-9a-f]{6})$/i.test(prefixed)) {
+      return prefixed.toUpperCase();
+    }
+    return "";
   }
 
   function removeVariant(id: string) {
@@ -38,11 +49,15 @@ export function AdminProductCreateForm({ initialError }: Props) {
     const form = event.currentTarget;
     const fd = new FormData(form);
     const normalizedColors = variants
-      .map((item) => item.colorLabel.trim())
+      .map((item) => normalizeHex(item.colorLabel))
       .filter(Boolean);
 
     if (normalizedColors.length === 0) {
       setError("Cargá al menos un color/variante.");
+      return;
+    }
+    if (new Set(normalizedColors).size !== normalizedColors.length) {
+      setError("No repitas colores en el mismo producto.");
       return;
     }
 
@@ -164,9 +179,8 @@ export function AdminProductCreateForm({ initialError }: Props) {
 
       <textarea
         name="description"
-        required
         rows={3}
-        placeholder="Descripcion de producto"
+        placeholder="Descripcion de producto (opcional)"
         className="w-full rounded-md border px-3 py-2"
       />
 
@@ -188,12 +202,12 @@ export function AdminProductCreateForm({ initialError }: Props) {
                 <label className="block text-xs font-medium text-slate-600">Color</label>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {COLOR_OPTIONS.map((color) => {
-                    const isSelected = color.label === variant.colorLabel;
+                    const isSelected = color.hex.toUpperCase() === variant.colorLabel.toUpperCase();
                     return (
                       <button
-                        key={`${variant.id}-${color.label}`}
+                        key={`${variant.id}-${color.hex}`}
                         type="button"
-                        onClick={() => updateVariantColor(variant.id, color.label)}
+                        onClick={() => updateVariantColor(variant.id, color.hex)}
                         title={color.label}
                         aria-label={`Elegir color ${color.label}`}
                         className={`h-8 w-8 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
@@ -206,8 +220,24 @@ export function AdminProductCreateForm({ initialError }: Props) {
                     );
                   })}
                 </div>
+                <div className="mt-2 grid grid-cols-[auto_1fr] items-center gap-2">
+                  <input
+                    type="color"
+                    value={normalizeHex(variant.colorLabel) || "#2563eb"}
+                    onChange={(event) => updateVariantColor(variant.id, event.target.value)}
+                    aria-label="Elegir color personalizado"
+                    className="h-8 w-10 cursor-pointer rounded border border-slate-200 bg-white p-0.5"
+                  />
+                  <input
+                    value={variant.colorLabel}
+                    onChange={(event) => updateVariantColor(variant.id, event.target.value)}
+                    placeholder="#2563EB"
+                    className="w-full rounded-md border px-2 py-1.5 text-xs uppercase"
+                  />
+                </div>
                 <p className="mt-2 text-xs text-slate-600">
-                  Seleccionado: <span className="font-medium text-slate-900">{variant.colorLabel}</span>
+                  Seleccionado:{" "}
+                  <span className="font-medium text-slate-900">{normalizeHex(variant.colorLabel) || "inválido"}</span>
                 </p>
               </div>
               <div className="md:col-span-2">

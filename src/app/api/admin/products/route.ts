@@ -2,7 +2,7 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
-import { categorySlugFromName, CATEGORY_NAMES } from "@/lib/categories";
+import { categorySlugFromName, CATEGORY_NAMES, type CategoryName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
@@ -11,15 +11,49 @@ import { ensureUniqueProductSlug } from "@/lib/unique-product-slug";
 
 export const runtime = "nodejs";
 
+function parseNumericInput(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  const raw = value.trim();
+  if (!raw) return undefined;
+
+  let normalized = raw.replace(/\s+/g, "").replace(/\$/g, "");
+  if (normalized.includes(",") && !normalized.includes(".")) {
+    normalized = normalized.replace(",", ".");
+  }
+  normalized = normalized.replace(/[^0-9.-]/g, "");
+  if (!normalized) return undefined;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const positiveAmountSchema = z.preprocess(parseNumericInput, z.number().positive());
+const discountPercentSchema = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || typeof value === "undefined") return 0;
+    return parseNumericInput(value);
+  },
+  z.number().int().min(0).max(100),
+);
+
+const categoryNameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .refine((value): value is CategoryName => CATEGORY_NAMES.includes(value as CategoryName), {
+    message: "Categoria invalida",
+  });
+
 const productSchema = z.object({
-  name: z.string().min(2),
-  description: z.string().min(10),
-  categoryName: z.enum(CATEGORY_NAMES),
-  listPrice: z.coerce.number().positive(),
-  retailPrice: z.coerce.number().positive(),
-  wholesalePrice: z.coerce.number().positive(),
-  discountRetailPercent: z.coerce.number().int().min(0).max(100).default(0),
-  discountWholesalePercent: z.coerce.number().int().min(0).max(100).default(0),
+  name: z.string().trim().min(2),
+  description: z.string().optional().transform((value) => value?.trim() ?? ""),
+  categoryName: categoryNameSchema,
+  listPrice: positiveAmountSchema,
+  retailPrice: positiveAmountSchema,
+  wholesalePrice: positiveAmountSchema,
+  discountRetailPercent: discountPercentSchema.default(0),
+  discountWholesalePercent: discountPercentSchema.default(0),
   isBestSeller: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -62,7 +96,7 @@ export async function POST(req: Request) {
 
   const parsed = productSchema.safeParse(payload);
   if (!parsed.success) {
-    return errorResponse(req, 400, "Datos invalidos. Revisa nombre, descripcion y precios.");
+    return errorResponse(req, 400, "Datos invalidos. Revisá categoría y precios.");
   }
 
   const file = formData.get("imageFile");
@@ -81,7 +115,9 @@ export async function POST(req: Request) {
   const colorRaw = String(formData.get("colorLabels") ?? "");
   const colorLabels = colorRaw
     .split(/[,;\n]/)
-    .map((s) => s.trim())
+    .map((s) => s.trim().toUpperCase())
+    .filter((s) => /^#([0-9A-F]{6})$/.test(s))
+    .filter((s, index, arr) => arr.indexOf(s) === index)
     .filter(Boolean);
   const labels = colorLabels.length > 0 ? colorLabels : ["#64748b"];
 
