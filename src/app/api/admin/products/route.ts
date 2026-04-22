@@ -2,6 +2,7 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
+import { CATEGORY_NAMES } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
@@ -14,7 +15,7 @@ export const runtime = "nodejs";
 const productSchema = z.object({
   name: z.string().min(2),
   description: z.string().min(10),
-  categoryName: z.string().min(2),
+  categoryName: z.enum(CATEGORY_NAMES),
   listPrice: z.coerce.number().positive(),
   retailPrice: z.coerce.number().positive(),
   wholesalePrice: z.coerce.number().positive(),

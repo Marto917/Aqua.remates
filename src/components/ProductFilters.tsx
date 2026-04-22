@@ -2,15 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent } from "react";
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-};
+import { FIXED_CATEGORIES } from "@/lib/categories";
 
 type ProductFiltersProps = {
-  categories: Category[];
+  categories?: { id: string; name: string; slug: string }[];
 };
 
 export function ProductFilters({ categories }: ProductFiltersProps) {
@@ -64,8 +59,8 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             onChange={(event) => updateParam("category", event.target.value)}
           >
             <option value="">Todas</option>
-            {categories.map((item) => (
-              <option key={item.id} value={item.slug}>
+            {(categories?.length ? categories : FIXED_CATEGORIES).map((item) => (
+              <option key={item.slug} value={item.slug}>
                 {item.name}
               </option>
             ))}

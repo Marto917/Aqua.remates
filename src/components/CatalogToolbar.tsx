@@ -1,15 +1,14 @@
 import Link from "next/link";
 import type { PriceMode } from "@/lib/catalog";
+import { FIXED_CATEGORIES } from "@/lib/categories";
 
 type CatalogToolbarProps = {
-  categories: { id: string; name: string; slug: string }[];
   selectedCategory?: string;
   search?: string;
   priceMode: PriceMode;
 };
 
 export function CatalogToolbar({
-  categories,
   selectedCategory,
   search,
   priceMode,
@@ -36,9 +35,9 @@ export function CatalogToolbar({
         >
           Todas
         </Link>
-        {categories.map((category) => (
+        {FIXED_CATEGORIES.map((category) => (
           <Link
-            key={category.id}
+            key={category.slug}
             href={`/catalog?category=${category.slug}&priceMode=${priceMode}${search ? `&q=${encodeURIComponent(search)}` : ""}`}
             className={`rounded-full border px-3 py-1 text-sm ${
               selectedCategory === category.slug ? "bg-brand text-white" : ""

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CATEGORY_NAMES } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
@@ -51,6 +52,43 @@ export default async function AdminProductoImagenesPage({
           {error}
         </p>
       ) : null}
+
+      <form
+        method="post"
+        action={`/api/admin/products/${product.id}`}
+        className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      >
+        <input type="hidden" name="intent" value="update_category" />
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+          Editar categoría
+        </h2>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            <span className="mb-1 block text-slate-600">Categoría del producto</span>
+            <select
+              name="categoryName"
+              defaultValue={CATEGORY_NAMES.includes(product.category.name as (typeof CATEGORY_NAMES)[number]) ? product.category.name : ""}
+              required
+              className="rounded-md border px-3 py-2"
+            >
+              <option value="" disabled>
+                Seleccionar categoría
+              </option>
+              {CATEGORY_NAMES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-full border border-brand px-4 py-2 text-sm font-semibold text-brand-dark hover:bg-brand-muted"
+          >
+            Guardar categoría
+          </button>
+        </div>
+      </form>
 
       <form
         method="post"

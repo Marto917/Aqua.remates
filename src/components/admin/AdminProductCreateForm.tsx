@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { CATEGORY_NAMES } from "@/lib/categories";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 
 type Props = {
@@ -107,12 +108,14 @@ export function AdminProductCreateForm({ initialError }: Props) {
             className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
           />
         </div>
-        <input
-          name="categoryName"
-          required
-          placeholder="Categoria"
-          className="rounded-md border px-3 py-2"
-        />
+        <select name="categoryName" required className="rounded-md border px-3 py-2">
+          <option value="">Seleccionar categoría</option>
+          {CATEGORY_NAMES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
         <input
           name="listPrice"
           required
