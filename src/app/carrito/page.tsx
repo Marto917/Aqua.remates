@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct } from "@/lib/wholesale-pricing";
 import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
 
 export default function CarritoPage() {
   const { lines, mode, setQuantity, removeLine, subtotalDisplay, totalsByProduct } = useCart();
@@ -44,7 +44,15 @@ export default function CarritoPage() {
                 className="flex gap-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
               >
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                  <Image src={line.imageUrl} alt="" fill className="object-cover" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveProductImageUrl(line.imageUrl)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.src = ERROR_PRODUCT_IMAGE;
+                    }}
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-900">{line.productName}</p>

@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // Import relativo: en algunos entornos el alias @/ falla al empaquetar el middleware (Edge).
 import { isBackofficePreview } from "./src/lib/backoffice-preview";
 
-const OWNER_ONLY_PATHS = ["/admin/finanzas"];
+const OWNER_ONLY_PATHS = ["/admin/finanzas", "/admin/aprobaciones"];
 const ROLES = {
   OWNER: "OWNER",
   EMPLOYEE: "EMPLOYEE",

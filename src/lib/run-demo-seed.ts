@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
+import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 
 const bazarCategories = [
   { name: "Cocina", slug: "cocina" },
@@ -88,8 +89,7 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       name: "Botella Termica Pro",
       slug: "botella-termica-pro",
       description: "Botella de acero premium para uso diario.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1616118132534-381148898bb4?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 45000,
       retailPrice: 39000,
       wholesalePrice: 32000,
@@ -122,8 +122,7 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       slug: "set-organizadores-apilables",
       name: "Set organizadores apilables",
       description: "Tres cajas para ordenar el placard o la cocina.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1584622650111-993a426c6a78?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 28900,
       retailPrice: 24900,
       wholesalePrice: 19800,
@@ -134,8 +133,7 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       slug: "maceta-ceramica-nordica",
       name: "Maceta cerámica nórdica",
       description: "Ideal para plantas medianas en living o balcón.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 15900,
       retailPrice: 12900,
       wholesalePrice: 9900,
@@ -146,8 +144,7 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       slug: "toallero-acero-inox",
       name: "Toallero acero inoxidable",
       description: "Barra adhesiva o tornillos; acabado satinado.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 22000,
       retailPrice: 18900,
       wholesalePrice: 15200,
@@ -187,5 +184,82 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
         sortOrder: i,
       })),
     });
+  }
+
+  const demoCustomer = await prisma.user.findUnique({
+    where: { email: "cliente@aqua.local" },
+  });
+  const demoEmployee = await prisma.user.findUnique({
+    where: { email: "empleado@aqua.local" },
+  });
+  const demoProduct = await prisma.product.findUnique({
+    where: { slug: "botella-termica-pro" },
+  });
+
+  if (demoCustomer && demoEmployee && demoProduct) {
+    const leadCount = await prisma.wholesaleLead.count();
+    if (leadCount === 0) {
+      await prisma.wholesaleLead.create({
+        data: {
+          companyName: "Mayorista Sur (lead)",
+          contactName: "Lucía Gómez",
+          email: "compras@mayoristasur.demo",
+          phone: "+54 11 5555-0000",
+          taxId: "30-71000000-1",
+          estimatedVolume: "10-20 unidades / mes",
+          message: "Hola, necesitamos cotización para revender en zona sur. Gracias.",
+        },
+      });
+    }
+
+    const existingWr = await prisma.wholesaleRequest.findFirst({
+      where: { companyName: "Distribuidora Demo SA" },
+    });
+
+    if (!existingWr) {
+      const variant = await prisma.productVariant.findFirst({
+        where: { productId: demoProduct.id },
+      });
+      if (variant) {
+        const qty = 24;
+        const unit = Number(demoProduct.wholesalePrice);
+        const sub = unit * qty;
+        const wr = await prisma.wholesaleRequest.create({
+          data: {
+            customerId: demoCustomer.id,
+            companyName: "Distribuidora Demo SA",
+            cuit: "30-12345678-9",
+            contactName: "Martín Paz",
+            email: "compras@distribuidorademo.ar",
+            phone: "+54 11 4321-0000",
+            items: {
+              create: [
+                {
+                  productId: demoProduct.id,
+                  variantId: variant.id,
+                  productNameSnapshot: demoProduct.name,
+                  colorLabelSnapshot: variant.colorLabel,
+                  unitPrice: new Prisma.Decimal(unit),
+                  quantity: qty,
+                  subtotal: new Prisma.Decimal(sub),
+                },
+              ],
+            },
+            events: {
+              create: [{ userId: demoEmployee.id, action: "CREATED", payload: { source: "seed" } }],
+            },
+          },
+        });
+
+        await prisma.approvalRequest.create({
+          data: {
+            wholesaleRequestId: wr.id,
+            requestedById: demoEmployee.id,
+            type: "PRECIO_ESPECIAL",
+            note: "Cliente pide 3% adicional por volumen (referencia demo).",
+          },
+        });
+      }
+    }
   }
 }

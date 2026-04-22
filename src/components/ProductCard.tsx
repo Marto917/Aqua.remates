@@ -4,6 +4,7 @@ import {
   getListingPriceLabel,
   type PriceMode,
 } from "@/lib/catalog";
+import { resolveProductImageUrl } from "@/lib/product-images";
 
 type ProductCardProps = {
   product: {
@@ -25,6 +26,7 @@ type ProductCardProps = {
 export function ProductCard({ product, mode }: ProductCardProps) {
   const { main, hint } = getListingPriceLabel(product, mode);
   const colors = product.variants.slice(0, 5);
+  const imageSrc = resolveProductImageUrl(product.imageUrl);
 
   return (
     <Link
@@ -33,7 +35,7 @@ export function ProductCard({ product, mode }: ProductCardProps) {
     >
       <article>
         <div className="relative h-44 w-full bg-slate-100">
-          <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+          <Image src={imageSrc} alt={product.name} fill className="object-cover" />
         </div>
         <div className="space-y-2 p-4">
           <span className="inline-flex rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-medium text-brand-dark">

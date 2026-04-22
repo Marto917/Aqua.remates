@@ -4,6 +4,7 @@ import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
 import { slugify } from "@/lib/slugify";
 import { ensureUniqueProductSlug } from "@/lib/unique-product-slug";
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
   }
 
   const file = formData.get("imageFile");
-  let imageUrl: string;
+  let imageUrl = DEFAULT_PRODUCT_IMAGE;
   if (file instanceof File && file.size > 0) {
     try {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -74,8 +75,6 @@ export async function POST(req: Request) {
       const msg = e instanceof Error ? e.message : "No se pudo procesar la imagen.";
       return errorResponse(req, 400, msg);
     }
-  } else {
-    return errorResponse(req, 400, "Subi una imagen del producto.");
   }
 
   const categorySlug = slugify(parsed.data.categoryName) || `categoria-${Date.now()}`;
@@ -112,13 +111,32 @@ export async function POST(req: Request) {
     },
   });
 
-  await prisma.productVariant.createMany({
-    data: labels.map((colorLabel, i) => ({
-      productId: product.id,
-      colorLabel,
-      sortOrder: i,
-    })),
-  });
+  for (const [index, colorLabel] of labels.entries()) {
+    const variantImageFile = formData.get(`variantImage_${index}`);
+    let variantImageUrl: string | null = null;
+
+    if (variantImageFile instanceof File && variantImageFile.size > 0) {
+      try {
+        const buffer = Buffer.from(await variantImageFile.arrayBuffer());
+        variantImageUrl = await saveCompressedProductImage(buffer);
+      } catch (error) {
+        const msg =
+          error instanceof Error
+            ? error.message
+            : `No se pudo procesar la imagen de la variante ${colorLabel}.`;
+        return errorResponse(req, 400, msg);
+      }
+    }
+
+    await prisma.productVariant.create({
+      data: {
+        productId: product.id,
+        colorLabel,
+        sortOrder: index,
+        imageUrl: variantImageUrl,
+      },
+    });
+  }
 
   if (wantsJson(req)) {
     return NextResponse.json({ ok: true, productId: product.id, slug: product.slug });

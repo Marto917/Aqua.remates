@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
 import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
 import { swatchColorForLabel } from "@/lib/color-swatch";
+import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
 
 type Variant = {
   id: string;
@@ -34,7 +35,12 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
   const { addLine, mode, lines } = useCart();
 
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
-  const displayImage = selected?.imageUrl || product.imageUrl;
+  const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
+  const [renderedImage, setRenderedImage] = useState(displayImage);
+
+  useEffect(() => {
+    setRenderedImage(displayImage);
+  }, [displayImage]);
 
   const retail = Number(product.retailPrice);
   const wholesale = Number(product.wholesalePrice);
@@ -74,7 +80,14 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
     <div className="space-y-4">
       <div className="max-w-md space-y-3">
         <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
-          <Image src={displayImage} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
+          <Image
+            src={renderedImage}
+            alt={product.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 400px"
+            onError={() => setRenderedImage(ERROR_PRODUCT_IMAGE)}
+          />
         </div>
 
         <div>

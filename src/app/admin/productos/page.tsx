@@ -21,13 +21,26 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   return (
     <section className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Gestion de catalogo</h1>
-        <a
-          href="/api/admin/export-catalog"
-          className="inline-flex shrink-0 rounded-md border border-brand bg-white px-3 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
-        >
-          Exportar ZIP (JSON + imagenes)
-        </a>
+        <div>
+          <h1 className="text-2xl font-semibold">Gestión de catálogo</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Alta rápida de artículos, variantes por color e imágenes por color.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="#crear-producto"
+            className="inline-flex shrink-0 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          >
+            + Nuevo artículo
+          </a>
+          <a
+            href="/api/admin/export-catalog"
+            className="inline-flex shrink-0 rounded-full border border-brand bg-white px-4 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
+          >
+            Exportar catálogo
+          </a>
+        </div>
       </div>
 
       {ok ? (
@@ -39,7 +52,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
       ) : null}
 
-      <AdminProductCreateForm initialError={error} />
+      <div id="crear-producto">
+        <AdminProductCreateForm initialError={error} />
+      </div>
 
       <div className="overflow-hidden rounded-xl border bg-white">
         <table className="w-full text-sm">
@@ -51,6 +66,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               <th className="px-3 py-2 text-left">Mayorista</th>
               <th className="px-3 py-2 text-left">Colores</th>
               <th className="px-3 py-2 text-left">Disponibilidad</th>
+              <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -75,6 +91,14 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                       {product.isActive ? "Habilitado" : "Deshabilitado"}
                     </button>
                   </form>
+                </td>
+                <td className="px-3 py-2">
+                  <a
+                    href={`/admin/productos/${product.id}`}
+                    className="inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand-dark"
+                  >
+                    Editar imágenes
+                  </a>
                 </td>
               </tr>
             ))}

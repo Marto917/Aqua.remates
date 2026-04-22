@@ -47,6 +47,28 @@ enum ApprovalStatus {
   REJECTED
 }
 
+/// Consultas web desde /mayorista/contacto (sin cuenta de cliente).
+enum WholesaleLeadStatus {
+  NUEVO
+  CONTACTADO
+  CERRADO
+  DESCARTADO
+}
+
+model WholesaleLead {
+  id              String              @id @default(cuid())
+  companyName     String
+  contactName     String
+  email           String
+  phone           String
+  taxId           String?
+  estimatedVolume String?
+  message         String
+  status          WholesaleLeadStatus @default(NUEVO)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String

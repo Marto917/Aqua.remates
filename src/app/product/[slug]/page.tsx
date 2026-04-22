@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductAddToCart } from "@/components/ProductAddToCart";
 import { PriceModeSwitch } from "@/components/PriceModeSwitch";
 import { prisma } from "@/lib/prisma";
+import { resolveProductImageUrl } from "@/lib/product-images";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -49,7 +50,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           product={{
             id: product.id,
             name: product.name,
-            imageUrl: product.imageUrl,
+            imageUrl: resolveProductImageUrl(product.imageUrl),
             retailPrice: product.retailPrice,
             wholesalePrice: product.wholesalePrice,
             discountRetailPercent: product.discountRetailPercent,

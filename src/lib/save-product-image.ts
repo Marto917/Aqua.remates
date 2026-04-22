@@ -30,11 +30,21 @@ export async function saveCompressedProductImage(buffer: Buffer): Promise<string
   const filename = `${Date.now()}-${randomBytes(4).toString("hex")}.webp`;
   const filepath = path.join(dir, filename);
 
-  await sharp(buffer)
-    .rotate()
-    .resize(MAX_SIDE, MAX_SIDE, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY, effort: 4 })
-    .toFile(filepath);
+  try {
+    await sharp(buffer)
+      .rotate()
+      .resize(MAX_SIDE, MAX_SIDE, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
+      .toFile(filepath);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (/read-only file system/i.test(msg) || /unable to open for write/i.test(msg)) {
+      throw new Error(
+        "El hosting actual no permite guardar archivos en public/ (filesystem de solo lectura). Para seguir con carpeta local, usa un servidor con disco persistente en vez de Vercel.",
+      );
+    }
+    throw error;
+  }
 
   return `/uploads/products/${filename}`;
 }
