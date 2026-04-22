@@ -2,12 +2,11 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
-import { CATEGORY_NAMES } from "@/lib/categories";
+import { categorySlugFromName, CATEGORY_NAMES } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
-import { slugify } from "@/lib/slugify";
 
 const updateAvailabilitySchema = z.object({
   isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
@@ -104,7 +103,7 @@ export async function POST(
       return NextResponse.redirect(url);
     }
 
-    const categorySlug = slugify(parsed.data.categoryName);
+    const categorySlug = categorySlugFromName(parsed.data.categoryName);
     const category = await prisma.category.upsert({
       where: { slug: categorySlug },
       update: { name: parsed.data.categoryName },

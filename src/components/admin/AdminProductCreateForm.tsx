@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { CATEGORY_NAMES } from "@/lib/categories";
+import { COLOR_OPTIONS } from "@/lib/color-options";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 
 type Props = {
@@ -12,11 +13,14 @@ export function AdminProductCreateForm({ initialError }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
-    { id: crypto.randomUUID(), colorLabel: "Azul" },
+    { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.label ?? "Blanco" },
   ]);
 
   function addVariant() {
-    setVariants((prev) => [...prev, { id: crypto.randomUUID(), colorLabel: "" }]);
+    setVariants((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.label ?? "Blanco" },
+    ]);
   }
 
   function updateVariantColor(id: string, colorLabel: string) {
@@ -182,13 +186,29 @@ export function AdminProductCreateForm({ initialError }: Props) {
             <div key={variant.id} className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600">Color</label>
-                <input
-                  value={variant.colorLabel}
-                  onChange={(event) => updateVariantColor(variant.id, event.target.value)}
-                  placeholder="Ej: Azul, Negro, Terracota"
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                  required
-                />
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {COLOR_OPTIONS.map((color) => {
+                    const isSelected = color.label === variant.colorLabel;
+                    return (
+                      <button
+                        key={`${variant.id}-${color.label}`}
+                        type="button"
+                        onClick={() => updateVariantColor(variant.id, color.label)}
+                        title={color.label}
+                        aria-label={`Elegir color ${color.label}`}
+                        className={`h-8 w-8 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
+                          isSelected
+                            ? "border-brand-dark ring-2 ring-brand/50 ring-offset-1"
+                            : "border-slate-200 hover:border-slate-400"
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-slate-600">
+                  Seleccionado: <span className="font-medium text-slate-900">{variant.colorLabel}</span>
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-slate-600">

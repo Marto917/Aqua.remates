@@ -15,15 +15,26 @@ export function CatalogToolbar({
 }: CatalogToolbarProps) {
   return (
     <div className="space-y-4 rounded-xl border bg-white p-4">
-      <form action="/catalog" className="flex gap-2">
+      <form action="/catalog" className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
         <input
           name="q"
           defaultValue={search}
           placeholder="Buscar productos..."
           className="w-full rounded-md border px-3 py-2"
         />
+        <select
+          name="category"
+          defaultValue={selectedCategory ?? ""}
+          className="rounded-md border px-3 py-2 text-sm text-slate-700"
+        >
+          <option value="">Todas las categorías</option>
+          {FIXED_CATEGORIES.map((category) => (
+            <option key={category.slug} value={category.slug}>
+              {category.name}
+            </option>
+          ))}
+        </select>
         <input type="hidden" name="priceMode" value={priceMode} />
-        {selectedCategory ? <input type="hidden" name="category" value={selectedCategory} /> : null}
         <button className="rounded-md bg-brand px-4 py-2 text-white" type="submit">
           Buscar
         </button>
