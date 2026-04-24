@@ -20,6 +20,38 @@
   },
   "dynamicRoutes": [
     {
+      "page": "/admin/mayoristas/lead/[id]",
+      "regex": "^/admin/mayoristas/lead/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/admin/mayoristas/lead/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/admin/mayoristas/solicitud/[id]",
+      "regex": "^/admin/mayoristas/solicitud/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/admin/mayoristas/solicitud/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/admin/pedidos/[id]",
+      "regex": "^/admin/pedidos/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/admin/pedidos/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/admin/productos/[id]",
+      "regex": "^/admin/productos/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/admin/productos/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/admin/products/[id]",
       "regex": "^/api/admin/products/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -64,10 +96,40 @@
       "namedRegex": "^/admin(?:/)?$"
     },
     {
+      "page": "/admin/aprobaciones",
+      "regex": "^/admin/aprobaciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/aprobaciones(?:/)?$"
+    },
+    {
+      "page": "/admin/finance",
+      "regex": "^/admin/finance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/finance(?:/)?$"
+    },
+    {
       "page": "/admin/finanzas",
       "regex": "^/admin/finanzas(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/admin/finanzas(?:/)?$"
+    },
+    {
+      "page": "/admin/login",
+      "regex": "^/admin/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/login(?:/)?$"
+    },
+    {
+      "page": "/admin/mayoristas",
+      "regex": "^/admin/mayoristas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/mayoristas(?:/)?$"
+    },
+    {
+      "page": "/admin/pedidos",
+      "regex": "^/admin/pedidos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/pedidos(?:/)?$"
     },
     {
       "page": "/admin/productos",
@@ -128,6 +190,18 @@
       "regex": "^/vendedor(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/vendedor(?:/)?$"
+    },
+    {
+      "page": "/vendedor/mayoristas",
+      "regex": "^/vendedor/mayoristas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vendedor/mayoristas(?:/)?$"
+    },
+    {
+      "page": "/vendedor/pedidos",
+      "regex": "^/vendedor/pedidos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vendedor/pedidos(?:/)?$"
     }
   ],
   "dataRoutes": [],

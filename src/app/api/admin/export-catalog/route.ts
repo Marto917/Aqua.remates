@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { existsSync, readdirSync } from "fs";
 import path from "path";
 import archiver from "archiver";
@@ -8,6 +9,7 @@ import { CATALOG_EXPORT_VERSION } from "@/lib/catalog-export-schema";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { getProductUploadsDir } from "@/lib/uploads-paths";
 
 export const runtime = "nodejs";
 
@@ -16,7 +18,8 @@ const LEEME = `Exportación de catálogo AQUA
 
 Contenido del ZIP:
 - catalog-aqua.json  → datos de productos, categorías y variantes
-- public/uploads/    → imágenes (WebP) referenciadas en la tienda
+- public/uploads/    → imágenes (WebP) usadas por la tienda
+  (si alguna imagen vive en un CDN, en el ZIP se descarga y se empaqueta en public/uploads/...)
 
 Cómo usarlo en el proyecto final
 ---------------------------------
@@ -34,6 +37,22 @@ Cómo usarlo en el proyecto final
      (o la carpeta donde está el JSON: npm run import:catalog -- ./carpeta/exportada)
 
 `;
+
+function hashUrl(url: string) {
+  return createHash("sha1").update(url).digest("hex").slice(0, 12);
+}
+
+async function fetchUrlBytes(url: string) {
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) {
+    throw new Error(`No se pudo descargar ${url} (HTTP ${res.status})`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > 25 * 1024 * 1024) {
+    throw new Error("Imagen demasiado grande para empaquetar (25 MB).");
+  }
+  return buf;
+}
 
 function buildCatalogJson(): Promise<CatalogExportV1> {
   return (async () => {
@@ -103,19 +122,44 @@ export async function GET() {
     archive.on("error", reject);
     archive.on("end", () => resolve(Buffer.concat(chunks)));
 
-    archive.append(JSON.stringify(catalog, null, 2), { name: "catalog-aqua.json" });
-    archive.append(LEEME, { name: "LEEME.txt" });
+    (async () => {
+      try {
+        archive.append(JSON.stringify(catalog, null, 2), { name: "catalog-aqua.json" });
+        archive.append(LEEME, { name: "LEEME.txt" });
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "products");
-    if (existsSync(uploadsDir)) {
-      for (const name of readdirSync(uploadsDir)) {
-        const full = path.join(uploadsDir, name);
-        const zipPath = `public/uploads/products/${name}`;
-        archive.file(full, { name: zipPath });
+        const uploadsDir = getProductUploadsDir();
+        if (existsSync(uploadsDir)) {
+          for (const name of readdirSync(uploadsDir)) {
+            const full = path.join(uploadsDir, name);
+            const zipPath = `public/uploads/products/${name}`;
+            archive.file(full, { name: zipPath });
+          }
+        }
+
+        const remoteUrls = new Set<string>();
+        for (const p of catalog.products) {
+          if (p.imageUrl?.startsWith("http")) remoteUrls.add(p.imageUrl);
+          for (const v of p.variants) {
+            if (v.imageUrl && v.imageUrl.startsWith("http")) remoteUrls.add(v.imageUrl);
+          }
+        }
+
+        for (const url of remoteUrls) {
+          const bytes = await fetchUrlBytes(url);
+          const ext = url.toLowerCase().includes(".png")
+            ? "png"
+            : url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")
+              ? "jpg"
+              : "webp";
+          const zipPath = `public/uploads/products/remote/${hashUrl(url)}.${ext}`;
+          archive.append(bytes, { name: zipPath });
+        }
+
+        void archive.finalize();
+      } catch (e) {
+        reject(e);
       }
-    }
-
-    void archive.finalize();
+    })();
   });
 
   const filename = `aqua-catalogo-${new Date().toISOString().slice(0, 10)}.zip`;

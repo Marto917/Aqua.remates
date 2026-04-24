@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import { CATEGORY_NAMES } from "@/lib/categories";
 import { COLOR_OPTIONS } from "@/lib/color-options";
-import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 
 type Props = {
   initialError?: string;
@@ -114,12 +113,6 @@ export function AdminProductCreateForm({ initialError }: Props) {
         />
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700">Imagen del producto</label>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Si no subís una imagen, se usa la predeterminada de Aqua. Podés cambiarla después.
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Predeterminada actual: <code className="rounded bg-slate-100 px-1">{DEFAULT_PRODUCT_IMAGE}</code>
-          </p>
           <input
             name="imageFile"
             type="file"
