@@ -2,13 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getListingPriceLabel,
   type PriceMode,
 } from "@/lib/catalog";
 import { swatchColorForLabel } from "@/lib/color-swatch";
-import { resolveProductImageUrl } from "@/lib/product-images";
+import { formatDisplayWords } from "@/lib/display-text";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  ERROR_PRODUCT_IMAGE,
+  resolveProductImageUrl,
+} from "@/lib/product-images";
 
 type ProductCardProps = {
   product: {
@@ -36,20 +41,41 @@ export function ProductCard({ product, mode }: ProductCardProps) {
     () => colors.find((variant) => variant.id === selectedVariantId) ?? colors[0],
     [colors, selectedVariantId],
   );
-  const imageSrc = resolveProductImageUrl(selectedVariant?.imageUrl || product.imageUrl);
+  const baseResolved = useMemo(
+    () => resolveProductImageUrl(selectedVariant?.imageUrl || product.imageUrl),
+    [selectedVariant, product.imageUrl],
+  );
+  const [imgSrc, setImgSrc] = useState(baseResolved);
+  useEffect(() => {
+    setImgSrc(baseResolved);
+  }, [baseResolved]);
+
+  const displayName = useMemo(() => formatDisplayWords(product.name), [product.name]);
+  const displayDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
+  const displayCategory = useMemo(() => formatDisplayWords(product.category.name), [product.category.name]);
 
   return (
     <article className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md">
       <Link href={`/product/${product.slug}`} className="block">
         <div className="relative h-44 w-full bg-slate-100">
-          <Image src={imageSrc} alt={product.name} fill className="object-cover" />
+          <Image
+            src={imgSrc}
+            alt={displayName}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            unoptimized={imgSrc === DEFAULT_PRODUCT_IMAGE || imgSrc === ERROR_PRODUCT_IMAGE}
+            onError={() => {
+              setImgSrc((u) => (u === DEFAULT_PRODUCT_IMAGE ? u : DEFAULT_PRODUCT_IMAGE));
+            }}
+          />
         </div>
         <div className="space-y-2 p-4">
           <span className="inline-flex rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-medium text-brand-dark">
-            {product.category.name}
+            {displayCategory}
           </span>
-          <h3 className="font-semibold leading-snug text-slate-900">{product.name}</h3>
-          <p className="line-clamp-2 text-sm text-slate-600">{product.description}</p>
+          <h3 className="font-semibold leading-snug text-slate-900">{displayName}</h3>
+          <p className="line-clamp-2 text-sm text-slate-600">{displayDesc}</p>
           <p className="text-lg font-bold text-brand-dark">{main}</p>
           {hint ? <p className="text-[11px] leading-tight text-slate-500">{hint}</p> : null}
         </div>
@@ -61,7 +87,7 @@ export function ProductCard({ product, mode }: ProductCardProps) {
               key={v.id}
               type="button"
               title={v.colorLabel}
-              aria-label={`Ver ${product.name} en color ${v.colorLabel}`}
+              aria-label={`Ver ${displayName} en color ${formatDisplayWords(v.colorLabel)}`}
               onClick={() => setSelectedVariantId(v.id)}
               className={`h-5 w-5 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
                 selectedVariant?.id === v.id

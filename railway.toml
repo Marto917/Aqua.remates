@@ -3,8 +3,9 @@ builder = "RAILPACK"
 buildCommand = "npm run build"
 
 [deploy]
-preDeployCommand = ["npm run db:migrate"]
-startCommand = "npm run start"
+# Asegura el esquema: Railpack a veces no ejecuta preDeploy; al iniciar el contenedor
+# `DATABASE_URL` ya está inyectada por Railway.
+startCommand = "npm run db:migrate && npm run start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PriceMode } from "@/lib/catalog";
 import { FIXED_CATEGORIES } from "@/lib/categories";
+import { formatDisplayWords } from "@/lib/display-text";
 
 type CatalogToolbarProps = {
   selectedCategory?: string;
@@ -30,7 +31,7 @@ export function CatalogToolbar({
           <option value="">Todas las categorías</option>
           {FIXED_CATEGORIES.map((category) => (
             <option key={category.slug} value={category.slug}>
-              {category.name}
+              {formatDisplayWords(category.name)}
             </option>
           ))}
         </select>
@@ -54,7 +55,7 @@ export function CatalogToolbar({
               selectedCategory === category.slug ? "bg-brand text-white" : ""
             }`}
           >
-            {category.name}
+            {formatDisplayWords(category.name)}
           </Link>
         ))}
       </div>

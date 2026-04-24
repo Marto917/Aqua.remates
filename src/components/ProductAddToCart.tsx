@@ -6,7 +6,12 @@ import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
 import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
 import { swatchColorForLabel } from "@/lib/color-swatch";
-import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
+import { formatDisplayWords } from "@/lib/display-text";
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  ERROR_PRODUCT_IMAGE,
+  resolveProductImageUrl,
+} from "@/lib/product-images";
 
 type Variant = {
   id: string;
@@ -37,6 +42,7 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
   const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
   const [renderedImage, setRenderedImage] = useState(displayImage);
+  const displayProductName = useMemo(() => formatDisplayWords(product.name), [product.name]);
 
   useEffect(() => {
     setRenderedImage(displayImage);
@@ -82,11 +88,14 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
         <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
           <Image
             src={renderedImage}
-            alt={product.name}
+            alt={displayProductName}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 400px"
-            onError={() => setRenderedImage(ERROR_PRODUCT_IMAGE)}
+            unoptimized={
+              renderedImage === DEFAULT_PRODUCT_IMAGE || renderedImage === ERROR_PRODUCT_IMAGE
+            }
+            onError={() => setRenderedImage((u) => (u === DEFAULT_PRODUCT_IMAGE ? u : DEFAULT_PRODUCT_IMAGE))}
           />
         </div>
 
@@ -101,8 +110,8 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
                   key={v.id}
                   type="button"
                   onClick={() => setVariantId(v.id)}
-                  title={v.colorLabel}
-                  aria-label={`Elegir color ${v.colorLabel}`}
+                  title={formatDisplayWords(v.colorLabel)}
+                  aria-label={`Elegir color ${formatDisplayWords(v.colorLabel)}`}
                   className={`relative h-10 w-10 shrink-0 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
                     isPicked
                       ? "border-brand-dark ring-2 ring-brand/50 ring-offset-2"
@@ -114,7 +123,10 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
             })}
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            Seleccionado: <span className="font-medium text-slate-900">{selected.colorLabel}</span>
+            Seleccionado:{" "}
+            <span className="font-medium text-slate-900">
+              {formatDisplayWords(selected.colorLabel)}
+            </span>
           </p>
         </div>
       </div>
@@ -142,8 +154,8 @@ export function ProductAddToCart({ product, variants }: ProductAddToCartProps) {
           addLine({
             variantId: selected.id,
             productId: product.id,
-            productName: product.name,
-            colorLabel: selected.colorLabel,
+            productName: displayProductName,
+            colorLabel: formatDisplayWords(selected.colorLabel),
             imageUrl: displayImage,
             retailPrice: retail,
             wholesalePrice: wholesale,

@@ -1,6 +1,5 @@
-import { randomInt } from "crypto";
 import Link from "next/link";
-import { Prisma, type Prisma as PrismaTypes } from "@prisma/client";
+import { type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
 import { ProductCard } from "@/components/ProductCard";
@@ -11,17 +10,6 @@ type HomeProduct = PrismaTypes.ProductGetPayload<{
   include: { category: true; variants: true };
 }>;
 
-function shuffleIds(ids: string[]): string[] {
-  const a = [...ids];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
-    const t = a[i]!;
-    a[i] = a[j]!;
-    a[j] = t;
-  }
-  return a;
-}
-
 export default async function HomePage() {
   let homeProducts: HomeProduct[] = [];
   let categories: { name: string; slug: string }[] = [];
@@ -29,45 +17,21 @@ export default async function HomePage() {
   try {
     categories = await prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 });
 
-    let ids: string[] = [];
-    try {
-      const idRows = await prisma.$queryRaw<Array<{ id: string }>>(
-        Prisma.sql`SELECT id FROM "Product" WHERE "isActive" = true ORDER BY RANDOM() LIMIT 4`,
-      );
-      ids = idRows.map((r) => r.id);
-    } catch (rawErr) {
-      console.warn("[home] ORDER BY RANDOM no disponible o falló, usando mezcla en memoria:", rawErr);
-    }
-
-    if (ids.length === 0) {
-      const pool = await prisma.product.findMany({
-        where: { isActive: true },
-        select: { id: true },
-        take: 40,
-        orderBy: { updatedAt: "desc" },
-      });
-      ids = shuffleIds(pool.map((p) => p.id)).slice(0, 4);
-    }
-
-    if (ids.length > 0) {
-      const orderMap = new Map(ids.map((id, i) => [id, i]));
-      const fetched = await prisma.product.findMany({
-        where: { id: { in: ids } },
-        include: {
-          category: true,
-          variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-        },
-      });
-      homeProducts = [...fetched].sort(
-        (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
-      );
-    }
+    homeProducts = await prisma.product.findMany({
+      where: { isActive: true },
+      orderBy: { updatedAt: "desc" },
+      take: 4,
+      include: {
+        category: true,
+        variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+      },
+    });
   } catch (error) {
     console.error("No se pudieron cargar datos del home:", error);
   }
 
   return (
-    <div className="space-y-10 sm:space-y-12">
+    <div className="space-y-8 sm:space-y-10">
       <section className="relative overflow-hidden rounded-3xl border border-teal-100/80 bg-gradient-to-b from-white via-white to-brand-muted/50 shadow-sm">
         <div
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/25 blur-3xl"
@@ -82,7 +46,7 @@ export default async function HomePage() {
           aria-hidden
         />
 
-        <div className="relative z-10 grid gap-10 px-5 py-12 sm:px-8 sm:py-14 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-center lg:gap-12">
+        <div className="relative z-10 grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-center lg:gap-12">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-muted/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
               Bazar y hogar
@@ -128,50 +92,21 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-
-        <div className="relative z-10 border-t border-slate-100/80 bg-white/40 px-5 py-8 backdrop-blur-sm sm:px-8">
-          <p className="mb-4 text-center text-sm font-medium text-slate-500">Buscar en el catálogo</p>
-          <HomeHeroSearch />
-          <div className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2.5 text-xs text-slate-600 sm:text-sm">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-slate-100">
-              <span className="text-brand-dark" aria-hidden>
-                ✓
-              </span>
-              Retiro o envío según zona
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-slate-100">
-              <span className="text-brand-dark" aria-hidden>
-                ✓
-              </span>
-              Atención a mayoristas
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-slate-100">
-              <span className="text-brand-dark" aria-hidden>
-                ✓
-              </span>
-              Pagos por transferencia
-            </span>
-          </div>
-        </div>
       </section>
 
-      <PromoCarousel />
-
-      <CategoryStrip categories={categories} />
-
-      <section className="space-y-5">
-        <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Descubrí hoy</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Novedades</h2>
             <p className="mt-1.5 text-sm text-slate-500">
-              Una muestra al azar del catálogo — se renueva al recargar
+              Los productos actualizados más recientes — tu último ingreso aparece acá
             </p>
           </div>
           <Link
             href="/catalog?priceMode=retail"
             className="group inline-flex items-center gap-1 self-start text-sm font-semibold text-brand-dark"
           >
-            Ver todo
+            Ver catálogo completo
             <span className="transition group-hover:translate-x-0.5" aria-hidden>
               →
             </span>
@@ -195,6 +130,35 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      <section className="rounded-3xl border border-slate-100/80 bg-gradient-to-b from-white to-brand-muted/30 p-5 shadow-sm sm:p-6">
+        <p className="mb-3 text-center text-sm font-medium text-slate-600">Buscar en el catálogo</p>
+        <HomeHeroSearch />
+        <div className="mx-auto mt-5 flex max-w-2xl flex-wrap justify-center gap-2.5 text-xs text-slate-600 sm:text-sm">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100/80">
+            <span className="text-brand-dark" aria-hidden>
+              ✓
+            </span>
+            Retiro o envío según zona
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100/80">
+            <span className="text-brand-dark" aria-hidden>
+              ✓
+            </span>
+            Atención a mayoristas
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100/80">
+            <span className="text-brand-dark" aria-hidden>
+              ✓
+            </span>
+            Pagos por transferencia
+          </span>
+        </div>
+      </section>
+
+      <PromoCarousel />
+
+      <CategoryStrip categories={categories} />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-muted/40 p-6 shadow-sm transition hover:shadow-md">

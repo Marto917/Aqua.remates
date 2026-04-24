@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProductAddToCart } from "@/components/ProductAddToCart";
 import { PriceModeSwitch } from "@/components/PriceModeSwitch";
+import { formatDisplayWords } from "@/lib/display-text";
 import { prisma } from "@/lib/prisma";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
@@ -26,6 +27,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const title = formatDisplayWords(product.name);
+  const desc = formatDisplayWords(product.description);
+  const categoryLabel = formatDisplayWords(product.category.name);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -40,10 +45,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
           <span className="inline-block rounded-full bg-brand-muted px-3 py-1 text-xs font-medium text-brand-dark">
-            {product.category.name}
+            {categoryLabel}
           </span>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">{product.name}</h1>
-          <p className="mt-3 whitespace-pre-wrap text-slate-600">{product.description}</p>
+          <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+          <p className="mt-3 whitespace-pre-wrap text-slate-600">{desc}</p>
         </div>
 
         <ProductAddToCart

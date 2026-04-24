@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDisplayWords } from "@/lib/display-text";
 
 type Cat = { name: string; slug: string };
 
@@ -19,8 +20,8 @@ export function CategoryStrip({ categories }: { categories: Cat[] }) {
               href={`/catalog?category=${encodeURIComponent(c.slug)}&priceMode=retail`}
               className="shrink-0 rounded-full border border-slate-200/90 bg-slate-50/90 px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/60 hover:bg-white hover:shadow-md hover:shadow-brand/5"
             >
-              {c.name}
-            </Link>
+            {formatDisplayWords(c.name)}
+          </Link>
           ))}
         </div>
       </div>

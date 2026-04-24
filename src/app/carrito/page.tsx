@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct } from "@/lib/wholesale-pricing";
 import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+import { formatDisplayWords } from "@/lib/display-text";
 import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
 
 export default function CarritoPage() {
@@ -55,8 +56,12 @@ export default function CarritoPage() {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900">{line.productName}</p>
-                  <p className="text-sm text-slate-500">Color: {line.colorLabel}</p>
+                  <p className="font-semibold text-slate-900">
+                    {formatDisplayWords(line.productName)}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Color: {formatDisplayWords(line.colorLabel)}
+                  </p>
                   <p className="text-xs text-slate-500">
                     {eff === "wholesale" ? "Precio mayorista" : "Precio minorista"} c/u
                   </p>
