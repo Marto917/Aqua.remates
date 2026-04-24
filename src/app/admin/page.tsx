@@ -112,6 +112,19 @@ export default async function AdminHomePage() {
             Gestionar artículos →
           </p>
         </Link>
+        <Link
+          href="/admin/promociones"
+          className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:shadow-md"
+        >
+          <p className="mb-2 text-2xl" aria-hidden>
+            🖼️
+          </p>
+          <p className="font-semibold text-slate-900">Promociones</p>
+          <p className="mt-1 text-sm text-slate-600">Carrusel y banners promocionales del home</p>
+          <p className="mt-3 inline-flex rounded-full bg-brand-muted px-3 py-1 text-xs font-medium text-brand-dark group-hover:bg-brand-light">
+            Gestionar imágenes →
+          </p>
+        </Link>
         {showFinanzas ? (
           <Link
             href="/admin/finanzas"

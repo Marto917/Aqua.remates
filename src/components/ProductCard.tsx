@@ -57,7 +57,7 @@ export function ProductCard({ product, mode }: ProductCardProps) {
   return (
     <article className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md">
       <Link href={`/product/${product.slug}`} className="block">
-        <div className="relative h-44 w-full bg-slate-100">
+        <div className="relative h-32 w-full bg-slate-100 sm:h-40 lg:h-44">
           <Image
             src={imgSrc}
             alt={displayName}
@@ -70,18 +70,18 @@ export function ProductCard({ product, mode }: ProductCardProps) {
             }}
           />
         </div>
-        <div className="space-y-2 p-4">
+        <div className="space-y-1.5 p-3 sm:space-y-2 sm:p-4">
           <span className="inline-flex rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-medium text-brand-dark">
             {displayCategory}
           </span>
-          <h3 className="font-semibold leading-snug text-slate-900">{displayName}</h3>
-          <p className="line-clamp-2 text-sm text-slate-600">{displayDesc}</p>
-          <p className="text-lg font-bold text-brand-dark">{main}</p>
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">{displayName}</h3>
+          <p className="line-clamp-2 text-xs text-slate-600 sm:text-sm">{displayDesc}</p>
+          <p className="text-base font-bold text-brand-dark sm:text-lg">{main}</p>
           {hint ? <p className="text-[11px] leading-tight text-slate-500">{hint}</p> : null}
         </div>
       </Link>
       {colors.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+        <div className="flex flex-wrap gap-1.5 px-3 pb-3 sm:px-4 sm:pb-4">
           {colors.map((v) => (
             <button
               key={v.id}

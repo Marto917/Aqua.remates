@@ -1,9 +1,14 @@
-export const DEFAULT_PRODUCT_IMAGE = "/aqua_image.webp";
-export const ERROR_PRODUCT_IMAGE = "/aqua_image.webp";
+export const DEFAULT_PRODUCT_IMAGE = "/uploads/products/aqua_default.png";
+export const ERROR_PRODUCT_IMAGE = "/uploads/products/aqua_default.png";
 
 const LEGACY_DEFAULT_PATHS = new Set([
   "/uploads/products/aqua-default.png",
   "/uploads/products/aqua-error.png",
+  "/uploads/products/aqua_default",
+  "/uploads/products/aqua_default.png",
+  "/uploads/products/aqua_default.jpg",
+  "/uploads/products/aqua_default.webp",
+  "/aqua_image.webp",
   "/aqua_image.png",
   "/aqua_image.jpg",
 ]);

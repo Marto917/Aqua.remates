@@ -138,6 +138,12 @@
       "namedRegex": "^/admin/productos(?:/)?$"
     },
     {
+      "page": "/admin/promociones",
+      "regex": "^/admin/promociones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/promociones(?:/)?$"
+    },
+    {
       "page": "/carrito",
       "regex": "^/carrito(?:/)?$",
       "routeKeys": {},
