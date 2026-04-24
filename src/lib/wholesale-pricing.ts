@@ -1,4 +1,4 @@
-import type { PriceMode } from "@/lib/catalog";
+import type { PriceMode } from "@/lib/catalog-pricing";
 import { MIN_UNITS_FOR_WHOLESALE_PRICE } from "@/lib/pricing-constants";
 
 export { MIN_UNITS_FOR_WHOLESALE_PRICE };

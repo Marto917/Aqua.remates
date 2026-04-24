@@ -1,11 +1,10 @@
 "use client";
 
-import type { PriceMode } from "@/lib/catalog";
+import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
 import {
   getEffectivePriceModeForProduct,
   quantityByProductId,
 } from "@/lib/wholesale-pricing";
-import { getFinalUnitPrice } from "@/lib/catalog";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "aqua-cart-v2";
