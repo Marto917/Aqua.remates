@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct } from "@/lib/wholesale-pricing";
-import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
 import { formatDisplayWords } from "@/lib/display-text";
 import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
 

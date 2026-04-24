@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
-import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog";
+import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import {

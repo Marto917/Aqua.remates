@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import type { PriceMode } from "@/lib/catalog";
+import type { PriceMode } from "@/lib/catalog-pricing";
 import { useCart } from "@/contexts/cart-context";
 
 /** Si la URL trae ?priceMode=, alinea el carrito; si no, respeta lo guardado en el dispositivo. */

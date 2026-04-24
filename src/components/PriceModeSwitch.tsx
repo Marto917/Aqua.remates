@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { PriceMode } from "@/lib/catalog";
+import type { PriceMode } from "@/lib/catalog-pricing";
 import { useCart } from "@/contexts/cart-context";
 
 export function PriceModeSwitch() {

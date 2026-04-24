@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getListingPriceLabel,
   type PriceMode,
-} from "@/lib/catalog";
+} from "@/lib/catalog-pricing";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import {

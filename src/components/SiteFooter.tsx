@@ -97,7 +97,7 @@ export function SiteFooter() {
             className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white transition active:scale-95 active:bg-white/20 sm:h-12 sm:w-12 sm:hover:border-white/50 sm:hover:bg-white/15"
             aria-label="TikTok AQUA"
           >
-            <SocialIconTikTok className="h-6 w-6 sm:h-5 sm:w-5" />
+            <SocialIconTiktok className="h-6 w-6 sm:h-5 sm:w-5" />
           </a>
         </div>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PriceMode } from "@/lib/catalog";
+import type { PriceMode } from "@/lib/catalog-pricing";
 import { FIXED_CATEGORIES } from "@/lib/categories";
 import { formatDisplayWords } from "@/lib/display-text";
 
