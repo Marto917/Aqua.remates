@@ -7,11 +7,7 @@ const SOCIAL = {
   tiktok: "https://www.tiktok.com/",
 } as const;
 
-const PHONES = {
-  /** Ej: "11 1234-5678" o dejá "" para mostrar guión */
-  telefono: "",
-  whatsapp: "",
-};
+const WHATSAPP = "";
 
 function SocialIconInstagram({ className }: { className?: string }) {
   return (
@@ -24,7 +20,7 @@ function SocialIconInstagram({ className }: { className?: string }) {
 function SocialIconTiktok({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.01-1-.01-1.49 0-1.5 0-3.01.01-4.51.33-1.5 1.2-2.9 2.5-3.8 1.2-.8 2.7-1.1 4.1-.9.1.01.2.04.2.16v3.4c-.6-.1-1.2-.1-1.8.1-.5.2-.9.5-1.1 1-.2.4-.2.8-.1 1.2.1.3.2.5.4.7.2.2.4.3.7.3.2.1.4.1.6.1.1 0 .2 0 .3-.01.3-.1.5-.2.7-.4.2-.2.3-.4.4-.6.1-.2.1-.4.1-.6.01-2.11 0-4.22.01-6.32z" />
+      <path d="M16.6 5.82A5.74 5.74 0 0 1 13.36 2H10.4v11.83a2.7 2.7 0 1 1-2.7-2.7c.2 0 .4.03.58.07V8.16a5.66 5.66 0 1 0 5.77 5.66V8.37a8.9 8.9 0 0 0 5.2 1.66V7.1a5.8 5.8 0 0 1-2.65-1.28Z" />
     </svg>
   );
 }
@@ -39,8 +35,7 @@ const navLinks = [
 
 export function SiteFooter() {
   const y = new Date().getFullYear();
-  const tel = PHONES.telefono.trim() || "—";
-  const wa = PHONES.whatsapp.trim() || "—";
+  const wa = WHATSAPP.trim() || "—";
 
   return (
     <footer className="relative mt-10 overflow-hidden border-t border-white/10 bg-slate-950 pb-[max(1rem,env(safe-area-inset-bottom))] text-white sm:mt-12">
@@ -71,12 +66,8 @@ export function SiteFooter() {
 
         <div className="mx-auto mt-8 w-full max-w-sm rounded-xl border border-white/25 bg-white/5 px-5 py-4 text-center backdrop-blur-sm sm:max-w-md sm:px-6">
           <p className="text-xs font-medium uppercase tracking-wider text-white/70">Contacto</p>
-          <p className="mt-3 space-y-1.5 text-sm leading-relaxed text-white/90 sm:mt-2 sm:space-y-0">
-            <span className="block sm:inline">Tel. {tel}</span>
-            <span className="hidden text-white/30 sm:mx-2 sm:inline" aria-hidden>
-              ·
-            </span>
-            <span className="block sm:inline">WhatsApp {wa}</span>
+          <p className="mt-3 text-sm leading-relaxed text-white/90">
+            <span className="block">WhatsApp {wa}</span>
           </p>
         </div>
 
@@ -105,7 +96,7 @@ export function SiteFooter() {
           Los precios y disponibilidad pueden variar. Consultá por medios oficiales antes de abonar.
         </p>
         <p className="mx-auto mt-4 max-w-[20rem] text-balance text-[11px] leading-relaxed text-white/45 sm:mt-3 sm:max-w-lg sm:text-xs">
-          © {y} AQUA — Bazar y hogar. Todos los derechos reservados.
+          © {y} Aqua Remates. Todos los derechos reservados.
         </p>
         <p
           className="mt-3 text-center text-[9px] leading-none text-white/20 tabular-nums sm:text-[10px]"

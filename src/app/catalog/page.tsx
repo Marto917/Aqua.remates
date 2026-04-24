@@ -42,7 +42,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         priceMode={priceMode}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {products.length > 0 ? (
           products.map((product) => <ProductCard key={product.id} product={product} mode={priceMode} />)
         ) : (

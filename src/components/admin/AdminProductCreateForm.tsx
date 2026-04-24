@@ -6,9 +6,10 @@ import { COLOR_OPTIONS } from "@/lib/color-options";
 
 type Props = {
   initialError?: string;
+  supplierNames?: string[];
 };
 
-export function AdminProductCreateForm({ initialError }: Props) {
+export function AdminProductCreateForm({ initialError, supplierNames = [] }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
@@ -111,6 +112,23 @@ export function AdminProductCreateForm({ initialError }: Props) {
           placeholder="Nombre del producto"
           className="rounded-md border px-3 py-2 md:col-span-2"
         />
+        <div className="md:col-span-2">
+          <input
+            name="supplierName"
+            list="supplier-list"
+            required
+            placeholder="Proveedor"
+            className="w-full rounded-md border px-3 py-2"
+          />
+          <datalist id="supplier-list">
+            {supplierNames.map((supplier) => (
+              <option key={supplier} value={supplier} />
+            ))}
+          </datalist>
+          <p className="mt-1 text-xs text-slate-500">
+            Podés escribir uno nuevo o elegir uno ya cargado.
+          </p>
+        </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700">Imagen del producto</label>
           <input

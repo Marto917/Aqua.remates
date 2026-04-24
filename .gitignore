@@ -7,3 +7,4 @@ node_modules
 # Imágenes subidas desde el admin (regenerables; no versionar binarios)
 /public/uploads/products/*
 !/public/uploads/products/.gitkeep
+!/public/uploads/products/aqua_default.png

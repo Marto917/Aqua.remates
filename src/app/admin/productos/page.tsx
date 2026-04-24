@@ -9,11 +9,26 @@ type PageProps = {
 export default async function AdminProductsPage({ searchParams }: PageProps) {
   const { error, ok } = await searchParams;
   let products: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
+  let supplierNames: string[] = [];
   try {
-    products = await prisma.product.findMany({
-      include: { category: true, variants: { orderBy: { sortOrder: "asc" } } },
-      orderBy: { updatedAt: "desc" },
-    });
+    [products, supplierNames] = await Promise.all([
+      prisma.product.findMany({
+        include: { category: true, variants: { orderBy: { sortOrder: "asc" } } },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.product
+        .findMany({
+          where: { supplierName: { not: null } },
+          select: { supplierName: true },
+          distinct: ["supplierName"],
+          orderBy: { supplierName: "asc" },
+        })
+        .then((rows) =>
+          rows
+            .map((r) => r.supplierName?.trim() ?? "")
+            .filter(Boolean),
+        ),
+    ]);
   } catch (readError) {
     console.error("No se pudieron cargar productos del backoffice:", readError);
   }
@@ -53,7 +68,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       ) : null}
 
       <div id="crear-producto">
-        <AdminProductCreateForm initialError={error} />
+        <AdminProductCreateForm initialError={error} supplierNames={supplierNames} />
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-white">

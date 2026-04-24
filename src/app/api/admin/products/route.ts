@@ -47,6 +47,7 @@ const categoryNameSchema = z
 
 const productSchema = z.object({
   name: z.string().trim().min(2),
+  supplierName: z.string().trim().min(2, "El proveedor es obligatorio."),
   description: z.string().optional().transform((value) => value?.trim() ?? ""),
   categoryName: categoryNameSchema,
   listPrice: positiveAmountSchema,
@@ -98,12 +99,16 @@ export async function POST(req: Request) {
 
   const rawName = String(formData.get("name") ?? "").trim();
   const rawDescription = String(formData.get("description") ?? "").trim();
+  const rawSupplierName = String(formData.get("supplierName") ?? "").trim();
   const rawCategory = String(formData.get("categoryName") ?? "")
     .trim()
     .toLowerCase();
 
   if (!rawName) {
     return errorResponse(req, 400, "Falta el nombre del producto.");
+  }
+  if (!rawSupplierName) {
+    return errorResponse(req, 400, "El proveedor es obligatorio.");
   }
 
   const listPriceCandidate = parseNumericInput(formData.get("listPrice"));
@@ -114,6 +119,7 @@ export async function POST(req: Request) {
     ? parsed.data
     : {
         name: rawName,
+        supplierName: rawSupplierName,
         description: rawDescription,
         categoryName: CATEGORY_NAMES.includes(rawCategory as CategoryName)
           ? (rawCategory as CategoryName)
@@ -166,6 +172,7 @@ export async function POST(req: Request) {
   const product = await prisma.product.create({
     data: {
       name: normalizedData.name,
+      supplierName: normalizedData.supplierName,
       slug: productSlug,
       description: normalizedData.description,
       imageUrl,

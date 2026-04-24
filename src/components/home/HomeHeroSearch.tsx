@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 function SearchIcon({ className }: { className?: string }) {
   return (
@@ -18,6 +19,36 @@ function SearchIcon({ className }: { className?: string }) {
 
 export function HomeHeroSearch() {
   const [q, setQ] = useState("");
+  const [suggestions, setSuggestions] = useState<Array<{ id: string; slug: string; name: string }>>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) return;
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(term)}`, {
+          signal: controller.signal,
+        });
+        const data = (await res.json()) as {
+          items?: Array<{ id: string; slug: string; name: string }>;
+        };
+        const items = data.items ?? [];
+        setSuggestions(items);
+        setOpen(items.length > 0);
+      } catch {
+        setSuggestions([]);
+        setOpen(false);
+      }
+    }, 180);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [q]);
 
   return (
     <form action="/catalog" className="relative mx-auto max-w-2xl">
@@ -29,7 +60,16 @@ export function HomeHeroSearch() {
         <input
           name="q"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setQ(next);
+            if (next.trim().length < 2) {
+              setSuggestions([]);
+              setOpen(false);
+            }
+          }}
+          onFocus={() => setOpen(suggestions.length > 0)}
+          onBlur={() => setTimeout(() => setOpen(false), 120)}
           placeholder="Buscá en el catálogo: cocina, baño, ferretería…"
           className="min-h-[52px] w-full flex-1 border-0 bg-transparent px-4 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:pl-2"
           autoComplete="off"
@@ -42,6 +82,19 @@ export function HomeHeroSearch() {
           Buscar
         </button>
       </div>
+      {open ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+          {suggestions.map((item) => (
+            <Link
+              key={item.id}
+              href={`/product/${item.slug}`}
+              className="block border-b border-slate-100 px-4 py-2.5 text-sm text-slate-700 hover:bg-brand-muted/40 last:border-b-0"
+            >
+              {item.name}
+            </Link>
+          ))}
+        </div>
+      ) : null}
     </form>
   );
 }

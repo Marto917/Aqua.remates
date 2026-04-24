@@ -2,6 +2,7 @@ export const DEFAULT_PRODUCT_IMAGE = "/uploads/products/aqua_default.png";
 export const ERROR_PRODUCT_IMAGE = "/uploads/products/aqua_default.png";
 
 const LEGACY_DEFAULT_PATHS = new Set([
+  "/api/images/default-product",
   "/uploads/products/aqua-default.png",
   "/uploads/products/aqua-error.png",
   "/uploads/products/aqua_default",
