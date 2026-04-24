@@ -1,4 +1,5 @@
 import Link from "next/link";
+import packageJson from "../../package.json";
 
 /** Editá acá URL y teléfonos cuando los tengas */
 const SOCIAL = {
@@ -105,6 +106,12 @@ export function SiteFooter() {
         </p>
         <p className="mx-auto mt-4 max-w-[20rem] text-balance text-[11px] leading-relaxed text-white/45 sm:mt-3 sm:max-w-lg sm:text-xs">
           © {y} AQUA — Bazar y hogar. Todos los derechos reservados.
+        </p>
+        <p
+          className="mt-3 text-center text-[9px] leading-none text-white/20 tabular-nums sm:text-[10px]"
+          aria-hidden
+        >
+          v{packageJson.version}
         </p>
       </div>
     </footer>
