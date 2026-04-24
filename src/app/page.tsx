@@ -46,28 +46,30 @@ export default async function HomePage() {
           aria-hidden
         />
 
-        <div className="relative z-10 grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-center lg:gap-12">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-muted/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
-              Bazar y hogar
+        <div className="relative z-10 grid gap-8 px-4 py-7 sm:px-8 sm:py-10 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-center lg:gap-12">
+          <div className="text-center sm:text-left">
+            <p className="flex justify-center sm:justify-start">
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-muted/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
+                Bazar y hogar
+              </span>
             </p>
-            <h1 className="mt-4 text-3xl font-bold leading-[1.15] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.5rem]">
+            <h1 className="mt-4 text-balance text-2xl font-bold leading-[1.2] tracking-tight text-slate-900 min-[400px]:text-3xl sm:text-4xl sm:leading-[1.15] lg:text-[2.5rem]">
               Todo para tu casa, <span className="text-brand-dark">en un solo lugar</span>
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-slate-600 sm:mx-0 sm:text-lg">
               Navegá el catálogo con precios minoristas o activá el modo mayorista y armá tu pedido como en un
               comercio online.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col items-stretch justify-center gap-3 min-[420px]:flex-row min-[420px]:flex-wrap sm:justify-start">
               <Link
                 href="/catalog?priceMode=retail"
-                className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/25 transition hover:bg-brand-dark"
+                className="inline-flex min-h-12 w-full min-[420px]:w-auto items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 active:bg-brand-dark sm:min-h-0 sm:py-2.5 sm:hover:bg-brand-dark"
               >
                 Ver catálogo
               </Link>
               <Link
                 href="/catalog?priceMode=wholesale"
-                className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand/40 hover:bg-brand-muted/50"
+                className="inline-flex min-h-12 w-full min-[420px]:w-auto min-[420px]:flex-1 items-center justify-center rounded-full border-2 border-slate-200 bg-white/90 px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm active:bg-slate-50 sm:min-h-0 sm:min-w-0 sm:flex-none sm:py-2.5 sm:hover:border-brand/40 sm:hover:bg-brand-muted/50"
               >
                 Soy comercio — mayorista
               </Link>
@@ -95,16 +97,16 @@ export default async function HomePage() {
       </section>
 
       <section className="space-y-4">
-        <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+          <div className="mx-auto max-w-md sm:mx-0 sm:max-w-none">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">Novedades</h2>
-            <p className="mt-1.5 text-sm text-slate-500">
+            <p className="mt-1.5 text-balance text-sm text-slate-500">
               Los productos actualizados más recientes — tu último ingreso aparece acá
             </p>
           </div>
           <Link
             href="/catalog?priceMode=retail"
-            className="group inline-flex items-center gap-1 self-start text-sm font-semibold text-brand-dark"
+            className="group inline-flex min-h-11 items-center justify-center gap-1 self-center text-sm font-semibold text-brand-dark sm:self-start"
           >
             Ver catálogo completo
             <span className="transition group-hover:translate-x-0.5" aria-hidden>
@@ -161,28 +163,28 @@ export default async function HomePage() {
       <CategoryStrip categories={categories} />
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-muted/40 p-6 shadow-sm transition hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-muted/40 p-6 text-center shadow-sm transition hover:shadow-md sm:text-left">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand/15 transition group-hover:bg-brand/25" aria-hidden />
           <h3 className="relative text-lg font-bold text-slate-900">¿Sos comercio?</h3>
-          <p className="relative mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="relative mt-2 text-balance text-sm leading-relaxed text-slate-600">
             Modo mayorista, carrito y solicitud. Un vendedor te contacta para cerrar el pedido.
           </p>
           <Link
             href="/catalog?priceMode=wholesale"
-            className="relative mt-5 inline-flex items-center text-sm font-semibold text-brand-dark underline-offset-4 hover:underline"
+            className="relative mt-5 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-brand-dark underline-offset-4 sm:inline sm:w-auto sm:justify-start sm:hover:underline"
           >
             Ir al catálogo mayorista →
           </Link>
         </div>
-        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm transition hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-6 text-center shadow-sm transition hover:shadow-md sm:text-left">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-cyan-100/80 transition group-hover:bg-cyan-200/60" aria-hidden />
           <h3 className="relative text-lg font-bold text-slate-900">¿Compras para tu casa?</h3>
-          <p className="relative mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="relative mt-2 text-balance text-sm leading-relaxed text-slate-600">
             Precio minorista claro, pago por transferencia y retiro o envío coordinado.
           </p>
           <Link
             href="/catalog?priceMode=retail"
-            className="relative mt-5 inline-flex items-center text-sm font-semibold text-brand-dark underline-offset-4 hover:underline"
+            className="relative mt-5 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-brand-dark underline-offset-4 sm:inline sm:w-auto sm:justify-start sm:hover:underline"
           >
             Comprar minorista →
           </Link>

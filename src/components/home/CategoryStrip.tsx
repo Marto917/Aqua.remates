@@ -9,7 +9,7 @@ export function CategoryStrip({ categories }: { categories: Cat[] }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-100/80 bg-gradient-to-br from-white to-brand-muted/30 p-1 shadow-sm">
       <div className="rounded-xl bg-white/80 px-4 py-4 backdrop-blur-sm sm:px-5 sm:py-5">
-        <h2 className="mb-3 flex items-center gap-2 px-0.5 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 flex items-center justify-center gap-2 px-0.5 text-sm font-semibold uppercase tracking-wide text-slate-500 sm:justify-start">
           <span className="h-1 w-1 rounded-full bg-brand" aria-hidden />
           Comprá por categoría
         </h2>

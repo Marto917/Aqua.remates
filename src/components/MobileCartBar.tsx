@@ -7,7 +7,7 @@ export function MobileCartBar() {
   const { totalItems, subtotalDisplay } = useCart();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-teal-100 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur sm:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-teal-100 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur sm:hidden">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-slate-500">Total estimado</p>
