@@ -144,6 +144,12 @@
       "namedRegex": "^/admin/promociones(?:/)?$"
     },
     {
+      "page": "/admin/usuarios",
+      "regex": "^/admin/usuarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/usuarios(?:/)?$"
+    },
+    {
       "page": "/carrito",
       "regex": "^/carrito(?:/)?$",
       "routeKeys": {},

@@ -50,7 +50,7 @@ export function LoginForm() {
         required
         type="email"
         name="email"
-        placeholder="Email"
+        placeholder="Usuario (email)"
         className="w-full rounded-md border px-3 py-2"
       />
       <input

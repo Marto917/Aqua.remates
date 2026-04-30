@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await getSafeSession();
+  const session = await getSafeSession();
 
   return (
     <html lang="es">
@@ -62,6 +62,22 @@ export default async function RootLayout({
               >
                 Mayorista
               </Link>
+              {!session?.user ? (
+                <>
+                  <Link
+                    href="/login"
+                    className="min-h-11 rounded-full border border-brand bg-white px-3 py-2 text-sm font-semibold text-brand-dark active:bg-brand-muted/50 sm:min-h-0 sm:py-1.5 sm:hover:bg-brand-muted/50"
+                  >
+                    Ingresar
+                  </Link>
+                  <Link
+                    href="/registro"
+                    className="min-h-11 rounded-full bg-brand px-3 py-2 text-sm font-semibold text-white active:bg-brand-dark sm:min-h-0 sm:py-1.5 sm:hover:bg-brand-dark"
+                  >
+                    Registrarte
+                  </Link>
+                </>
+              ) : null}
             </div>
           </nav>
         </header>

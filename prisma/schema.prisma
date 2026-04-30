@@ -16,6 +16,11 @@ enum UserRole {
   CUSTOMER
 }
 
+enum StaffAccessLevel {
+  MANAGER
+  SELLER
+}
+
 enum RetailOrderStatus {
   PENDING_TRANSFER
   TRANSFER_REPORTED
@@ -75,6 +80,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         UserRole
+  staffAccessLevel StaffAccessLevel?
   /// Clientes deben verificar email antes de comprar; staff suele tener fecha fijada en el alta.
   emailVerified            DateTime?
   emailVerificationTokenHash String?

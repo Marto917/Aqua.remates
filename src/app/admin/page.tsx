@@ -159,6 +159,21 @@ export default async function AdminHomePage() {
             </p>
           </Link>
         ) : null}
+        {showFinanzas ? (
+          <Link
+            href="/admin/usuarios"
+            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:shadow-md"
+          >
+            <p className="mb-2 text-2xl" aria-hidden>
+              👥
+            </p>
+            <p className="font-semibold text-slate-900">Usuarios y permisos</p>
+            <p className="mt-1 text-sm text-slate-600">Alta de cuentas y permisos encargado/vendedor</p>
+            <p className="mt-3 inline-flex rounded-full bg-brand-muted px-3 py-1 text-xs font-medium text-brand-dark group-hover:bg-brand-light">
+              Gestionar usuarios →
+            </p>
+          </Link>
+        ) : null}
       </div>
     </section>
   );

@@ -1,8 +1,9 @@
-import { UserRole } from "@prisma/client";
+import { StaffAccessLevel, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { z } from "zod";
+import { ensureDefaultStaffUsers } from "@/lib/bootstrap-staff-users";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -29,11 +30,12 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Email y contraseña",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Usuario o email", type: "text" },
         password: { label: "Password", type: "password" },
         branchKey: { label: "Clave de sucursal", type: "password" },
       },
       async authorize(credentials) {
+        await ensureDefaultStaffUsers();
         const raw = {
           email: typeof credentials?.email === "string" ? credentials.email : "",
           password: typeof credentials?.password === "string" ? credentials.password : "",
@@ -90,6 +92,8 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          staffAccessLevel:
+            user.staffAccessLevel ?? (user.role === UserRole.OWNER ? StaffAccessLevel.MANAGER : null),
           emailVerified,
         };
       },
@@ -100,6 +104,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role as UserRole;
+        token.staffAccessLevel = user.staffAccessLevel ?? null;
         token.emailVerified = Boolean(user.emailVerified);
       }
       return token;
@@ -108,6 +113,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.staffAccessLevel = token.staffAccessLevel ?? null;
         session.user.emailVerified = Boolean(token.emailVerified);
       }
       return session;

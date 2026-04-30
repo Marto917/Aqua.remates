@@ -33,6 +33,9 @@ export async function StaffNav({ area }: StaffNavProps) {
           </Link>
           {showOwner ? (
             <>
+              <Link href="/admin/usuarios" className={linkClass}>
+                Usuarios
+              </Link>
               <Link href="/admin/aprobaciones" className={linkClass}>
                 Aprobaciones
               </Link>
