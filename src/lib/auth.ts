@@ -11,6 +11,7 @@ const credentialsSchema = z.object({
     .trim()
     .email(),
   password: z.string().min(6),
+  branchKey: z.string().optional().transform((v) => (v ?? "").trim()),
 });
 
 function normalizeEmail(email: string) {
@@ -30,11 +31,14 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        branchKey: { label: "Clave de sucursal", type: "password" },
       },
       async authorize(credentials) {
         const raw = {
           email: typeof credentials?.email === "string" ? credentials.email : "",
           password: typeof credentials?.password === "string" ? credentials.password : "",
+          branchKey:
+            typeof credentials?.branchKey === "string" ? credentials.branchKey : "",
         };
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) {
@@ -43,6 +47,7 @@ export const authOptions: NextAuthOptions = {
 
         const email = normalizeEmail(parsed.data.email);
         const password = parsed.data.password.trimEnd();
+        const branchKey = parsed.data.branchKey;
 
         let user;
         try {
@@ -62,6 +67,20 @@ export const authOptions: NextAuthOptions = {
 
         if (!isValidPassword) {
           return null;
+        }
+
+        const isStaff = user.role === UserRole.OWNER || user.role === UserRole.EMPLOYEE;
+        if (isStaff) {
+          const expected = (process.env.STAFF_BRANCH_KEY ?? "").trim();
+          if (!expected) {
+            console.error(
+              "[auth] STAFF_BRANCH_KEY no configurada; login de staff bloqueado por seguridad.",
+            );
+            return null;
+          }
+          if (branchKey !== expected) {
+            return null;
+          }
         }
 
         const emailVerified = Boolean(user.emailVerified);

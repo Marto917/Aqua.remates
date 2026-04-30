@@ -62,18 +62,6 @@ export default async function RootLayout({
               >
                 Mayorista
               </Link>
-              <Link
-                href="/admin"
-                className="min-h-11 rounded-full border border-brand bg-white px-3 py-2 text-sm font-semibold text-brand-dark active:bg-brand-muted/50 sm:min-h-0 sm:py-1.5 sm:hover:bg-brand-muted/50"
-              >
-                Admin
-              </Link>
-              <Link
-                href="/vendedor"
-                className="min-h-11 rounded-full bg-brand px-3 py-2 text-sm text-white active:bg-brand-dark sm:min-h-0 sm:py-1.5 sm:font-semibold sm:hover:bg-brand-dark"
-              >
-                Vendedor
-              </Link>
             </div>
           </nav>
         </header>

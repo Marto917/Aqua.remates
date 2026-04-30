@@ -20,9 +20,11 @@ export function LoginForm() {
         const form = new FormData(event.currentTarget);
         const email = String(form.get("email") ?? "").trim();
         const password = String(form.get("password") ?? "");
+        const branchKey = String(form.get("branchKey") ?? "").trim();
         const result = await signIn("credentials", {
           email,
           password,
+          branchKey,
           callbackUrl,
           redirect: false,
         });
@@ -56,6 +58,12 @@ export function LoginForm() {
         type="password"
         name="password"
         placeholder="Contrasena"
+        className="w-full rounded-md border px-3 py-2"
+      />
+      <input
+        type="password"
+        name="branchKey"
+        placeholder="Clave de sucursal (solo staff)"
         className="w-full rounded-md border px-3 py-2"
       />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

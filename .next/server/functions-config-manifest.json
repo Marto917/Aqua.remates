@@ -2,9 +2,9 @@
   "version": 1,
   "functions": {
     "/api/admin/banners": {},
-    "/api/images/default-product": {},
     "/api/admin/export-catalog": {},
-    "/api/search-suggestions": {},
-    "/api/admin/products": {}
+    "/api/images/default-product": {},
+    "/api/admin/products": {},
+    "/api/search-suggestions": {}
   }
 }
