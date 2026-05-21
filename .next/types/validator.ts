@@ -227,6 +227,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/cuenta/pedidos-mayorista/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/cuenta/pedidos-mayorista">> = Specific
+  const handler = {} as typeof import("../../src/app/cuenta/pedidos-mayorista/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/cuenta/verificar-email/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/cuenta/verificar-email">> = Specific
@@ -240,6 +249,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends AppPageConfig<"/login">> = Specific
   const handler = {} as typeof import("../../src/app/login/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/mayorista/checkout/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/mayorista/checkout">> = Specific
+  const handler = {} as typeof import("../../src/app/mayorista/checkout/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -447,6 +465,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/webhooks/mercadopago">> = Specific
   const handler = {} as typeof import("../../src/app/api/webhooks/mercadopago/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/wholesale-checkout/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/wholesale-checkout">> = Specific
+  const handler = {} as typeof import("../../src/app/api/wholesale-checkout/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

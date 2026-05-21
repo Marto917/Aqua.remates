@@ -52,9 +52,12 @@ enum PriceModeCart {
 }
 
 enum WholesaleRequestStatus {
+  PENDIENTE_CONFIRMACION
   NUEVO
   CONTACTADO
   COTIZADO
+  CONFIRMADO
+  RECHAZADO
   CERRADO
   CANCELADO
 }
@@ -226,24 +229,31 @@ model RetailOrderItem {
 
 /// Solicitud mayorista con ítems; gestión en pantalla empleado/owner.
 model WholesaleRequest {
-  id             String                 @id @default(cuid())
-  status         WholesaleRequestStatus   @default(NUEVO)
-  customerId     String
-  customer       User                   @relation("CustomerWholesaleRequests", fields: [customerId], references: [id])
-  companyName    String
-  cuit           String
-  contactName    String
-  email          String
-  phone          String?
-  address        String?
-  notes          String?
-  assignedToId   String?
-  assignedTo     User?                  @relation("AssignedWholesaleRequests", fields: [assignedToId], references: [id])
-  items          WholesaleRequestItem[]
-  events         WholesaleRequestEvent[]
-  approvals      ApprovalRequest[]
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
+  id                 String                 @id @default(cuid())
+  status             WholesaleRequestStatus @default(NUEVO)
+  customerId         String
+  customer           User                   @relation("CustomerWholesaleRequests", fields: [customerId], references: [id])
+  companyName        String
+  cuit               String
+  contactName        String
+  email              String
+  phone              String?
+  address            String?
+  notes              String?
+  shippingMethod     RetailShippingMethod   @default(SHIPPING_TO_COORDINATE)
+  shippingAddress    String?
+  shippingCity       String?
+  shippingProvince   String?
+  shippingPostalCode String?
+  shippingNotes      String?
+  vendorNote         String?
+  assignedToId       String?
+  assignedTo         User?                  @relation("AssignedWholesaleRequests", fields: [assignedToId], references: [id])
+  items              WholesaleRequestItem[]
+  events             WholesaleRequestEvent[]
+  approvals          ApprovalRequest[]
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 }
 
 model WholesaleRequestItem {

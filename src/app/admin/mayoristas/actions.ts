@@ -10,6 +10,75 @@ import { requireStaff, staffUserId } from "@/lib/staff-auth";
 
 const approvalTypeSchema = z.enum(["PRECIO_ESPECIAL", "PLAZO_EXTRA", "CREDITO", "OTRO"]);
 
+export async function confirmWholesaleRequest(formData: FormData) {
+  const ctx = await requireStaff();
+  const id = String(formData.get("id"));
+  const vendorNote = String(formData.get("vendorNote") ?? "").trim();
+
+  const prev = await prisma.wholesaleRequest.findUnique({ where: { id } });
+  if (!prev) {
+    throw new Error("Solicitud no encontrada");
+  }
+  if (prev.status !== "PENDIENTE_CONFIRMACION") {
+    throw new Error("Solo se pueden confirmar pedidos pendientes de confirmación.");
+  }
+
+  await prisma.wholesaleRequest.update({
+    where: { id },
+    data: {
+      status: "CONFIRMADO",
+      vendorNote: vendorNote || null,
+    },
+  });
+
+  await logWholesaleRequestEvent(id, staffUserId(ctx), "VENDOR_CONFIRMED", {
+    from: prev.status,
+    vendorNote: vendorNote || null,
+  });
+
+  revalidatePath("/admin/mayoristas");
+  revalidatePath(`/admin/mayoristas/solicitud/${id}`);
+  revalidatePath("/vendedor/mayoristas");
+  revalidatePath("/cuenta/pedidos-mayorista");
+}
+
+export async function rejectWholesaleRequest(formData: FormData) {
+  const ctx = await requireStaff();
+  const id = String(formData.get("id"));
+  const vendorNote = String(formData.get("vendorNote") ?? "").trim();
+
+  if (vendorNote.length < 3) {
+    redirect(`/admin/mayoristas/solicitud/${id}?reject=invalid`);
+  }
+
+  const prev = await prisma.wholesaleRequest.findUnique({ where: { id } });
+  if (!prev) {
+    throw new Error("Solicitud no encontrada");
+  }
+  if (prev.status !== "PENDIENTE_CONFIRMACION") {
+    throw new Error("Solo se pueden rechazar pedidos pendientes de confirmación.");
+  }
+
+  await prisma.wholesaleRequest.update({
+    where: { id },
+    data: {
+      status: "RECHAZADO",
+      vendorNote,
+    },
+  });
+
+  await logWholesaleRequestEvent(id, staffUserId(ctx), "VENDOR_REJECTED", {
+    from: prev.status,
+    vendorNote,
+  });
+
+  revalidatePath("/admin/mayoristas");
+  revalidatePath(`/admin/mayoristas/solicitud/${id}`);
+  revalidatePath("/vendedor/mayoristas");
+  revalidatePath("/cuenta/pedidos-mayorista");
+  redirect(`/admin/mayoristas/solicitud/${id}?reject=ok`);
+}
+
 export async function updateWholesaleRequestStatus(formData: FormData) {
   const ctx = await requireStaff();
   const id = String(formData.get("id"));

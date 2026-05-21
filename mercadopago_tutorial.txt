@@ -1,0 +1,211 @@
+================================================================================
+  AQUA — Tutorial: activar Mercado Pago y probar el checkout minorista
+================================================================================
+
+Este archivo resume cómo configurar Mercado Pago en Aqua y cómo probar el flujo
+de compra minorista (B2C). No necesitás tocar código para activarlo en producción;
+solo variables de entorno y la cuenta de Mercado Pago.
+
+
+--------------------------------------------------------------------------------
+1. REQUISITOS PREVIOS
+--------------------------------------------------------------------------------
+
+- La tienda desplegada con URL pública HTTPS (Railway, Vercel, etc.).
+- Variable NEXTAUTH_URL en el servidor = esa URL exacta, sin barra final.
+  Ejemplo: https://aqua-production.up.railway.app
+
+- Migración de base de datos aplicada (incluye campos de MP y envío en pedidos).
+  En Railway, si railway.toml ya ejecuta "prisma migrate deploy" al iniciar,
+  se aplica solo al desplegar. En local: npm run db:migrate
+
+
+--------------------------------------------------------------------------------
+2. CREAR / USAR CUENTA EN MERCADO PAGO DEVELOPERS
+--------------------------------------------------------------------------------
+
+1) Entrá a: https://www.mercadopago.com.ar/developers/panel/app
+
+2) Iniciá sesión con la cuenta de Mercado Pago del negocio (la que cobrará).
+
+3) Creá una aplicación (o usá una existente):
+   - Nombre: por ejemplo "Aqua Remates Web"
+   - Producto: Checkout / Pagos online
+
+4) En la app, vas a ver dos entornos:
+   - PRUEBAS (sandbox): para desarrollo sin cobrar dinero real.
+   - PRODUCCIÓN: cobros reales.
+
+5) Copiá el Access Token del entorno que vayas a usar:
+   - Pruebas: suele empezar con TEST-
+   - Producción: token de producción (no compartirlo públicamente)
+
+
+--------------------------------------------------------------------------------
+3. VARIABLES EN RAILWAY (O .env LOCAL)
+--------------------------------------------------------------------------------
+
+En el servicio web de Railway → Variables, agregá:
+
+  MERCADOPAGO_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxxxxxx
+
+  NEXTAUTH_URL=https://tu-dominio-publico.com
+
+Importante:
+- Sin MERCADOPAGO_ACCESS_TOKEN, el checkout solo muestra TRANSFERENCIA bancaria.
+- Con el token, aparece la opción "Mercado Pago" en /checkout.
+- Reiniciá / redeployá el servicio después de guardar las variables.
+
+
+También podés poner lo mismo en .env local para probar en tu PC:
+
+  MERCADOPAGO_ACCESS_TOKEN="TEST-..."
+  NEXTAUTH_URL="http://localhost:3000"
+
+En local, MP a veces no puede llamar al webhook (localhost no es público).
+Para probar el webhook en serio conviene ngrok o desplegar en Railway con token TEST.
+
+
+--------------------------------------------------------------------------------
+4. QUÉ HACE LA APP AUTOMÁTICAMENTE
+--------------------------------------------------------------------------------
+
+Cuando el cliente elige Mercado Pago y confirma:
+
+1) Se crea un pedido en la base (estado: PENDING_PAYMENT) con todos los ítems
+   del carrito y el método de envío elegido.
+
+2) Se crea una "preferencia" en Mercado Pago con:
+   - Ítems del pedido (nombre, cantidad, precio en ARS)
+   - external_reference = ID del pedido en Aqua
+   - back_urls:
+       éxito    → /checkout/exito
+       pendiente→ /checkout/pendiente
+       error    → /checkout/error
+   - notification_url → /api/webhooks/mercadopago
+
+3) El navegador redirige al init_point de MP (página de pago de Mercado Pago).
+
+4) Cuando MP confirma el pago, llama al webhook y Aqua actualiza el pedido a:
+   PAYMENT_APPROVED (y guarda el ID de pago de MP).
+
+5) En Admin → Pedidos podés ver el pedido y pasarlo a CONFIRMED cuando
+   preparás el envío o el retiro.
+
+
+--------------------------------------------------------------------------------
+5. WEBHOOK (NOTIFICACIONES IPN)
+--------------------------------------------------------------------------------
+
+URL que Mercado Pago debe poder alcanzar:
+
+  https://TU-DOMINIO/api/webhooks/mercadopago
+
+En muchos casos NO hace falta configurarla a mano en el panel: Aqua la envía
+al crear cada preferencia (notification_url).
+
+Si en producción los pagos no actualizan el estado del pedido:
+- Verificá que NEXTAUTH_URL sea HTTPS y sea el dominio real.
+- En Developers → tu app → Webhooks / Notificaciones, podés agregar la misma URL.
+- Revisá logs del servicio en Railway cuando MP notifica (errores 500, token malo).
+
+
+--------------------------------------------------------------------------------
+6. FLUJO PARA PROBAR (PASO A PASO)
+--------------------------------------------------------------------------------
+
+A) PREPARACIÓN
+   - Token TEST en MERCADOPAGO_ACCESS_TOKEN
+   - Deploy con migraciones OK
+   - Catálogo con productos activos
+
+B) COMPRA MINORISTA
+   1. En la tienda, asegurate de estar en modo MINORISTA (no mayorista).
+   2. Agregá productos al carrito.
+   3. Carrito → "Continuar al pago" → /checkout
+   4. Completá nombre, email, teléfono.
+   5. Elegí forma de envío:
+        - Retiro en sucursal
+        - Envío a domicilio (pedirá dirección y ciudad)
+        - Envío a coordinar
+   6. Elegí "Mercado Pago".
+   7. "Pagar con Mercado Pago" → te lleva a la web de MP.
+
+C) PAGO EN SANDBOX (PRUEBAS)
+   Mercado Pago ofrece usuarios y tarjetas de prueba en su documentación:
+   https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/test-cards
+
+   Usá las credenciales de comprador de prueba que indique MP para aprobar/rechazar pagos.
+
+D) DESPUÉS DEL PAGO
+   - Te redirige a /checkout/exito (aprobado), /checkout/pendiente o /checkout/error
+   - En Admin → Pedidos deberías ver:
+       * PENDING_PAYMENT → mientras no pagó
+       * PAYMENT_APPROVED → cuando el webhook procesó el pago aprobado
+   - Pasá manualmente a CONFIRMED cuando despachás el pedido.
+
+E) TRANSFERENCIA (SIN MP)
+   Si no configurás el token, o elegís transferencia:
+   1. Mismo checkout, método "Transferencia bancaria".
+   2. Pedido queda PENDING_TRANSFER con alias/CBU de constants.ts.
+   3. Admin valida el comprobante y cambia estado:
+      PENDING_TRANSFER → TRANSFER_REPORTED → CONFIRMED
+
+
+--------------------------------------------------------------------------------
+7. ESTADOS DEL PEDIDO MINORISTA (REFERENCIA)
+--------------------------------------------------------------------------------
+
+  PENDING_PAYMENT      Esperando pago en Mercado Pago
+  PENDING_TRANSFER     Esperando transferencia del cliente
+  TRANSFER_REPORTED    Cliente informó comprobante (si usás ese paso)
+  PAYMENT_APPROVED     MP confirmó el pago (webhook)
+  CONFIRMED            Pedido listo / entregado / cerrado por el equipo
+  CANCELLED            Cancelado
+
+
+--------------------------------------------------------------------------------
+8. PASAR A PRODUCCIÓN (COBROS REALES)
+--------------------------------------------------------------------------------
+
+1) Completá el proceso de homologación / datos del negocio en Mercado Pago.
+2) Cambiá MERCADOPAGO_ACCESS_TOKEN al token de PRODUCCIÓN (no TEST-).
+3) NEXTAUTH_URL = dominio final de la tienda en producción.
+4) Hacé una compra real chica para verificar webhook y estados en Admin.
+
+
+--------------------------------------------------------------------------------
+9. PROBLEMAS FRECUENTES
+--------------------------------------------------------------------------------
+
+- No aparece Mercado Pago en checkout
+  → Falta MERCADOPAGO_ACCESS_TOKEN o el deploy no se reinició.
+
+- Error al pagar / "No se pudo iniciar el pago"
+  → Token inválido, app MP mal configurada, o total/items rechazados por MP.
+  → Revisá logs en Railway.
+
+- Pago OK en MP pero pedido sigue PENDING_PAYMENT
+  → Webhook no llegó (localhost, URL incorrecta, firewall).
+  → Corregí NEXTAUTH_URL y probá desde el dominio público.
+
+- Monto distinto entre carrito y MP
+  → Los precios se recalculan en servidor al crear el pedido; el carrito debe
+    estar en modo minorista y con productos activos.
+
+
+--------------------------------------------------------------------------------
+10. ARCHIVOS RELACIONADOS EN EL PROYECTO (POR SI DEVUELVEN A CÓDIGO)
+--------------------------------------------------------------------------------
+
+  src/app/checkout/CheckoutClient.tsx     UI checkout
+  src/app/api/retail-checkout/route.ts    Crear pedido + preferencia MP
+  src/app/api/webhooks/mercadopago/route.ts Webhook IPN
+  src/lib/mercadopago.ts                  SDK preferencia y consulta pago
+  src/lib/order-labels.ts                 Etiquetas de estados
+  .env.example                            Variables documentadas
+
+
+================================================================================
+  Fin del tutorial — Aqua Remates
+================================================================================

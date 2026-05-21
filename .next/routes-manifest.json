@@ -186,6 +186,12 @@
       "namedRegex": "^/checkout/pendiente(?:/)?$"
     },
     {
+      "page": "/cuenta/pedidos-mayorista",
+      "regex": "^/cuenta/pedidos\\-mayorista(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cuenta/pedidos\\-mayorista(?:/)?$"
+    },
+    {
       "page": "/cuenta/verificar-email",
       "regex": "^/cuenta/verificar\\-email(?:/)?$",
       "routeKeys": {},
@@ -196,6 +202,12 @@
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/mayorista/checkout",
+      "regex": "^/mayorista/checkout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/mayorista/checkout(?:/)?$"
     },
     {
       "page": "/mayorista/contacto",

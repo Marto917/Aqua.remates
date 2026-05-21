@@ -3,16 +3,22 @@ import { notFound } from "next/navigation";
 import { UserRole, WholesaleRequestStatus } from "@prisma/client";
 import {
   assignWholesaleRequest,
+  confirmWholesaleRequest,
   createApprovalRequestFromWholesale,
+  rejectWholesaleRequest,
   updateWholesaleRequestStatus,
 } from "../../actions";
 import { formatArs } from "@/lib/currency";
-import { approvalStatusLabel, wholesaleRequestStatusLabel } from "@/lib/order-labels";
+import {
+  approvalStatusLabel,
+  retailShippingMethodLabel,
+  wholesaleRequestStatusLabel,
+} from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ approval?: string }>;
+  searchParams: Promise<{ approval?: string; reject?: string }>;
 };
 
 export default async function WholesaleSolicitudDetailPage({ params, searchParams }: PageProps) {
@@ -60,6 +66,15 @@ export default async function WholesaleSolicitudDetailPage({ params, searchParam
     approvalBanner = "Tenés que iniciar sesión como empleado o dueño para pedir aprobaciones.";
   }
 
+  let rejectBanner: string | null = null;
+  if (sp.reject === "ok") {
+    rejectBanner = "Pedido rechazado. El cliente verá tu mensaje en su cuenta.";
+  } else if (sp.reject === "invalid") {
+    rejectBanner = "Indicá un motivo de rechazo (mínimo 3 caracteres).";
+  }
+
+  const awaitingVendor = req.status === "PENDIENTE_CONFIRMACION";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -78,6 +93,62 @@ export default async function WholesaleSolicitudDetailPage({ params, searchParam
       {approvalBanner ? (
         <p className="rounded-lg border border-brand/40 bg-brand-muted px-4 py-3 text-sm text-slate-800">
           {approvalBanner}
+        </p>
+      ) : null}
+      {rejectBanner ? (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{rejectBanner}</p>
+      ) : null}
+
+      {awaitingVendor ? (
+        <section className="rounded-xl border-2 border-cyan-300 bg-cyan-50/80 p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-cyan-900">Confirmar o rechazar pedido</h2>
+          <p className="mt-1 text-sm text-cyan-800">
+            El cliente envió este pedido desde el carrito mayorista. Confirmalo para avanzar con preparación y cobro,
+            o rechazalo con un motivo visible para el cliente.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <form action={confirmWholesaleRequest} className="space-y-3 rounded-lg border border-emerald-200 bg-white p-4">
+              <input type="hidden" name="id" value={req.id} />
+              <p className="text-sm font-medium text-emerald-900">Confirmar compra</p>
+              <textarea
+                name="vendorNote"
+                rows={2}
+                placeholder="Mensaje opcional al cliente (plazo, retiro, etc.)"
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Confirmar pedido
+              </button>
+            </form>
+            <form action={rejectWholesaleRequest} className="space-y-3 rounded-lg border border-rose-200 bg-white p-4">
+              <input type="hidden" name="id" value={req.id} />
+              <p className="text-sm font-medium text-rose-900">Rechazar pedido</p>
+              <textarea
+                name="vendorNote"
+                required
+                minLength={3}
+                rows={2}
+                placeholder="Motivo del rechazo (obligatorio)"
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+              >
+                Rechazar pedido
+              </button>
+            </form>
+          </div>
+        </section>
+      ) : null}
+
+      {req.vendorNote ? (
+        <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <span className="font-medium">Nota del vendedor: </span>
+          {req.vendorNote}
         </p>
       ) : null}
 
@@ -107,6 +178,19 @@ export default async function WholesaleSolicitudDetailPage({ params, searchParam
               <div className="flex justify-between gap-4">
                 <dt className="text-slate-500">Dirección</dt>
                 <dd className="text-right text-slate-800">{req.address}</dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">Envío</dt>
+              <dd className="text-right text-slate-800">{retailShippingMethodLabel[req.shippingMethod]}</dd>
+            </div>
+            {req.shippingAddress ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Dirección envío</dt>
+                <dd className="text-right text-slate-800">
+                  {req.shippingAddress}
+                  {req.shippingCity ? `, ${req.shippingCity}` : ""}
+                </dd>
               </div>
             ) : null}
             <div className="flex justify-between gap-4">

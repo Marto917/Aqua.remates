@@ -110,12 +110,12 @@ export default function CarritoPage() {
               Continuar al pago
             </Link>
           ) : (
-            <p className="text-center text-sm text-amber-800">
-              El pago online es solo en modo minorista.{" "}
-              <Link href="/mayorista" className="font-medium underline">
-                Ver mayorista
-              </Link>
-            </p>
+            <Link
+              href="/mayorista/checkout"
+              className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
+            >
+              Enviar pedido mayorista
+            </Link>
           )}
         </div>
       )}

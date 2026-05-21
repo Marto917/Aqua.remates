@@ -8,11 +8,11 @@ export default async function VendedorHomePage() {
   const preview = isBackofficePreview();
 
   let pendingRetail = 0;
-  let nuevosMayoristas = 0;
+  let pendienteConfirmacion = 0;
   try {
-    ;[pendingRetail, nuevosMayoristas] = await Promise.all([
+    ;[pendingRetail, pendienteConfirmacion] = await Promise.all([
       prisma.retailOrder.count({ where: { status: "PENDING_TRANSFER" } }),
-      prisma.wholesaleRequest.count({ where: { status: "NUEVO" } }),
+      prisma.wholesaleRequest.count({ where: { status: "PENDIENTE_CONFIRMACION" } }),
     ]);
   } catch {
     /* sin DB */
@@ -43,9 +43,9 @@ export default async function VendedorHomePage() {
           </div>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Mayoristas nuevos</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Mayorista a confirmar</p>
           <div className="mt-1 flex items-end justify-between">
-            <p className="text-2xl font-semibold text-amber-700">{nuevosMayoristas}</p>
+            <p className="text-2xl font-semibold text-amber-700">{pendienteConfirmacion}</p>
             <span className="text-xl" aria-hidden>
               🏪
             </span>

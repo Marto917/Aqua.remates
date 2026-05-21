@@ -28,9 +28,12 @@ export const retailShippingMethodLabel: Record<RetailShippingMethod, string> = {
 };
 
 export const wholesaleRequestStatusLabel: Record<WholesaleRequestStatus, string> = {
+  PENDIENTE_CONFIRMACION: "Pendiente de confirmación (vendedor)",
   NUEVO: "Nuevo",
   CONTACTADO: "Contactado",
   COTIZADO: "Cotizado",
+  CONFIRMADO: "Confirmado por vendedor",
+  RECHAZADO: "Rechazado",
   CERRADO: "Cerrado",
   CANCELADO: "Cancelado",
 };

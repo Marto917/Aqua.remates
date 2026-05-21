@@ -36,6 +36,7 @@ export default async function AdminMayoristasPage() {
     console.error(e);
   }
 
+  const pendienteConfirmacion = requests.filter((r) => r.status === "PENDIENTE_CONFIRMACION").length;
   const nuevasSolicitudes = requests.filter((r) => r.status === "NUEVO").length;
   const nuevosLeads = leads.filter((l) => l.status === "NUEVO").length;
 
@@ -48,7 +49,11 @@ export default async function AdminMayoristasPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-800">A confirmar (carrito)</p>
+          <p className="mt-1 text-2xl font-semibold text-brand-dark">{pendienteConfirmacion}</p>
+        </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Solicitudes nuevas</p>
           <p className="mt-1 text-2xl font-semibold text-brand-dark">{nuevasSolicitudes}</p>
