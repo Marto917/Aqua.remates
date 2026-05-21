@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { RetailOrderStatus } from "@prisma/client";
 import { updateRetailOrderStatus } from "../actions";
 import { formatArs } from "@/lib/currency";
-import { retailOrderStatusLabel } from "@/lib/order-labels";
+import {
+  retailOrderStatusLabel,
+  retailPaymentMethodLabel,
+  retailShippingMethodLabel,
+} from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -71,7 +75,7 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Transferencia</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Pago y envío</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500">Total</dt>
@@ -80,17 +84,51 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Alias</dt>
-              <dd className="text-right font-mono text-xs text-slate-800">{order.transferAlias}</dd>
+              <dt className="text-slate-500">Pago</dt>
+              <dd className="text-right text-slate-800">{retailPaymentMethodLabel[order.paymentMethod]}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">CBU</dt>
-              <dd className="text-right font-mono text-xs text-slate-800">{order.transferCbu}</dd>
+              <dt className="text-slate-500">Envío</dt>
+              <dd className="text-right text-slate-800">{retailShippingMethodLabel[order.shippingMethod]}</dd>
             </div>
+            {order.shippingAddress ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Dirección</dt>
+                <dd className="text-right text-slate-800">
+                  {order.shippingAddress}
+                  {order.shippingCity ? `, ${order.shippingCity}` : ""}
+                  {order.shippingProvince ? ` (${order.shippingProvince})` : ""}
+                </dd>
+              </div>
+            ) : null}
+            {order.shippingNotes ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Notas envío</dt>
+                <dd className="text-right text-slate-800">{order.shippingNotes}</dd>
+              </div>
+            ) : null}
+            {order.paymentMethod === "BANK_TRANSFER" && order.transferAlias ? (
+              <>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">Alias</dt>
+                  <dd className="text-right font-mono text-xs text-slate-800">{order.transferAlias}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">CBU</dt>
+                  <dd className="text-right font-mono text-xs text-slate-800">{order.transferCbu}</dd>
+                </div>
+              </>
+            ) : null}
+            {order.mercadoPagoPaymentId ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Pago MP</dt>
+                <dd className="text-right font-mono text-xs text-slate-800">{order.mercadoPagoPaymentId}</dd>
+              </div>
+            ) : null}
           </dl>
           {order.notes ? (
             <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-              <span className="font-medium text-slate-600">Notas: </span>
+              <span className="font-medium text-slate-600">Notas del pedido: </span>
               {order.notes}
             </div>
           ) : null}
@@ -127,7 +165,8 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
       <section className="rounded-xl border border-brand/30 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Cambiar estado del pedido</h2>
         <p className="mt-1 text-xs text-slate-600">
-          Flujo sugerido: pendiente → comprobante informado → confirmado (o cancelar si corresponde).
+          Transferencia: pendiente → comprobante → confirmado. Mercado Pago: pendiente de pago → pago aprobado →
+          confirmado al preparar/enviar.
         </p>
         <form action={updateRetailOrderStatus} className="mt-4 flex flex-wrap items-end gap-3">
           <input type="hidden" name="id" value={order.id} />

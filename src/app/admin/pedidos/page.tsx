@@ -14,29 +14,39 @@ export default async function AdminPedidosPage() {
     console.error(e);
   }
 
-  const pending = orders.filter((o) => o.status === "PENDING_TRANSFER").length;
+  const pendingTransfer = orders.filter((o) => o.status === "PENDING_TRANSFER").length;
   const reported = orders.filter((o) => o.status === "TRANSFER_REPORTED").length;
+  const pendingMp = orders.filter((o) => o.status === "PENDING_PAYMENT").length;
+  const paidMp = orders.filter((o) => o.status === "PAYMENT_APPROVED").length;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Pedidos minoristas (B2C)</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Transferencias bancarias: validá comprobantes y avanzá el estado del pedido.
+          Transferencias, Mercado Pago y envíos: validá pagos y avanzá el estado del pedido.
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Pendientes</p>
-          <p className="mt-1 text-2xl font-semibold text-brand-dark">{pending}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Transfer. pendientes</p>
+          <p className="mt-1 text-2xl font-semibold text-brand-dark">{pendingTransfer}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Comprobante informado</p>
           <p className="mt-1 text-2xl font-semibold text-amber-700">{reported}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">En bandeja (últimos 80)</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">MP pendiente</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-700">{pendingMp}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">MP pagado</p>
+          <p className="mt-1 text-2xl font-semibold text-emerald-700">{paidMp}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">En bandeja (últ. 80)</p>
           <p className="mt-1 text-2xl font-semibold text-slate-800">{orders.length}</p>
         </div>
       </div>

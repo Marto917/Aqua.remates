@@ -1,0 +1,68 @@
+import { NextResponse } from "next/server";
+import { fetchMercadoPagoPayment, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { prisma } from "@/lib/prisma";
+
+/** IPN / Webhooks de Mercado Pago (topic=payment). */
+export async function POST(req: Request) {
+  if (!isMercadoPagoConfigured()) {
+    return NextResponse.json({ ok: false }, { status: 503 });
+  }
+
+  const url = new URL(req.url);
+  let topic = url.searchParams.get("topic") ?? url.searchParams.get("type");
+  let id = url.searchParams.get("id") ?? url.searchParams.get("data.id");
+
+  if (!topic || !id) {
+    try {
+      const body = (await req.json()) as { type?: string; data?: { id?: string | number } };
+      topic = body.type ?? topic;
+      id = body.data?.id != null ? String(body.data.id) : id;
+    } catch {
+      /* query-only webhook */
+    }
+  }
+
+  if (topic !== "payment" || !id) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  try {
+    const payment = await fetchMercadoPagoPayment(id);
+    const orderId = payment.external_reference;
+    if (!orderId) {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    const order = await prisma.retailOrder.findUnique({ where: { id: orderId } });
+    if (!order || order.paymentMethod !== "MERCADO_PAGO") {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    const status = payment.status;
+    if (status === "approved") {
+      await prisma.retailOrder.update({
+        where: { id: orderId },
+        data: {
+          status: "PAYMENT_APPROVED",
+          mercadoPagoPaymentId: String(payment.id ?? id),
+        },
+      });
+    } else if (status === "cancelled" || status === "rejected") {
+      if (order.status === "PENDING_PAYMENT") {
+        await prisma.retailOrder.update({
+          where: { id: orderId },
+          data: { status: "CANCELLED", mercadoPagoPaymentId: String(payment.id ?? id) },
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Mercado Pago webhook error:", e);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function GET(req: Request) {
+  return POST(req);
+}

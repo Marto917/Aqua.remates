@@ -168,6 +168,24 @@
       "namedRegex": "^/checkout(?:/)?$"
     },
     {
+      "page": "/checkout/error",
+      "regex": "^/checkout/error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout/error(?:/)?$"
+    },
+    {
+      "page": "/checkout/exito",
+      "regex": "^/checkout/exito(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout/exito(?:/)?$"
+    },
+    {
+      "page": "/checkout/pendiente",
+      "regex": "^/checkout/pendiente(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout/pendiente(?:/)?$"
+    },
+    {
       "page": "/cuenta/verificar-email",
       "regex": "^/cuenta/verificar\\-email(?:/)?$",
       "routeKeys": {},

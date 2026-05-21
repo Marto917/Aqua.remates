@@ -102,12 +102,21 @@ export default function CarritoPage() {
             <p className="text-sm text-slate-500">Total estimado</p>
             <p className="text-2xl font-bold text-brand-dark">{subtotalDisplay}</p>
           </div>
-          <Link
-            href="/checkout"
-            className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
-          >
-            Continuar al pago
-          </Link>
+          {mode === "retail" ? (
+            <Link
+              href="/checkout"
+              className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
+            >
+              Continuar al pago
+            </Link>
+          ) : (
+            <p className="text-center text-sm text-amber-800">
+              El pago online es solo en modo minorista.{" "}
+              <Link href="/mayorista" className="font-medium underline">
+                Ver mayorista
+              </Link>
+            </p>
+          )}
         </div>
       )}
     </div>

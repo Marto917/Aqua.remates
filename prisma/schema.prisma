@@ -22,10 +22,23 @@ enum StaffAccessLevel {
 }
 
 enum RetailOrderStatus {
+  PENDING_PAYMENT
   PENDING_TRANSFER
   TRANSFER_REPORTED
+  PAYMENT_APPROVED
   CONFIRMED
   CANCELLED
+}
+
+enum RetailPaymentMethod {
+  BANK_TRANSFER
+  MERCADO_PAGO
+}
+
+enum RetailShippingMethod {
+  PICKUP
+  DELIVERY
+  SHIPPING_TO_COORDINATE
 }
 
 enum BillingMode {
@@ -168,23 +181,32 @@ model CartItem {
   @@unique([cartId, variantId])
 }
 
-/// Pedido minorista (transferencia). Sin envío de mail al cliente en flujo final.
+/// Pedido minorista (transferencia o Mercado Pago).
 model RetailOrder {
-  id             String            @id @default(cuid())
-  customerId     String?
-  customer       User?             @relation("CustomerRetailOrders", fields: [customerId], references: [id])
-  buyerName      String
-  buyerEmail     String
-  buyerPhone     String?
-  notes          String?
-  billingMode    BillingMode       @default(BLANCO)
-  totalAmount    Decimal           @db.Decimal(10, 2)
-  status         RetailOrderStatus @default(PENDING_TRANSFER)
-  transferAlias  String
-  transferCbu    String
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  items          RetailOrderItem[]
+  id                      String                @id @default(cuid())
+  customerId              String?
+  customer                User?                 @relation("CustomerRetailOrders", fields: [customerId], references: [id])
+  buyerName               String
+  buyerEmail              String
+  buyerPhone              String?
+  notes                   String?
+  billingMode             BillingMode           @default(BLANCO)
+  paymentMethod           RetailPaymentMethod   @default(BANK_TRANSFER)
+  shippingMethod          RetailShippingMethod  @default(PICKUP)
+  shippingAddress         String?
+  shippingCity            String?
+  shippingProvince        String?
+  shippingPostalCode      String?
+  shippingNotes           String?
+  totalAmount             Decimal               @db.Decimal(10, 2)
+  status                  RetailOrderStatus     @default(PENDING_TRANSFER)
+  transferAlias           String?
+  transferCbu             String?
+  mercadoPagoPreferenceId String?
+  mercadoPagoPaymentId    String?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  items                   RetailOrderItem[]
 }
 
 model RetailOrderItem {
