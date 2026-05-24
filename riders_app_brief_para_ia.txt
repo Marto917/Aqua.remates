@@ -4,7 +4,10 @@
 
 Contexto: La tienda Aqua (Next.js + Postgres) administra cuentas de repartidores
 en la tabla "Rider". La app de mapas NO debe conectarse con DATABASE_URL ni leer
-el resto de la base. Solo debe usar la API HTTP pública de Aqua para login de riders.
+el resto de la base. Solo debe usar la API HTTP pública de Aqua.
+
+IMPORTANTE: Los riders solo manejan compras MINORISTAS (retail) con envío a
+domicilio. Los pedidos mayoristas NO usan esta app: los gestiona el empleado.
 
 --------------------------------------------------------------------------------
 1. VARIABLES DE ENTORNO EN LA APP DE MAPAS (solo estas)
@@ -15,13 +18,12 @@ AQUA_API_BASE_URL=https://tu-dominio-aqua.up.railway.app
 
 NO uses DATABASE_URL de Aqua.
 NO uses NEXTAUTH_SECRET de Aqua en el cliente.
-NO accedas a tablas User, Product, RetailOrder, etc.
 
 Opcional en el servidor de la app mapas (si validás JWT localmente):
 RIDER_JWT_SECRET=<mismo valor que en Railway del backend Aqua, solo en backend del mapa>
 
 --------------------------------------------------------------------------------
-2. ENDPOINTS (solo riders)
+2. AUTENTICACIÓN DEL RIDER
 --------------------------------------------------------------------------------
 
 LOGIN
@@ -40,9 +42,7 @@ LOGIN
     }
   }
 
-  Errores: 400 datos inválidos, 401 credenciales o cuenta inactiva.
-
-PERFIL (sesión)
+PERFIL
   GET {AQUA_API_BASE_URL}/api/riders/me
   Header: Authorization: Bearer <token>
 
@@ -50,66 +50,111 @@ PERFIL (sesión)
   { "rider": { "id", "name", "email", "phone", "isActive" } }
 
 --------------------------------------------------------------------------------
-3. FLUJO RECOMENDADO EN LA APP
+3. ENTREGAS MINORISTAS (envío a domicilio)
 --------------------------------------------------------------------------------
 
-1. Pantalla login: email + password → POST /api/riders/auth/login
-2. Guardar token en almacenamiento seguro (AsyncStorage / SecureStore / etc.)
-3. En cada request autenticado: header Authorization: Bearer <token>
-4. Al abrir app: GET /api/riders/me; si 401, volver a login
-5. El token expira a los 30 días (renovar con login)
+LISTAR ENTREGAS PENDIENTES
+  GET {AQUA_API_BASE_URL}/api/riders/deliveries
+  Header: Authorization: Bearer <token>
+
+  Respuesta 200:
+  {
+    "deliveries": [
+      {
+        "orderId": "clxabc123...",
+        "buyerName": "María García",
+        "phone": "+5491123456789",
+        "email": "maria@ejemplo.com",
+        "address": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+        "postalCode": "1043",
+        "deliveryStatus": "DISPATCHED",
+        "deliveryStatusLabel": "En camino",
+        "dispatchedAt": "2026-05-20T15:30:00.000Z"
+      }
+    ]
+  }
+
+  Solo pedidos minoristas ya emitidos (DISPATCHED).
+  El código de 4 dígitos NO viene en esta respuesta: lo dicta el cliente al recibir.
+
+CONFIRMAR ENTREGA
+  POST {AQUA_API_BASE_URL}/api/riders/deliveries/confirm
+  Header: Authorization: Bearer <token>
+  Content-Type: application/json
+  Body: { "orderId": "clxabc123...", "code": "4829" }
+
+  Respuesta 200: { "ok": true }
+  Errores: 400 datos inválidos, 403 código incorrecto, 404 no encontrado, 409 no pendiente.
 
 --------------------------------------------------------------------------------
-4. EJEMPLO fetch (TypeScript / React Native)
+4. ESCANEO DE QR EN EL TICKET DE ENVÍO
 --------------------------------------------------------------------------------
 
-const BASE = process.env.EXPO_PUBLIC_AQUA_API_URL; // o AQUA_API_BASE_URL
+El QR contiene un JSON mínimo (snapshot al imprimir):
 
-async function loginRider(email: string, password: string) {
-  const res = await fetch(`${BASE}/api/riders/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) throw new Error("Login fallido");
-  return res.json() as Promise<{ token: string; rider: { id: string; name: string; email: string; phone: string | null } }>;
-}
+  {
+    "v": 1,
+    "type": "retail",
+    "orderId": "clxabc123...",
+    "buyerName": "María García",
+    "phone": "+5491123456789",
+    "address": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+    "postalCode": "1043"
+  }
 
-async function getRiderProfile(token: string) {
-  const res = await fetch(`${BASE}/api/riders/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Sesión inválida");
-  return res.json();
-}
-
---------------------------------------------------------------------------------
-5. PEDIDOS / ENVÍOS (fase siguiente — no es login)
---------------------------------------------------------------------------------
-
-Los pedidos a entregar NO están en la API de riders todavía.
-Para escanear QR de envíos de Aqua, hoy existe (staff o integración futura):
+Tras escanear, consultar datos frescos en Aqua:
 
   GET {AQUA_API_BASE_URL}/api/shipping/orders/{orderId}?type=retail
-  (opcional header X-Shipping-Key si Aqua tiene SHIPPING_LOOKUP_KEY)
+  (opcional: header X-Shipping-Key o Bearer si Aqua tiene SHIPPING_LOOKUP_KEY)
 
-Si la app mapas necesita listar entregas del rider, pedir en Aqua un endpoint nuevo, por ejemplo:
+  Respuesta 200 (ejemplo completo para la pantalla de entrega):
+
+  {
+    "v": 1,
+    "type": "retail",
+    "orderId": "clxabc123...",
+    "buyerName": "María García",
+    "phone": "+5491123456789",
+    "email": "maria@ejemplo.com",
+    "shippingMethod": "DELIVERY",
+    "shippingMethodLabel": "Envío a domicilio",
+    "status": "CONFIRMED",
+    "statusLabel": "Confirmado / listo",
+    "fullAddress": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+    "postalCode": "1043",
+    "customerComments": "Tocar timbre 3B · Dejar en portería",
+    "deliveryStatus": "DISPATCHED",
+    "deliveryStatusLabel": "En camino",
+    "createdAt": "2026-05-20T18:30:00.000Z"
+  }
+
+  Nunca incluye deliveryCode. Solo deliveryStatus indica si se puede confirmar:
+  - PENDING = aún no salió
+  - DISPATCHED = en camino, pedir código al cliente
+  - DELIVERED = ya entregado
+
+--------------------------------------------------------------------------------
+5. FLUJO RECOMENDADO
+--------------------------------------------------------------------------------
+
+1. Login → guardar token JWT
+2. GET /api/riders/deliveries → lista / mapa de entregas
+3. (Opcional) Escanear QR del ticket → GET /api/shipping/orders/{id}?type=retail
+4. Al llegar: pedir código de 4 dígitos al cliente
+5. POST /api/riders/deliveries/confirm con { orderId, code }
+
+--------------------------------------------------------------------------------
+6. RESUMEN PARA LA IA
+--------------------------------------------------------------------------------
+
+Implementá la app de riders solo para compras minoristas con envío a domicilio.
+Endpoints permitidos:
+  POST /api/riders/auth/login
+  GET /api/riders/me
   GET /api/riders/deliveries
-  con el mismo Bearer token — sin acceso directo a Postgres.
+  POST /api/riders/deliveries/confirm
+  GET /api/shipping/orders/{id}?type=retail
 
---------------------------------------------------------------------------------
-6. CÓMO SE CREAN LAS CUENTAS
---------------------------------------------------------------------------------
-
-El dueño de Aqua entra a Admin → Riders (/admin/riders), crea email, teléfono y
-contraseña inicial. El rider usa esas credenciales en la app de mapas.
-
---------------------------------------------------------------------------------
-7. RESUMEN PARA LA IA
---------------------------------------------------------------------------------
-
-Implementá autenticación de riders únicamente vía REST contra AQUA_API_BASE_URL.
-Endpoints permitidos: POST /api/riders/auth/login y GET /api/riders/me.
-Prohibido: Prisma, DATABASE_URL, leer tabla Rider directamente, APIs de admin o tienda.
+Prohibido: Prisma, DATABASE_URL, pedidos mayoristas, APIs de admin o tienda.
 
 ================================================================================

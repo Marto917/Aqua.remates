@@ -79,7 +79,7 @@ export default async function RootLayout({
                 </>
               ) : session.user.role === "CUSTOMER" ? (
                 <Link
-                  href="/cuenta/pedidos-mayorista"
+                  href="/cuenta/mis-compras"
                   className="min-h-11 rounded-lg px-3 py-2 text-center text-sm font-medium text-slate-700 active:bg-slate-50 sm:min-h-0 sm:min-w-0 sm:px-0 sm:py-0 sm:hover:text-brand-dark"
                 >
                   Mis pedidos

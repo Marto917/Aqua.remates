@@ -5,21 +5,33 @@ import { signIn } from "next-auth/react";
 type Props = {
   callbackUrl: string;
   label?: string;
+  disabled?: boolean;
+  disabledHint?: string;
 };
 
 export function GoogleSignInButton({
   callbackUrl,
   label = "Continuar con Google",
+  disabled = false,
+  disabledHint,
 }: Props) {
   return (
-    <button
-      type="button"
-      onClick={() => signIn("google", { callbackUrl })}
-      className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
-    >
-      <GoogleIcon />
-      {label}
-    </button>
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) signIn("google", { callbackUrl });
+        }}
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-55"
+      >
+        <GoogleIcon />
+        {label}
+      </button>
+      {disabled && disabledHint ? (
+        <p className="text-center text-xs text-amber-700">{disabledHint}</p>
+      ) : null}
+    </div>
   );
 }
 

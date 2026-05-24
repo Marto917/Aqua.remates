@@ -3,10 +3,21 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
-export function isGoogleAuthConfigured(): boolean {
-  return Boolean(
-    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim(),
+export function getGoogleClientId(): string | null {
+  return (
+    process.env.GOOGLE_CLIENT_ID?.trim() ||
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ||
+    null
   );
+}
+
+export function isGoogleAuthConfigured(): boolean {
+  return Boolean(getGoogleClientId() && process.env.GOOGLE_CLIENT_SECRET?.trim());
+}
+
+/** Muestra el botón de Google en la UI (requiere al menos client id público). */
+export function isGoogleSignInUiVisible(): boolean {
+  return Boolean(getGoogleClientId());
 }
 
 function normalizeEmail(email: string) {

@@ -4,8 +4,17 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import {
+  authDividerClass,
+  authFieldClass,
+  authPrimaryButtonClass,
+} from "@/components/auth/auth-styles";
 
-export function RegistroForm({ googleEnabled }: { googleEnabled: boolean }) {
+type Props = {
+  googleReady: boolean;
+};
+
+export function RegistroForm({ googleReady }: Props) {
   const searchParams = useSearchParams();
   const rawCallback = searchParams.get("callbackUrl");
   const callbackUrl =
@@ -16,30 +25,27 @@ export function RegistroForm({ googleEnabled }: { googleEnabled: boolean }) {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
 
-  return (
-    <section className="mx-auto max-w-md rounded-xl border bg-white p-6 shadow-sm">
-      <h1 className="text-xl font-semibold text-brand-dark">Crear cuenta</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Registrate con Google o con email. Con Google tu cuenta queda verificada al instante.
-      </p>
+  const googleHint = !googleReady
+    ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Railway para activar el login con Google."
+    : undefined;
 
-      {googleEnabled ? (
-        <div className="mt-4 space-y-4">
-          <GoogleSignInButton callbackUrl={callbackUrl} label="Registrarse con Google" />
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="h-px flex-1 bg-slate-200" />
-            o con email
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
-        </div>
-      ) : (
-        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          Google no está configurado en el servidor. Usá el formulario de email.
-        </p>
-      )}
+  return (
+    <>
+      <GoogleSignInButton
+        callbackUrl={callbackUrl}
+        label="Registrarse con Google"
+        disabled={!googleReady}
+        disabledHint={googleHint}
+      />
+
+      <div className={`${authDividerClass} my-5`}>
+        <span className="h-px flex-1 bg-slate-200" />
+        o con email
+        <span className="h-px flex-1 bg-slate-200" />
+      </div>
 
       <form
-        className="mt-4 space-y-3"
+        className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
           setLoading(true);
@@ -69,14 +75,14 @@ export function RegistroForm({ googleEnabled }: { googleEnabled: boolean }) {
           name="name"
           required
           placeholder="Nombre y apellido"
-          className="w-full rounded-lg border border-slate-200 px-3 py-3 text-base"
+          className={authFieldClass}
         />
         <input
           name="email"
           required
           type="email"
           placeholder="Email"
-          className="w-full rounded-lg border border-slate-200 px-3 py-3 text-base"
+          className={authFieldClass}
         />
         <input
           name="password"
@@ -84,17 +90,16 @@ export function RegistroForm({ googleEnabled }: { googleEnabled: boolean }) {
           type="password"
           minLength={6}
           placeholder="Contraseña (mín. 6 caracteres)"
-          className="w-full rounded-lg border border-slate-200 px-3 py-3 text-base"
+          className={authFieldClass}
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-brand py-3 text-base font-semibold text-white disabled:opacity-60"
-        >
-          {loading ? "Registrando..." : "Registrarme con email"}
+        <button type="submit" disabled={loading} className={authPrimaryButtonClass}>
+          {loading ? "Registrando…" : "Crear cuenta con email"}
         </button>
       </form>
-      {mensaje ? <p className="mt-3 text-sm text-slate-700">{mensaje}</p> : null}
+
+      {mensaje ? (
+        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{mensaje}</p>
+      ) : null}
       {devLink ? (
         <p className="mt-2 break-all text-xs text-slate-500">
           Link dev:{" "}
@@ -103,15 +108,16 @@ export function RegistroForm({ googleEnabled }: { googleEnabled: boolean }) {
           </a>
         </p>
       ) : null}
-      <p className="mt-4 text-center text-sm text-slate-600">
+
+      <p className="mt-5 text-center text-sm text-slate-600">
         ¿Ya tenés cuenta?{" "}
         <Link
           href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-          className="font-medium text-brand underline"
+          className="font-semibold text-brand-dark hover:underline"
         >
           Ingresar
         </Link>
       </p>
-    </section>
+    </>
   );
 }

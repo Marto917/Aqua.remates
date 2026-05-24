@@ -31,6 +31,7 @@ const navLinks = [
   { href: "/carrito", label: "Carrito" },
   { href: "/mayorista/contacto", label: "Mayorista" },
   { href: "/login", label: "Ingresar" },
+  { href: "/registro", label: "Registrarte" },
 ] as const;
 
 export function SiteFooter() {

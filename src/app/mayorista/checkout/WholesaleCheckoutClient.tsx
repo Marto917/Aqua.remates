@@ -9,7 +9,7 @@ import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { getEffectivePriceModeForProduct } from "@/lib/wholesale-pricing";
 
-type ShippingChoice = "PICKUP" | "DELIVERY" | "SHIPPING_TO_COORDINATE";
+type ShippingChoice = "PICKUP" | "SHIPPING_TO_COORDINATE";
 
 type Props = {
   loggedIn: boolean;
@@ -34,10 +34,6 @@ export function WholesaleCheckoutClient({
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingChoice>("SHIPPING_TO_COORDINATE");
-  const [shippingAddress, setShippingAddress] = useState("");
-  const [shippingCity, setShippingCity] = useState("");
-  const [shippingProvince, setShippingProvince] = useState("");
-  const [shippingPostalCode, setShippingPostalCode] = useState("");
   const [shippingNotes, setShippingNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,10 +144,6 @@ export function WholesaleCheckoutClient({
           address: address || undefined,
           notes: notes || undefined,
           shippingMethod,
-          shippingAddress: shippingMethod === "DELIVERY" ? shippingAddress : undefined,
-          shippingCity: shippingMethod === "DELIVERY" ? shippingCity : undefined,
-          shippingProvince: shippingMethod === "DELIVERY" ? shippingProvince : undefined,
-          shippingPostalCode: shippingMethod === "DELIVERY" ? shippingPostalCode : undefined,
           shippingNotes: shippingNotes || undefined,
           lines: lines.map((l) => ({
             variantId: l.variantId,
@@ -226,9 +218,12 @@ export function WholesaleCheckoutClient({
         </section>
 
         <section className="rounded-xl border bg-white p-5">
-          <h2 className="text-lg font-semibold">Envío</h2>
+          <h2 className="text-lg font-semibold">Entrega</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Los pedidos mayoristas los coordina un vendedor con vos. No hay envío a domicilio con repartidor desde acá.
+          </p>
           <div className="mt-4 space-y-2">
-            {(["PICKUP", "DELIVERY", "SHIPPING_TO_COORDINATE"] as const).map((key) => (
+            {(["PICKUP", "SHIPPING_TO_COORDINATE"] as const).map((key) => (
               <label
                 key={key}
                 className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5"
@@ -244,29 +239,11 @@ export function WholesaleCheckoutClient({
               </label>
             ))}
           </div>
-          {shippingMethod === "DELIVERY" && (
-            <div className="mt-3 space-y-3">
-              <input
-                required
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                placeholder="Calle y número"
-                className="w-full rounded-md border px-3 py-2"
-              />
-              <input
-                required
-                value={shippingCity}
-                onChange={(e) => setShippingCity(e.target.value)}
-                placeholder="Ciudad"
-                className="w-full rounded-md border px-3 py-2"
-              />
-            </div>
-          )}
           <textarea
             value={shippingNotes}
             onChange={(e) => setShippingNotes(e.target.value)}
             rows={2}
-            placeholder="Indicaciones de envío (opcional)"
+            placeholder="Indicaciones para el vendedor (opcional)"
             className="mt-3 w-full rounded-md border px-3 py-2 text-sm"
           />
         </section>

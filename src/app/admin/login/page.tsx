@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import { getStaffLoginPath } from "@/lib/staff-login-path";
 
-/** El login unificado está en `/login` (NextAuth). */
+/** Redirige al login staff oculto (sin link público). */
 export default function AdminLoginRedirectPage() {
-  redirect("/login?callbackUrl=/admin");
+  redirect(getStaffLoginPath());
 }

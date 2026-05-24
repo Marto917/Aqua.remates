@@ -6,21 +6,24 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 import { ensureDefaultStaffUsers } from "@/lib/bootstrap-staff-users";
-import { isGoogleAuthConfigured, resolveGoogleSignInUser } from "@/lib/google-auth";
+import {
+  getGoogleClientId,
+  isGoogleAuthConfigured,
+  resolveGoogleSignInUser,
+} from "@/lib/google-auth";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email(),
+  email: z.string().trim().email(),
   password: z.string().min(6),
-  branchKey: z.string().optional().transform((v) => (v ?? "").trim()),
+  loginMode: z.enum(["customer", "staff"]).default("customer"),
 });
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
+
+const googleClientId = getGoogleClientId();
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -30,10 +33,10 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   providers: [
-    ...(isGoogleAuthConfigured()
+    ...(isGoogleAuthConfigured() && googleClientId
       ? [
           GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!.trim(),
+            clientId: googleClientId,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!.trim(),
           }),
         ]
@@ -41,17 +44,19 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Email y contraseña",
       credentials: {
-        email: { label: "Usuario o email", type: "text" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
-        branchKey: { label: "Clave de sucursal", type: "password" },
+        loginMode: { label: "Modo", type: "text" },
       },
       async authorize(credentials) {
         await ensureDefaultStaffUsers();
         const raw = {
           email: typeof credentials?.email === "string" ? credentials.email : "",
           password: typeof credentials?.password === "string" ? credentials.password : "",
-          branchKey:
-            typeof credentials?.branchKey === "string" ? credentials.branchKey : "",
+          loginMode:
+            credentials?.loginMode === "staff" || credentials?.loginMode === "customer"
+              ? credentials.loginMode
+              : "customer",
         };
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) {
@@ -60,7 +65,7 @@ export const authOptions: NextAuthOptions = {
 
         const email = normalizeEmail(parsed.data.email);
         const password = parsed.data.password.trimEnd();
-        const branchKey = parsed.data.branchKey;
+        const loginMode = parsed.data.loginMode;
 
         let user;
         try {
@@ -77,23 +82,16 @@ export const authOptions: NextAuthOptions = {
         }
 
         const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-
         if (!isValidPassword) {
           return null;
         }
 
         const isStaff = user.role === UserRole.OWNER || user.role === UserRole.EMPLOYEE;
-        if (isStaff) {
-          const expected = (process.env.STAFF_BRANCH_KEY ?? "").trim();
-          if (!expected) {
-            console.error(
-              "[auth] STAFF_BRANCH_KEY no configurada; login de staff bloqueado por seguridad.",
-            );
-            return null;
-          }
-          if (branchKey !== expected) {
-            return null;
-          }
+        if (loginMode === "customer" && isStaff) {
+          return null;
+        }
+        if (loginMode === "staff" && !isStaff) {
+          return null;
         }
 
         const emailVerified = Boolean(user.emailVerified);

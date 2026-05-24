@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BANK_TRANSFER } from "@/lib/constants";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
+import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
 
 const lineSchema = z.object({
@@ -85,6 +86,7 @@ export async function POST(req: Request) {
       shippingProvince: data.shippingProvince?.trim() || null,
       shippingPostalCode: data.shippingPostalCode?.trim() || null,
       shippingNotes: data.shippingNotes?.trim() || null,
+      deliveryStatus: initialDeliveryStatus(data.shippingMethod),
       totalAmount: cart.totalAmount,
       status,
       transferAlias: isTransfer ? BANK_TRANSFER.alias : null,

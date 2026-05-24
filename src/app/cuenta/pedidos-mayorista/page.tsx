@@ -74,6 +74,9 @@ export default async function MisPedidosMayoristaPage() {
         </ul>
       )}
 
+      <Link href="/cuenta/mis-compras" className="mr-4 inline-block text-sm font-medium text-brand-dark underline">
+        Mis compras minorista
+      </Link>
       <Link href="/mayorista/checkout" className="inline-block text-sm font-medium text-brand-dark underline">
         Nuevo pedido mayorista
       </Link>

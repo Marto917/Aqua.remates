@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 // Import relativo: en algunos entornos el alias @/ falla al empaquetar el middleware (Edge).
 import { isBackofficePreview } from "./src/lib/backoffice-preview";
+import { getStaffLoginPath } from "./src/lib/staff-login-path";
 
 const OWNER_ONLY_PATHS = ["/admin/finanzas", "/admin/aprobaciones", "/admin/riders", "/admin/usuarios"];
 const ROLES = {
@@ -42,8 +43,9 @@ export async function middleware(req: NextRequest) {
   }
 
   const token = await getToken({ req, secret });
+  const staffLoginPath = getStaffLoginPath();
   if (!token) {
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL(staffLoginPath, req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -55,7 +57,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (staffRole !== ROLES.OWNER && staffRole !== ROLES.EMPLOYEE) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/catalog", req.url));
   }
 
   return NextResponse.next();

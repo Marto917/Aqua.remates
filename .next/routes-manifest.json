@@ -216,6 +216,12 @@
       "namedRegex": "^/checkout/pendiente(?:/)?$"
     },
     {
+      "page": "/cuenta/mis-compras",
+      "regex": "^/cuenta/mis\\-compras(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cuenta/mis\\-compras(?:/)?$"
+    },
+    {
       "page": "/cuenta/pedidos-mayorista",
       "regex": "^/cuenta/pedidos\\-mayorista(?:/)?$",
       "routeKeys": {},
@@ -232,6 +238,12 @@
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/login-aquaremates_administracion",
+      "regex": "^/login\\-aquaremates_administracion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login\\-aquaremates_administracion(?:/)?$"
     },
     {
       "page": "/mayorista/checkout",

@@ -21,23 +21,13 @@ const checkoutSchema = z
     phone: z.string().optional(),
     address: z.string().optional(),
     notes: z.string().optional(),
-    shippingMethod: z.enum(["PICKUP", "DELIVERY", "SHIPPING_TO_COORDINATE"]),
+    shippingMethod: z.enum(["PICKUP", "SHIPPING_TO_COORDINATE"]),
     shippingAddress: z.string().optional(),
     shippingCity: z.string().optional(),
     shippingProvince: z.string().optional(),
     shippingPostalCode: z.string().optional(),
     shippingNotes: z.string().optional(),
     lines: z.array(lineSchema).min(1),
-  })
-  .superRefine((data, ctx) => {
-    if (data.shippingMethod === "DELIVERY") {
-      if (!data.shippingAddress?.trim()) {
-        ctx.addIssue({ code: "custom", message: "Indicá la dirección de envío.", path: ["shippingAddress"] });
-      }
-      if (!data.shippingCity?.trim()) {
-        ctx.addIssue({ code: "custom", message: "Indicá la ciudad.", path: ["shippingCity"] });
-      }
-    }
   });
 
 export async function POST(req: Request) {

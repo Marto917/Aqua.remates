@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { formatCustomerComments, formatFullAddress } from "@/lib/shipping";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 
@@ -53,6 +54,9 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         shippingNotes: true,
         notes: true,
         status: true,
+        deliveryStatus: true,
+        deliveryDispatchedAt: true,
+        deliveryDeliveredAt: true,
         createdAt: true,
       },
     });
@@ -76,6 +80,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         shippingNotes: order.shippingNotes,
         notes: order.notes,
       }),
+      deliveryStatus: order.deliveryStatus,
+      deliveryStatusLabel: deliveryDispatchStatusLabel(order.deliveryStatus),
       createdAt: order.createdAt.toISOString(),
     });
   }
@@ -96,6 +102,9 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
       shippingNotes: true,
       notes: true,
       status: true,
+      deliveryStatus: true,
+      deliveryDispatchedAt: true,
+      deliveryDeliveredAt: true,
       createdAt: true,
     },
   });
@@ -120,6 +129,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
       shippingNotes: request.shippingNotes,
       notes: request.notes,
     }),
+    deliveryStatus: request.deliveryStatus,
+    deliveryStatusLabel: deliveryDispatchStatusLabel(request.deliveryStatus),
     createdAt: request.createdAt.toISOString(),
   });
 }

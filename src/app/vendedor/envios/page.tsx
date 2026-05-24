@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
+import { dispatchDeliveryFormAction } from "./actions";
 import { formatArs } from "@/lib/currency";
+import { canDispatchDelivery, deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
@@ -64,7 +66,8 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Gestión de envíos</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pedidos confirmados listos para retiro o despacho. Los envíos a domicilio tienen ticket imprimible con QR.
+          Pedidos minoristas confirmados. Al emitir un envío a domicilio se genera un código de 4 dígitos que el
+          cliente entrega al repartidor. Los mayoristas se gestionan aparte con el vendedor.
         </p>
       </header>
 
@@ -110,13 +113,14 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Entrega</th>
                 <th className="px-4 py-3">Total</th>
                 <th className="px-4 py-3">Estado</th>
+                <th className="px-4 py-3">Envío</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {retailOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     No hay pedidos minoristas en esta vista.
                   </td>
                 </tr>
@@ -128,7 +132,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-900">{o.buyerName}</div>
-                      <div className="text-xs text-slate-500">{o.buyerPhone ?? o.buyerEmail}</div>
+                      <p className="text-xs text-slate-500">{o.buyerPhone ?? o.buyerEmail}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -142,6 +146,33 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-medium">{formatArs(Number(o.totalAmount))}</td>
                     <td className="px-4 py-3 text-xs">{retailOrderStatusLabel[o.status]}</td>
+                    <td className="px-4 py-3">
+                      {isHomeDelivery(o.shippingMethod) ? (
+                        <div className="space-y-1">
+                          <span className="text-xs text-slate-600">
+                            {deliveryDispatchStatusLabel(o.deliveryStatus)}
+                          </span>
+                          {o.deliveryStatus === "DISPATCHED" && o.deliveryCode ? (
+                            <p className="font-mono text-sm font-semibold text-sky-900">
+                              Código: {o.deliveryCode}
+                            </p>
+                          ) : null}
+                          {canDispatchDelivery(o.shippingMethod, o.deliveryStatus) ? (
+                            <form action={dispatchDeliveryFormAction}>
+                              <input type="hidden" name="orderId" value={o.id} />
+                              <button
+                                type="submit"
+                                className="rounded-md bg-sky-600 px-2 py-1 text-xs font-medium text-white hover:bg-sky-700"
+                              >
+                                Emitir envío
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-col items-end gap-1">
                         {isHomeDelivery(o.shippingMethod) ? (
@@ -208,21 +239,12 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-medium">{formatArs(total)}</td>
                       <td className="px-4 py-3 text-right">
-                        {isHomeDelivery(r.shippingMethod) ? (
-                          <Link
-                            href={`/vendedor/envios/mayorista/${r.id}/ticket`}
-                            className="font-medium text-brand-dark underline"
-                          >
-                            Ticket / imprimir
-                          </Link>
-                        ) : (
-                          <Link
-                            href={`/admin/mayoristas/solicitud/${r.id}`}
-                            className="text-xs text-slate-500 underline"
-                          >
-                            Ver solicitud
-                          </Link>
-                        )}
+                        <Link
+                          href={`/admin/mayoristas/solicitud/${r.id}`}
+                          className="text-xs text-slate-500 underline"
+                        >
+                          Ver solicitud
+                        </Link>
                       </td>
                     </tr>
                   );

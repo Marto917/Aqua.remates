@@ -24,19 +24,19 @@
 
 3) VARIABLES EN .env Y RAILWAY
 
-   GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+   GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
    GOOGLE_CLIENT_SECRET="GOCSPX-xxxxxxxx"
-   NEXTAUTH_URL="https://TU-DOMINIO"    (o http://localhost:3000 en local)
+   NEXTAUTH_URL="https://TU-DOMINIO"    (debe coincidir con el dominio real del deploy)
    NEXTAUTH_SECRET="..."                (ya deberías tenerlo)
 
    Reiniciá / redeployá el servicio después de guardar.
 
 4) COMPORTAMIENTO EN AQUA
 
-   - En /registro y /login aparece "Continuar con Google" si las variables están configuradas.
-   - Primera vez con Google: se crea cuenta CLIENTE con email verificado (puede comprar al toque).
-   - Si el email ya existe como cliente: inicia sesión y marca email verificado si faltaba.
-   - Cuentas de empleado/dueño (staff): NO pueden entrar con Google; deben usar email + contraseña + clave de sucursal.
+   - En /registro y /login siempre aparece el botón de Google.
+   - Con GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET activos, el login funciona.
+   - Cuentas staff: solo URL oculta /login-aquaremates_administracion (no Google).
 
 5) PROBAR EN LOCAL
 

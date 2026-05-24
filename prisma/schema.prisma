@@ -41,6 +41,12 @@ enum RetailShippingMethod {
   SHIPPING_TO_COORDINATE
 }
 
+enum DeliveryDispatchStatus {
+  PENDING
+  DISPATCHED
+  DELIVERED
+}
+
 enum BillingMode {
   NEGRO
   BLANCO
@@ -213,6 +219,10 @@ model RetailOrder {
   shippingProvince        String?
   shippingPostalCode      String?
   shippingNotes           String?
+  deliveryStatus          DeliveryDispatchStatus?
+  deliveryCode            String?
+  deliveryDispatchedAt    DateTime?
+  deliveryDeliveredAt     DateTime?
   totalAmount             Decimal               @db.Decimal(10, 2)
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
   transferAlias           String?
@@ -259,6 +269,10 @@ model WholesaleRequest {
   shippingPostalCode String?
   shippingNotes      String?
   vendorNote         String?
+  deliveryStatus     DeliveryDispatchStatus?
+  deliveryCode       String?
+  deliveryDispatchedAt DateTime?
+  deliveryDeliveredAt  DateTime?
   assignedToId       String?
   assignedTo         User?                  @relation("AssignedWholesaleRequests", fields: [assignedToId], references: [id])
   items              WholesaleRequestItem[]
