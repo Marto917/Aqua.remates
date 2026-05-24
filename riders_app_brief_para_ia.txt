@@ -1,0 +1,115 @@
+================================================================================
+  TEXTO PARA PEGAR EN LA IA DEL PROYECTO DE MAPAS (RIDERS)
+================================================================================
+
+Contexto: La tienda Aqua (Next.js + Postgres) administra cuentas de repartidores
+en la tabla "Rider". La app de mapas NO debe conectarse con DATABASE_URL ni leer
+el resto de la base. Solo debe usar la API HTTP pública de Aqua para login de riders.
+
+--------------------------------------------------------------------------------
+1. VARIABLES DE ENTORNO EN LA APP DE MAPAS (solo estas)
+--------------------------------------------------------------------------------
+
+AQUA_API_BASE_URL=https://tu-dominio-aqua.up.railway.app
+   (en local: http://localhost:3000)
+
+NO uses DATABASE_URL de Aqua.
+NO uses NEXTAUTH_SECRET de Aqua en el cliente.
+NO accedas a tablas User, Product, RetailOrder, etc.
+
+Opcional en el servidor de la app mapas (si validás JWT localmente):
+RIDER_JWT_SECRET=<mismo valor que en Railway del backend Aqua, solo en backend del mapa>
+
+--------------------------------------------------------------------------------
+2. ENDPOINTS (solo riders)
+--------------------------------------------------------------------------------
+
+LOGIN
+  POST {AQUA_API_BASE_URL}/api/riders/auth/login
+  Content-Type: application/json
+  Body: { "email": "rider@ejemplo.com", "password": "su_clave" }
+
+  Respuesta 200:
+  {
+    "token": "<JWT>",
+    "rider": {
+      "id": "cuid...",
+      "name": "Nombre",
+      "email": "rider@ejemplo.com",
+      "phone": "+54..."
+    }
+  }
+
+  Errores: 400 datos inválidos, 401 credenciales o cuenta inactiva.
+
+PERFIL (sesión)
+  GET {AQUA_API_BASE_URL}/api/riders/me
+  Header: Authorization: Bearer <token>
+
+  Respuesta 200:
+  { "rider": { "id", "name", "email", "phone", "isActive" } }
+
+--------------------------------------------------------------------------------
+3. FLUJO RECOMENDADO EN LA APP
+--------------------------------------------------------------------------------
+
+1. Pantalla login: email + password → POST /api/riders/auth/login
+2. Guardar token en almacenamiento seguro (AsyncStorage / SecureStore / etc.)
+3. En cada request autenticado: header Authorization: Bearer <token>
+4. Al abrir app: GET /api/riders/me; si 401, volver a login
+5. El token expira a los 30 días (renovar con login)
+
+--------------------------------------------------------------------------------
+4. EJEMPLO fetch (TypeScript / React Native)
+--------------------------------------------------------------------------------
+
+const BASE = process.env.EXPO_PUBLIC_AQUA_API_URL; // o AQUA_API_BASE_URL
+
+async function loginRider(email: string, password: string) {
+  const res = await fetch(`${BASE}/api/riders/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error("Login fallido");
+  return res.json() as Promise<{ token: string; rider: { id: string; name: string; email: string; phone: string | null } }>;
+}
+
+async function getRiderProfile(token: string) {
+  const res = await fetch(`${BASE}/api/riders/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Sesión inválida");
+  return res.json();
+}
+
+--------------------------------------------------------------------------------
+5. PEDIDOS / ENVÍOS (fase siguiente — no es login)
+--------------------------------------------------------------------------------
+
+Los pedidos a entregar NO están en la API de riders todavía.
+Para escanear QR de envíos de Aqua, hoy existe (staff o integración futura):
+
+  GET {AQUA_API_BASE_URL}/api/shipping/orders/{orderId}?type=retail
+  (opcional header X-Shipping-Key si Aqua tiene SHIPPING_LOOKUP_KEY)
+
+Si la app mapas necesita listar entregas del rider, pedir en Aqua un endpoint nuevo, por ejemplo:
+  GET /api/riders/deliveries
+  con el mismo Bearer token — sin acceso directo a Postgres.
+
+--------------------------------------------------------------------------------
+6. CÓMO SE CREAN LAS CUENTAS
+--------------------------------------------------------------------------------
+
+El dueño de Aqua entra a Admin → Riders (/admin/riders), crea email, teléfono y
+contraseña inicial. El rider usa esas credenciales en la app de mapas.
+
+--------------------------------------------------------------------------------
+7. RESUMEN PARA LA IA
+--------------------------------------------------------------------------------
+
+Implementá autenticación de riders únicamente vía REST contra AQUA_API_BASE_URL.
+Endpoints permitidos: POST /api/riders/auth/login y GET /api/riders/me.
+Prohibido: Prisma, DATABASE_URL, leer tabla Rider directamente, APIs de admin o tienda.
+
+================================================================================

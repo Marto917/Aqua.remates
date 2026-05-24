@@ -1,9 +1,12 @@
 import { StaffAccessLevel, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
+import type { User as NextAuthUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 import { ensureDefaultStaffUsers } from "@/lib/bootstrap-staff-users";
+import { isGoogleAuthConfigured, resolveGoogleSignInUser } from "@/lib/google-auth";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -27,6 +30,14 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   providers: [
+    ...(isGoogleAuthConfigured()
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!.trim(),
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!.trim(),
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "Email y contraseña",
       credentials: {
@@ -100,6 +111,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider !== "google") {
+        return true;
+      }
+      const email = user.email;
+      if (!email) {
+        return false;
+      }
+      const resolved = await resolveGoogleSignInUser({ email, name: user.name });
+      if (!resolved.ok) {
+        return false;
+      }
+      const u = user as NextAuthUser & {
+        id?: string;
+        role?: UserRole;
+        emailVerified?: boolean;
+        staffAccessLevel?: null;
+      };
+      u.id = resolved.id;
+      u.name = resolved.name;
+      u.email = resolved.email;
+      u.role = resolved.role;
+      u.emailVerified = resolved.emailVerified;
+      u.staffAccessLevel = null;
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

@@ -9,6 +9,7 @@ import {
   retailShippingMethodLabel,
 } from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
+import { isHomeDelivery } from "@/lib/shipping";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -38,9 +39,19 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">Pedido minorista</h1>
           <p className="text-xs text-slate-500">ID: {order.id}</p>
         </div>
-        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-800">
-          {retailOrderStatusLabel[order.status]}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {isHomeDelivery(order.shippingMethod) ? (
+            <Link
+              href={`/vendedor/envios/minorista/${order.id}/ticket`}
+              className="inline-flex rounded-full bg-sky-600 px-3 py-1 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              Ticket de envío
+            </Link>
+          ) : null}
+          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-800">
+            {retailOrderStatusLabel[order.status]}
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

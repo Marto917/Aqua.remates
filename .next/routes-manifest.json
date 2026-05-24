@@ -68,12 +68,36 @@
       "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
     },
     {
+      "page": "/api/shipping/orders/[id]",
+      "regex": "^/api/shipping/orders/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/shipping/orders/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/product/[slug]",
       "regex": "^/product/([^/]+?)(?:/)?$",
       "routeKeys": {
         "nxtPslug": "nxtPslug"
       },
       "namedRegex": "^/product/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios/mayorista/[id]/ticket",
+      "regex": "^/vendedor/envios/mayorista/([^/]+?)/ticket(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/vendedor/envios/mayorista/(?<nxtPid>[^/]+?)/ticket(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios/minorista/[id]/ticket",
+      "regex": "^/vendedor/envios/minorista/([^/]+?)/ticket(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/vendedor/envios/minorista/(?<nxtPid>[^/]+?)/ticket(?:/)?$"
     }
   ],
   "staticRoutes": [
@@ -142,6 +166,12 @@
       "regex": "^/admin/promociones(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/admin/promociones(?:/)?$"
+    },
+    {
+      "page": "/admin/riders",
+      "regex": "^/admin/riders(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/riders(?:/)?$"
     },
     {
       "page": "/admin/usuarios",
@@ -232,6 +262,12 @@
       "regex": "^/vendedor(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/vendedor(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios",
+      "regex": "^/vendedor/envios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vendedor/envios(?:/)?$"
     },
     {
       "page": "/vendedor/mayoristas",

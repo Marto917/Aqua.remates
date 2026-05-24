@@ -9,10 +9,17 @@ export default async function VendedorHomePage() {
 
   let pendingRetail = 0;
   let pendienteConfirmacion = 0;
+  let enviosDomicilio = 0;
   try {
-    ;[pendingRetail, pendienteConfirmacion] = await Promise.all([
+    ;[pendingRetail, pendienteConfirmacion, enviosDomicilio] = await Promise.all([
       prisma.retailOrder.count({ where: { status: "PENDING_TRANSFER" } }),
       prisma.wholesaleRequest.count({ where: { status: "PENDIENTE_CONFIRMACION" } }),
+      prisma.retailOrder.count({
+        where: {
+          status: { in: ["CONFIRMED", "PAYMENT_APPROVED", "TRANSFER_REPORTED"] },
+          shippingMethod: "DELIVERY",
+        },
+      }),
     ]);
   } catch {
     /* sin DB */
@@ -54,6 +61,21 @@ export default async function VendedorHomePage() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
+        <Link
+          href="/vendedor/envios"
+          className="group rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md"
+        >
+          <p className="mb-2 text-2xl" aria-hidden>
+            📦
+          </p>
+          <p className="font-semibold text-slate-900">Gestión de envíos</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Pedidos confirmados, retiro vs domicilio y tickets con QR ({enviosDomicilio} envíos activos)
+          </p>
+          <p className="mt-3 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-900 group-hover:bg-sky-200">
+            Abrir envíos →
+          </p>
+        </Link>
         <Link
           href="/vendedor/pedidos"
           className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:shadow-md"

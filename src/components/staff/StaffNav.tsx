@@ -25,6 +25,9 @@ export async function StaffNav({ area }: StaffNavProps) {
           <Link href="/admin/pedidos" className={linkClass}>
             Pedidos minoristas
           </Link>
+          <Link href="/vendedor/envios" className={linkClass}>
+            Envíos
+          </Link>
           <Link href="/admin/mayoristas" className={linkClass}>
             Mayoristas
           </Link>
@@ -35,6 +38,9 @@ export async function StaffNav({ area }: StaffNavProps) {
             <>
               <Link href="/admin/usuarios" className={linkClass}>
                 Usuarios
+              </Link>
+              <Link href="/admin/riders" className={linkClass}>
+                Riders
               </Link>
               <Link href="/admin/aprobaciones" className={linkClass}>
                 Aprobaciones

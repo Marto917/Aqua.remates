@@ -113,6 +113,18 @@ model User {
   approvalRequestsResolved ApprovalRequest[]         @relation("ApprovalResolver")
 }
 
+/// Repartidor (app de mapas). Tabla aislada; la app externa solo usa la API /api/riders/*.
+model Rider {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Category {
   id        String    @id @default(cuid())
   name      String    @unique

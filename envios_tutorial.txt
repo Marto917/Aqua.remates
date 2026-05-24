@@ -1,0 +1,71 @@
+================================================================================
+  AQUA — Módulo de gestión de envíos (vendedores)
+================================================================================
+
+RUTAS PRINCIPALES
+-----------------
+  Panel:     /vendedor/envios
+  Ticket:    /vendedor/envios/minorista/[id]/ticket
+             /vendedor/envios/mayorista/[id]/ticket
+  API QR:    GET /api/shipping/orders/[id]?type=retail|wholesale
+
+PEDIDOS QUE APARECEN EN EL PANEL
+--------------------------------
+  Minorista: estados CONFIRMED, PAYMENT_APPROVED, TRANSFER_REPORTED
+  Mayorista: estado CONFIRMADO (después de que el vendedor confirme el pedido)
+
+FILTROS
+-------
+  Todos | Envío a domicilio | Retiro en sucursal | Envío a coordinar
+
+TICKET DE ENVÍO
+---------------
+  - Solo se genera enlace "Ticket / imprimir" para modalidad DELIVERY (envío a domicilio).
+  - Vista optimizada para impresión (botón "Imprimir ticket" o Ctrl+P).
+  - Incluye: nombre, teléfono, CP, dirección, indicaciones del cliente, QR.
+
+CONTENIDO DEL QR (JSON)
+-----------------------
+  {
+    "v": 1,
+    "type": "retail",
+    "orderId": "cuid...",
+    "buyerName": "...",
+    "phone": "...",
+    "address": "Calle ..., Ciudad, Provincia · CP 1234",
+    "postalCode": "1234"
+  }
+
+API PARA APP EXTERNA
+--------------------
+  GET https://TU-DOMINIO/api/shipping/orders/PEDIDO_ID?type=retail
+
+  Respuesta ejemplo:
+  {
+    "v": 1,
+    "type": "retail",
+    "orderId": "...",
+    "buyerName": "...",
+    "phone": "...",
+    "fullAddress": "...",
+    "postalCode": "...",
+    "customerComments": "...",
+    ...
+  }
+
+  Seguridad opcional: variable SHIPPING_LOOKUP_KEY en Railway.
+  Si está definida, enviar header:
+    Authorization: Bearer TU_CLAVE
+  o
+    X-Shipping-Key: TU_CLAVE
+
+ARCHIVOS DEL PROYECTO
+---------------------
+  src/lib/shipping.ts              — dirección, filtros, payload QR
+  src/lib/shipping-ticket.ts       — armado del ticket
+  src/lib/shipping-ticket-qr.ts    — generación imagen QR (npm: qrcode)
+  src/components/shipping/ShippingTicketPrint.tsx
+  src/app/vendedor/envios/page.tsx
+  src/app/api/shipping/orders/[id]/route.ts
+
+================================================================================
