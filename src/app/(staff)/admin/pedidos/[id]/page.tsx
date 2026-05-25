@@ -21,16 +21,7 @@ type PageProps = {
 export default async function AdminPedidoDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  let order: Awaited<
-    ReturnType<
-      typeof prisma.retailOrder.findUnique<{
-        include: {
-          items: { include: { product: true; variant: true } };
-          customer: { select: { email: true; name: true } };
-        };
-      }>
-    >
-  >;
+  let order;
 
   try {
     order = await prisma.retailOrder.findUnique({
