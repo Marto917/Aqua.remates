@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { IconCart, IconCatalog, IconHome } from "@/components/icons/NavIcons";
+import { SiteLogo } from "@/components/SiteLogo";
 import { UserProfileChip } from "@/components/nav/UserProfileChip";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
 import { prisma } from "@/lib/prisma";
@@ -12,30 +12,6 @@ type Props = {
 };
 
 export async function StoreNav({ session }: Props) {
-  const role = session?.user?.role;
-  const isStaff = role === UserRole.OWNER || role === UserRole.EMPLOYEE;
-
-  if (isStaff) {
-    return (
-      <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-4">
-          <Link href="/admin" className="flex items-center gap-2 font-semibold text-brand-dark">
-            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-brand">
-              <Image src="/aqua_image.webp" alt="" width={36} height={36} className="h-full w-full object-cover" unoptimized />
-            </span>
-            <span className="text-lg tracking-tight">AQUA</span>
-          </Link>
-          <Link
-            href="/admin"
-            className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Ir al panel
-          </Link>
-        </nav>
-      </header>
-    );
-  }
-
   let profileImage: string | null = null;
   let profileName = session?.user?.name ?? "";
 
@@ -62,18 +38,7 @@ export async function StoreNav({ session }: Props) {
           className="flex items-center gap-2 font-semibold text-brand-dark"
           aria-label="Inicio AQUA"
         >
-          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand sm:h-10 sm:w-10">
-            <Image
-              src="/aqua_image.webp"
-              alt=""
-              width={40}
-              height={40}
-              className="h-full w-full object-cover"
-              priority
-              unoptimized
-            />
-          </span>
-          <span className="hidden text-lg tracking-tight sm:inline">AQUA</span>
+          <SiteLogo size={40} />
         </Link>
 
         <div className="flex justify-center px-1">

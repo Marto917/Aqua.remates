@@ -4,7 +4,7 @@
     "/api/admin/banners": {},
     "/api/admin/export-catalog": {},
     "/api/images/default-product": {},
-    "/api/admin/products": {},
-    "/api/search-suggestions": {}
+    "/api/search-suggestions": {},
+    "/api/admin/products": {}
   }
 }

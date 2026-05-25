@@ -65,6 +65,14 @@ export async function POST(
       });
     }
 
+    const productPosition = String(formData.get("productImagePosition") ?? "").trim();
+    if (productPosition) {
+      await prisma.product.update({
+        where: { id },
+        data: { imagePosition: productPosition },
+      });
+    }
+
     const variantEntries = Array.from(formData.entries()).filter(([key]) =>
       key.startsWith("variantImage_"),
     );
@@ -86,6 +94,15 @@ export async function POST(
           error instanceof Error ? error.message : "No se pudo procesar una imagen de variante.",
         );
         return NextResponse.redirect(url);
+      }
+
+      const positionKey = `variantImagePosition_${variantId}`;
+      const variantPosition = String(formData.get(positionKey) ?? "").trim();
+      if (variantPosition) {
+        await prisma.productVariant.update({
+          where: { id: variantId },
+          data: { imagePosition: variantPosition },
+        });
       }
     }
 

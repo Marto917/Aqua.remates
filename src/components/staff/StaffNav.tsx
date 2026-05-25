@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
+import { SiteLogo } from "@/components/SiteLogo";
 import { getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 
 type StaffNavProps = {
@@ -20,18 +20,8 @@ export async function StaffNav({ area }: StaffNavProps) {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
       <div className="mx-auto max-w-6xl px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href={homeHref} className="flex items-center gap-2 font-semibold text-brand-dark">
-            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-brand">
-              <Image
-                src="/aqua_image.webp"
-                alt=""
-                width={36}
-                height={36}
-                className="h-full w-full object-cover"
-                unoptimized
-              />
-            </span>
-            <span className="text-lg tracking-tight">AQUA — Panel</span>
+          <Link href={homeHref} className="font-semibold text-brand-dark">
+            <SiteLogo size={36} />
           </Link>
           <div className="text-xs text-slate-500">
             {ctx.preview ? (

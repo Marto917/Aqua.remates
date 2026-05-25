@@ -7,6 +7,7 @@
   "/api/auth/register/route": "app/api/auth/register/route.js",
   "/api/auth/verify-email/route": "app/api/auth/verify-email/route.js",
   "/api/health/route": "app/api/health/route.js",
+  "/api/products/[id]/reviews/route": "app/api/products/[id]/reviews/route.js",
   "/api/retail-checkout/route": "app/api/retail-checkout/route.js",
   "/api/retail-orders/route": "app/api/retail-orders/route.js",
   "/api/riders/auth/login/route": "app/api/riders/auth/login/route.js",

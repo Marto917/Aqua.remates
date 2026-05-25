@@ -7,6 +7,7 @@
   "/api/auth/register/route": "/api/auth/register",
   "/api/auth/verify-email/route": "/api/auth/verify-email",
   "/api/health/route": "/api/health",
+  "/api/products/[id]/reviews/route": "/api/products/[id]/reviews",
   "/api/retail-checkout/route": "/api/retail-checkout",
   "/api/retail-orders/route": "/api/retail-orders",
   "/api/riders/auth/login/route": "/api/riders/auth/login",

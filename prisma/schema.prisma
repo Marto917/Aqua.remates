@@ -119,6 +119,22 @@ model User {
   wholesaleRequestEvents   WholesaleRequestEvent[]
   approvalRequestsCreated  ApprovalRequest[]         @relation("ApprovalRequester")
   approvalRequestsResolved ApprovalRequest[]         @relation("ApprovalResolver")
+  productReviews           ProductReview[]
+}
+
+/// Valoración y comentario de clientes sobre un producto.
+model ProductReview {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authorName String
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
 }
 
 /// Repartidor (app de mapas). Tabla aislada; la app externa solo usa la API /api/riders/*.
@@ -150,6 +166,8 @@ model Product {
   description              String
   /// Imagen por defecto si la variante no tiene imagen propia.
   imageUrl                 String
+  /// Encuadre CSS object-position, ej. "50% 35%"
+  imagePosition            String?           @default("50% 50%")
   listPrice                Decimal           @db.Decimal(10, 2)
   retailPrice              Decimal           @db.Decimal(10, 2)
   wholesalePrice           Decimal           @db.Decimal(10, 2)
@@ -160,6 +178,7 @@ model Product {
   categoryId               String
   category                 Category          @relation(fields: [categoryId], references: [id])
   variants                 ProductVariant[]
+  reviews                  ProductReview[]
   retailItems              RetailOrderItem[]
   wholesaleRequestItems    WholesaleRequestItem[]
   createdAt                DateTime          @default(now())
@@ -173,6 +192,7 @@ model ProductVariant {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   colorLabel String
   imageUrl  String?
+  imagePosition String?  @default("50% 50%")
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   cartItems CartItem[]
