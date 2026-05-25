@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { IconCamera } from "@/components/icons/StaffIcons";
 import { COLOR_OPTIONS } from "@/lib/color-options";
 
 type Props = {
@@ -130,13 +131,16 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
           </p>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700">Imagen del producto</label>
-          <input
-            name="imageFile"
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
-          />
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+            <IconCamera className="h-5 w-5 text-brand-dark" aria-hidden />
+            Imagen del producto
+            <input
+              name="imageFile"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="sr-only"
+            />
+          </label>
         </div>
         <input
           name="sku"
@@ -152,30 +156,21 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
           ))}
         </select>
         <input
+          name="listPrice"
+          required
+          type="number"
+          step="0.01"
+          placeholder="Precio lista (Mercado Pago)"
+          className="rounded-md border px-3 py-2"
+        />
+        <input
           name="transferPrice"
           required
           type="number"
           step="0.01"
-          placeholder="Precio con transferencia"
+          placeholder="Precio transferencia"
           className="rounded-md border px-3 py-2"
         />
-        <input
-          name="discountRetailPercent"
-          type="number"
-          min="0"
-          max="90"
-          defaultValue={15}
-          placeholder="Descuento sobre lista (%)"
-          className="rounded-md border px-3 py-2"
-        />
-        <input
-          name="discountBadgeLabel"
-          placeholder="Texto badge (opcional)"
-          className="rounded-md border px-3 py-2 md:col-span-2"
-        />
-        <p className="md:col-span-2 text-xs text-slate-500">
-          El precio de lista se calcula automáticamente: transferencia + 15%.
-        </p>
       </div>
 
       <textarea
@@ -295,9 +290,10 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-60"
+        className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-60"
+        aria-label="Guardar producto"
       >
-        {submitting ? "Guardando..." : "Guardar producto"}
+        {submitting ? "Guardando…" : "Guardar"}
       </button>
     </form>
   );

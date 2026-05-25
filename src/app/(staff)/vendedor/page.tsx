@@ -12,7 +12,9 @@ export default async function VendedorHomePage() {
   let enviosDomicilio = 0;
   try {
     ;[pendingRetail, pendienteConfirmacion, enviosDomicilio] = await Promise.all([
-      prisma.retailOrder.count({ where: { status: "PENDING_TRANSFER" } }),
+      prisma.retailOrder.count({
+        where: { status: { in: ["PENDING_TRANSFER", "TRANSFER_REPORTED"] } },
+      }),
       prisma.wholesaleRequest.count({ where: { status: "PENDIENTE_CONFIRMACION" } }),
       prisma.retailOrder.count({
         where: {

@@ -1,25 +1,20 @@
 import { getStorePriceDisplay } from "@/lib/product-pricing-display";
-import type { StoreSettingsData } from "@/lib/store-settings";
-
 type Props = {
   product: {
     listPrice: unknown;
     retailPrice: unknown;
-    discountRetailPercent: number;
   };
-  settings: Pick<StoreSettingsData, "mercadoPagoMarkupPercent">;
   size?: "card" | "detail";
   showMercadoPago?: boolean;
 };
 
 export function ProductPriceBlock({
   product,
-  settings,
   size = "card",
   showMercadoPago = false,
 }: Props) {
   const { listFormatted, transferFormatted, mercadoPagoFormatted, showListAndTransfer } =
-    getStorePriceDisplay(product, settings);
+    getStorePriceDisplay(product);
 
   if (size === "detail") {
     return (

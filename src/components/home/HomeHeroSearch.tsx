@@ -60,7 +60,7 @@ export function HomeHeroSearch() {
     <form action="/catalog" className="relative mx-auto max-w-2xl">
       <label className="sr-only">Buscar productos</label>
       <div className="flex items-stretch overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl shadow-teal-900/10 ring-1 ring-white/60 backdrop-blur-sm sm:rounded-full sm:pr-1.5 sm:pl-1">
-        <span className="hidden min-h-[52px] items-center pl-4 text-slate-400 sm:flex">
+        <span className="flex min-h-[52px] shrink-0 items-center pl-3 text-slate-400 sm:pl-4">
           <SearchIcon className="h-5 w-5" />
         </span>
         <input

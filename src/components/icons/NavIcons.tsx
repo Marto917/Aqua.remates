@@ -28,3 +28,12 @@ export function IconHome({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+export function IconSearch({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+      <path d="M20 20l-4-4" strokeLinecap="round" />
+    </svg>
+  );
+}

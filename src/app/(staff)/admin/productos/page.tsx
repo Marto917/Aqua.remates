@@ -1,5 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { AdminProductCreateForm } from "@/components/admin/AdminProductCreateForm";
+import { IconCamera, IconPencil, IconToggle } from "@/components/icons/StaffIcons";
+import { formatArs } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -79,7 +81,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             <tr>
               <th className="px-3 py-2 text-left">Producto</th>
               <th className="px-3 py-2 text-left">Categoria</th>
-              <th className="px-3 py-2 text-left">Minorista</th>
+              <th className="px-3 py-2 text-left">Lista / MP</th>
+              <th className="px-3 py-2 text-left">Transferencia</th>
               <th className="px-3 py-2 text-left">Mayorista</th>
               <th className="px-3 py-2 text-left">Colores</th>
               <th className="px-3 py-2 text-left">Disponibilidad</th>
@@ -91,8 +94,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               <tr key={product.id} className="border-t">
                 <td className="px-3 py-2">{product.name}</td>
                 <td className="px-3 py-2">{product.category.name}</td>
-                <td className="px-3 py-2">{Number(product.retailPrice).toFixed(2)}</td>
-                <td className="px-3 py-2">{Number(product.wholesalePrice).toFixed(2)}</td>
+                <td className="px-3 py-2">{formatArs(Number(product.listPrice))}</td>
+                <td className="px-3 py-2">{formatArs(Number(product.retailPrice))}</td>
+                <td className="px-3 py-2">{formatArs(Number(product.wholesalePrice))}</td>
                 <td className="px-3 py-2 text-xs text-slate-600">
                   {product.variants.map((v) => v.colorLabel).join(", ") || "—"}
                 </td>
@@ -101,21 +105,35 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                     <input type="hidden" name="isActive" value={product.isActive ? "false" : "true"} />
                     <button
                       type="submit"
-                      className={`rounded px-3 py-1 text-xs ${
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${
                         product.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
                       }`}
+                      aria-label={product.isActive ? "Deshabilitar producto" : "Habilitar producto"}
+                      title={product.isActive ? "Visible en tienda" : "Oculto en tienda"}
                     >
-                      {product.isActive ? "Habilitado" : "Deshabilitado"}
+                      <IconToggle className="h-4 w-4" />
                     </button>
                   </form>
                 </td>
                 <td className="px-3 py-2">
-                  <a
-                    href={`/admin/productos/${product.id}`}
-                    className="inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand-dark"
-                  >
-                    Editar imágenes
-                  </a>
+                  <div className="flex gap-1">
+                    <a
+                      href={`/admin/productos/${product.id}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
+                      aria-label="Editar producto"
+                      title="Editar"
+                    >
+                      <IconPencil className="h-4 w-4" />
+                    </a>
+                    <a
+                      href={`/admin/productos/${product.id}#imagenes`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
+                      aria-label="Editar imágenes"
+                      title="Imágenes"
+                    >
+                      <IconCamera className="h-4 w-4" />
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}

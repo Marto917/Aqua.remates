@@ -60,42 +60,9 @@ export function AdminStoreSettingsForm({ initial }: { initial: StoreSettingsData
         onChange={(e) => setForm({ ...form, bankExtraNotes: e.target.value })}
       />
 
-      <h2 className="font-semibold text-slate-900">Precios</h2>
-      <label className="block text-sm">
-        Descuento transferencia sobre lista (%)
-        <input
-          type="number"
-          min={0}
-          max={90}
-          className="mt-1 w-full rounded-md border px-3 py-2"
-          value={form.transferDiscountPercent}
-          onChange={(e) =>
-            setForm({ ...form, transferDiscountPercent: Number(e.target.value) })
-          }
-        />
-      </label>
-      <label className="block text-sm">
-        Recargo Mercado Pago sobre precio transferencia (%)
-        <input
-          type="number"
-          min={0}
-          max={100}
-          className="mt-1 w-full rounded-md border px-3 py-2"
-          value={form.mercadoPagoMarkupPercent}
-          onChange={(e) =>
-            setForm({ ...form, mercadoPagoMarkupPercent: Number(e.target.value) })
-          }
-        />
-      </label>
-      <label className="block text-sm">
-        Texto del badge (sin números)
-        <input
-          className="mt-1 w-full rounded-md border px-3 py-2"
-          value={form.discountBadgeLabel}
-          onChange={(e) => setForm({ ...form, discountBadgeLabel: e.target.value })}
-          required
-        />
-      </label>
+      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        Los precios de lista y transferencia se cargan en cada producto del catálogo.
+      </p>
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       {ok ? <p className="text-sm text-emerald-700">Guardado correctamente.</p> : null}

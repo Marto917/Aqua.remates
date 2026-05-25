@@ -7,7 +7,8 @@ import { useCart } from "@/contexts/cart-context";
 import { useStoreSettings } from "@/contexts/store-settings-context";
 import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
-import { getMercadoPagoPrice, getTransferPrice } from "@/lib/store-pricing";
+import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
+import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type PaymentChoice = "BANK_TRANSFER" | "MERCADO_PAGO";
 type ShippingChoice = "PICKUP" | "DELIVERY" | "SHIPPING_TO_COORDINATE";
@@ -38,19 +39,20 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
   const [shippingNotes, setShippingNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [transferDone, setTransferDone] = useState<{ orderId: string; transfer: TransferInfo } | null>(
-    null,
-  );
+  const [transferDone, setTransferDone] = useState<{
+    orderId: string;
+    transfer: TransferInfo;
+    totalAmount: number;
+  } | null>(null);
 
   const lineSummaries = useMemo(() => {
     return lines.map((line) => {
       const product = {
         listPrice: line.listPrice,
         retailPrice: line.transferPrice,
-        discountRetailPercent: line.discountPercent,
       };
       const transferUnit = getTransferPrice(product);
-      const mpUnit = getMercadoPagoPrice(product, settings.mercadoPagoMarkupPercent);
+      const mpUnit = getListPrice(product);
       const unit = paymentMethod === "BANK_TRANSFER" ? transferUnit : mpUnit;
       return {
         ...line,
@@ -60,7 +62,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
         lineTotal: unit * line.quantity,
       };
     });
-  }, [lines, paymentMethod, settings.mercadoPagoMarkupPercent]);
+  }, [lines, paymentMethod]);
 
   const totalDisplay = useMemo(() => {
     const sum = lineSummaries.reduce((a, l) => a + l.lineTotal, 0);
@@ -90,35 +92,13 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
   }
 
   if (transferDone) {
-    const t = transferDone.transfer;
     return (
-      <div className="space-y-6">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
-          <h2 className="text-lg font-semibold">Pedido registrado</h2>
-          <p className="mt-2 text-sm">
-            Número de pedido: <span className="font-mono text-xs">{transferDone.orderId}</span>
-          </p>
-          <p className="mt-2 text-sm">
-            Realizá la transferencia por el total indicado. Cuando la acreditemos, te confirmamos el pedido.
-          </p>
-        </div>
-        <aside className="rounded-xl border bg-white p-5">
-          <h3 className="font-semibold text-slate-900">Datos para transferir</h3>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <strong>Titular:</strong> {t.holder}
-            </li>
-            <li>
-              <strong>Alias:</strong> {t.alias}
-            </li>
-            <li>
-              <strong>CBU:</strong> {t.cbu}
-            </li>
-            {t.notes ? (
-              <li className="text-slate-600">{t.notes}</li>
-            ) : null}
-          </ul>
-        </aside>
+      <div className="space-y-4">
+        <TransferProofUpload
+          orderId={transferDone.orderId}
+          totalAmount={transferDone.totalAmount}
+          transfer={transferDone.transfer}
+        />
         <Link href="/catalog" className="inline-block text-sm font-medium text-brand-dark underline">
           Seguir comprando
         </Link>
@@ -159,6 +139,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
         initPoint?: string;
         paymentMethod?: string;
         transfer?: TransferInfo;
+        totalAmount?: number;
       };
       if (!res.ok) {
         setError(data.error ?? "No se pudo procesar el pedido.");
@@ -170,8 +151,13 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
         return;
       }
       clearLines();
+      const total =
+        typeof data.totalAmount === "number"
+          ? data.totalAmount
+          : lineSummaries.reduce((a, l) => a + l.lineTotal, 0);
       setTransferDone({
         orderId: data.orderId ?? "",
+        totalAmount: total,
         transfer: data.transfer ?? {
           holder: settings.bankHolder,
           alias: settings.bankAlias,
@@ -280,9 +266,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                 />
                 <span className="font-medium">Transferencia bancaria</span>
               </span>
-              <span className="pl-7 text-sm text-brand-dark">
-                Total: {subtotalTransfer} (mejor precio)
-              </span>
+              <span className="pl-7 text-sm text-brand-dark">Total: {subtotalTransfer}</span>
             </label>
             {mercadoPagoEnabled && (
               <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-slate-200 p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5">
@@ -295,9 +279,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                   />
                   <span className="font-medium">Mercado Pago</span>
                 </span>
-                <span className="pl-7 text-sm text-slate-600">
-                  Total estimado: {mpTotal} (+{settings.mercadoPagoMarkupPercent}% sobre transferencia)
-                </span>
+                <span className="pl-7 text-sm text-slate-600">Total: {mpTotal} (precio de lista)</span>
               </label>
             )}
           </div>

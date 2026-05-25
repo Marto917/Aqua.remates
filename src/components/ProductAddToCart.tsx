@@ -8,10 +8,6 @@ import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
-import {
-  getDiscountBadgeLabel,
-  shouldShowDiscountBadge,
-} from "@/lib/product-pricing-display";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type Variant = {
@@ -30,8 +26,7 @@ type Product = {
   imageScale?: unknown;
   listPrice: unknown;
   retailPrice: unknown;
-  discountRetailPercent: number;
-  discountBadgeLabel?: string | null;
+  discountRetailPercent?: number;
 };
 
 type ProductAddToCartProps = {
@@ -73,14 +68,10 @@ export function ProductAddToCart({
   const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
   const imagePosition = selected?.imagePosition ?? product.imagePosition;
   const imageScale = Number(selected?.imageScale ?? product.imageScale ?? 1);
-  const showBadge = shouldShowDiscountBadge(product.discountRetailPercent);
-  const badgeLabel = getDiscountBadgeLabel(product, settings);
-
   const pricing = useMemo(
     () => ({
       listPrice: getListPrice(product),
       transferPrice: getTransferPrice(product),
-      discountPercent: product.discountRetailPercent,
     }),
     [product],
   );
@@ -98,7 +89,7 @@ export function ProductAddToCart({
       imageUrl: displayImage,
       listPrice: pricing.listPrice,
       transferPrice: pricing.transferPrice,
-      discountPercent: pricing.discountPercent,
+      discountPercent: 0,
       quantity: qty,
     });
     setAdded(true);
@@ -118,11 +109,6 @@ export function ProductAddToCart({
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
-          {showBadge ? (
-            <span className="absolute left-2 top-2 flex min-h-[4.5rem] min-w-[4.5rem] max-w-[6rem] items-center justify-center rounded-full bg-brand px-2.5 py-1 text-center text-[10px] font-bold uppercase leading-tight text-white shadow-lg sm:min-h-20 sm:min-w-20 sm:text-xs">
-              {badgeLabel}
-            </span>
-          ) : null}
         </div>
         <p className="mt-2 text-xs text-slate-500">
           Categoría: <span className="font-medium text-slate-700">{categoryLabel}</span>
@@ -154,7 +140,7 @@ export function ProductAddToCart({
           )}
         </div>
 
-        <ProductPriceBlock product={product} settings={settings} size="detail" showMercadoPago />
+        <ProductPriceBlock product={product} size="detail" showMercadoPago />
 
         <div>
           <p className="mb-2 text-sm font-semibold text-slate-800">Color</p>

@@ -1,6 +1,5 @@
 "use client";
 
-import { getTransferPrice } from "@/lib/store-pricing";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "aqua-cart-v3";
@@ -62,11 +61,7 @@ function persistState(state: CartState) {
 }
 
 function lineSubtotal(line: CartLine): number {
-  return getTransferPrice({
-    listPrice: line.listPrice,
-    retailPrice: line.transferPrice,
-    discountRetailPercent: line.discountPercent,
-  }) * line.quantity;
+  return line.transferPrice * line.quantity;
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {

@@ -4,13 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
-import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
-import {
-  getDiscountBadgeLabel,
-  shouldShowDiscountBadge,
-} from "@/lib/product-pricing-display";
 
 type ProductCardProps = {
   product: {
@@ -23,8 +18,7 @@ type ProductCardProps = {
     imageScale?: unknown;
     listPrice: unknown;
     retailPrice: unknown;
-    discountRetailPercent: number;
-    discountBadgeLabel?: string | null;
+    discountRetailPercent?: number;
     variants: {
       id: string;
       colorLabel: string;
@@ -36,7 +30,6 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
-  const settings = useStoreSettings();
   const colors = product.variants.slice(0, 6);
   const [selectedVariantId, setSelectedVariantId] = useState<string>(colors[0]?.id ?? "");
 
@@ -49,9 +42,6 @@ export function ProductCard({ product }: ProductCardProps) {
   const shortDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
   const imagePosition = selectedVariant?.imagePosition ?? product.imagePosition;
   const imageScale = Number(selectedVariant?.imageScale ?? product.imageScale ?? 1);
-  const showBadge = shouldShowDiscountBadge(product.discountRetailPercent);
-  const badgeLabel = getDiscountBadgeLabel(product, settings);
-
   return (
     <article className="group flex flex-col bg-white transition hover:shadow-md">
       <Link href={`/product/${product.slug}`} className="block">
@@ -63,11 +53,6 @@ export function ProductCard({ product }: ProductCardProps) {
             scale={imageScale}
             sizes="(max-width: 640px) 50vw, 25vw"
           />
-          {showBadge ? (
-            <span className="absolute right-1 top-1 flex min-h-[3.5rem] min-w-[3.5rem] max-w-[5.5rem] items-center justify-center rounded-full bg-brand px-2 py-1 text-center text-[9px] font-bold uppercase leading-tight text-white shadow-md sm:min-h-16 sm:min-w-16 sm:text-[10px]">
-              {badgeLabel}
-            </span>
-          ) : null}
         </div>
 
         {colors.length > 0 ? (
@@ -99,7 +84,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </h3>
           <p className="line-clamp-1 text-xs text-slate-500">{shortDesc}</p>
           <div className="pt-1">
-            <ProductPriceBlock product={product} settings={settings} size="card" />
+            <ProductPriceBlock product={product} size="card" />
           </div>
         </div>
       </Link>

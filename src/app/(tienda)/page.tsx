@@ -91,6 +91,12 @@ export default async function HomePage() {
                 Soy comercio — mayorista
               </Link>
             </div>
+            <div id="buscar" className="mx-auto mt-6 w-full max-w-xl scroll-mt-28 sm:mx-0">
+              <p className="mb-2 text-center text-xs font-medium text-slate-500 sm:text-left">
+                Buscar en el catálogo
+              </p>
+              <HomeHeroSearch />
+            </div>
           </div>
 
           <div className="relative mx-auto hidden w-full max-w-[260px] lg:mx-0 lg:block" aria-hidden>
@@ -151,9 +157,7 @@ export default async function HomePage() {
       </section>
 
       <section className="rounded-3xl border border-slate-100/80 bg-gradient-to-b from-white to-brand-muted/30 p-5 shadow-sm sm:p-6">
-        <p className="mb-3 text-center text-sm font-medium text-slate-600">Buscar en el catálogo</p>
-        <HomeHeroSearch />
-        <div className="mx-auto mt-5 flex max-w-2xl flex-wrap justify-center gap-2.5 text-xs text-slate-600 sm:text-sm">
+        <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-2.5 text-xs text-slate-600 sm:text-sm">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100/80">
             <span className="text-brand-dark" aria-hidden>
               ✓

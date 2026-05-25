@@ -10,7 +10,7 @@ import type {
 export const retailOrderStatusLabel: Record<RetailOrderStatus, string> = {
   PENDING_PAYMENT: "Pendiente de pago (Mercado Pago)",
   PENDING_TRANSFER: "Pendiente de transferencia",
-  TRANSFER_REPORTED: "Comprobante informado",
+  TRANSFER_REPORTED: "Comprobante enviado — revisar pago",
   PAYMENT_APPROVED: "Pago aprobado (Mercado Pago)",
   CONFIRMED: "Confirmado / listo",
   CANCELLED: "Cancelado",

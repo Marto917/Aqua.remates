@@ -22,6 +22,29 @@ const updateCategorySchema = z.object({
   categoryName: z.string().trim().min(2).max(40),
 });
 
+function parseNumericInput(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  const raw = value.trim().replace(/\s+/g, "").replace(/\$/g, "");
+  const normalized = raw.includes(",") && !raw.includes(".") ? raw.replace(",", ".") : raw;
+  const parsed = Number(normalized.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const updateDetailsSchema = z.object({
+  name: z.string().trim().min(2),
+  sku: z.string().trim().max(64).optional(),
+  supplierName: z.string().trim().optional(),
+  description: z.string().optional(),
+  categoryName: z.string().trim().min(2).max(40),
+  listPrice: z.preprocess(parseNumericInput, z.number().positive()),
+  transferPrice: z.preprocess(parseNumericInput, z.number().positive()),
+  wholesalePrice: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : parseNumericInput(v)),
+    z.number().nonnegative().optional(),
+  ),
+});
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -114,6 +137,50 @@ export async function POST(
         });
       }
     }
+
+    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+  }
+
+  if (intent === "update_details") {
+    const parsed = updateDetailsSchema.safeParse({
+      name: formData.get("name"),
+      sku: formData.get("sku"),
+      supplierName: formData.get("supplierName"),
+      description: formData.get("description"),
+      categoryName: formData.get("categoryName"),
+      listPrice: formData.get("listPrice"),
+      transferPrice: formData.get("transferPrice"),
+      wholesalePrice: formData.get("wholesalePrice"),
+    });
+
+    if (!parsed.success) {
+      const url = new URL(`/admin/productos/${id}`, req.url);
+      url.searchParams.set("error", "Revisá los datos y precios del producto.");
+      return NextResponse.redirect(url);
+    }
+
+    const categorySlug = categorySlugFromName(parsed.data.categoryName);
+    const category = await prisma.category.upsert({
+      where: { slug: categorySlug },
+      update: { name: parsed.data.categoryName },
+      create: { name: parsed.data.categoryName, slug: categorySlug },
+    });
+
+    await prisma.product.update({
+      where: { id },
+      data: {
+        name: parsed.data.name,
+        sku: parsed.data.sku?.trim() || null,
+        supplierName: parsed.data.supplierName?.trim() || null,
+        description: parsed.data.description?.trim() ?? "",
+        categoryId: category.id,
+        listPrice: parsed.data.listPrice,
+        retailPrice: parsed.data.transferPrice,
+        wholesalePrice: parsed.data.wholesalePrice ?? parsed.data.transferPrice,
+        discountRetailPercent: 0,
+        discountBadgeLabel: null,
+      },
+    });
 
     return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
   }

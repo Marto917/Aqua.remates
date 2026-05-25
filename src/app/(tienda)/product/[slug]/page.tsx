@@ -66,7 +66,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
           listPrice: product.listPrice,
           retailPrice: product.retailPrice,
           discountRetailPercent: product.discountRetailPercent,
-          discountBadgeLabel: product.discountBadgeLabel,
           imageScale: product.imageScale,
         }}
         variants={product.variants.map((v) => ({

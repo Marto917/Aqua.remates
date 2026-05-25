@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
-import { getTransferPrice } from "@/lib/store-pricing";
 
 export default function CarritoPage() {
   const { lines, setQuantity, removeLine, subtotalTransfer } = useCart();
@@ -14,8 +13,8 @@ export default function CarritoPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-brand-dark">Carrito</h1>
       <p className="text-sm text-slate-600">
-        Los totales son con <strong>precio transferencia</strong>. En el checkout podés elegir transferencia o
-        Mercado Pago (con un recargo).
+        Los totales son con <strong>precio transferencia</strong>. En el checkout podés pagar por transferencia o
+        Mercado Pago (precio de lista).
       </p>
 
       {lines.length === 0 ? (
@@ -28,11 +27,7 @@ export default function CarritoPage() {
       ) : (
         <ul className="space-y-4">
           {lines.map((line) => {
-            const unit = getTransferPrice({
-              listPrice: line.listPrice,
-              retailPrice: line.transferPrice,
-              discountRetailPercent: line.discountPercent,
-            });
+            const unit = line.transferPrice;
             const lineTotal = unit * line.quantity;
             return (
               <li

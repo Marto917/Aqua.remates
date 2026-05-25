@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AdminProductEditDetails } from "@/components/admin/AdminProductEditDetails";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
+import { IconCamera } from "@/components/icons/StaffIcons";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -53,6 +55,19 @@ export default async function AdminProductoImagenesPage({
         </p>
       ) : null}
 
+      <AdminProductEditDetails
+        productId={product.id}
+        name={product.name}
+        sku={product.sku}
+        description={product.description}
+        supplierName={product.supplierName}
+        listPrice={Number(product.listPrice)}
+        transferPrice={Number(product.retailPrice)}
+        wholesalePrice={Number(product.wholesalePrice)}
+        categories={categories}
+        categoryName={product.category.name}
+      />
+
       <form
         method="post"
         action={`/api/admin/products/${product.id}`}
@@ -91,10 +106,11 @@ export default async function AdminProductoImagenesPage({
       </form>
 
       <form
+        id="imagenes"
         method="post"
         action={`/api/admin/products/${product.id}`}
         encType="multipart/form-data"
-        className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+        className="scroll-mt-24 space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
       >
         <input type="hidden" name="intent" value="update_images" />
 
@@ -138,9 +154,11 @@ export default async function AdminProductoImagenesPage({
 
         <button
           type="submit"
-          className="inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark"
+          aria-label="Guardar imágenes"
+          title="Guardar imágenes"
         >
-          Guardar imágenes y encuadre
+          <IconCamera className="h-5 w-5" />
         </button>
       </form>
     </section>

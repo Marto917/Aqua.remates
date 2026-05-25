@@ -76,6 +76,14 @@
       "namedRegex": "^/api/products/(?<nxtPid>[^/]+?)/reviews(?:/)?$"
     },
     {
+      "page": "/api/retail-orders/[orderId]/transfer-proof",
+      "regex": "^/api/retail\\-orders/([^/]+?)/transfer\\-proof(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/api/retail\\-orders/(?<nxtPorderId>[^/]+?)/transfer\\-proof(?:/)?$"
+    },
+    {
       "page": "/api/shipping/orders/[id]",
       "regex": "^/api/shipping/orders/([^/]+?)(?:/)?$",
       "routeKeys": {

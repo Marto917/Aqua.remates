@@ -259,6 +259,8 @@ model RetailOrder {
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
   transferAlias           String?
   transferCbu             String?
+  transferProofUrl        String?
+  transferProofUploadedAt DateTime?
   mercadoPagoPreferenceId String?
   mercadoPagoPaymentId    String?
   createdAt               DateTime              @default(now())

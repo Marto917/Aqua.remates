@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
-import { getTransferPrice } from "@/lib/store-pricing";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
@@ -51,11 +50,7 @@ export function CartPreviewDrawer({ open, onClose }: Props) {
           ) : (
             <ul className="divide-y divide-slate-100">
               {lines.map((line) => {
-                const unit = getTransferPrice({
-                  listPrice: line.listPrice,
-                  retailPrice: line.transferPrice,
-                  discountRetailPercent: line.discountPercent,
-                });
+                const unit = line.transferPrice;
                 return (
                   <li key={line.variantId} className="flex gap-3 py-3">
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">

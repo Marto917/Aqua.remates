@@ -1,5 +1,4 @@
-import { getMercadoPagoPrice, getTransferPrice } from "@/lib/store-pricing";
-import { getStoreSettings } from "@/lib/store-settings";
+import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 import { prisma } from "@/lib/prisma";
 
 export type RetailCheckoutLineInput = {
@@ -31,7 +30,6 @@ export async function resolveRetailCartLines(
     return { ok: false, error: "El carrito está vacío." };
   }
 
-  const settings = await getStoreSettings();
   const variantIds = [...new Set(inputs.map((l) => l.variantId))];
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: variantIds }, isActive: true },
@@ -57,13 +55,10 @@ export async function resolveRetailCartLines(
     const pricing = {
       listPrice: variant.product.listPrice,
       retailPrice: variant.product.retailPrice,
-      discountRetailPercent: variant.product.discountRetailPercent,
     };
 
     const unitPrice =
-      paymentMethod === "MERCADO_PAGO"
-        ? getMercadoPagoPrice(pricing, settings.mercadoPagoMarkupPercent)
-        : getTransferPrice(pricing);
+      paymentMethod === "MERCADO_PAGO" ? getListPrice(pricing) : getTransferPrice(pricing);
 
     const subtotal = unitPrice * input.quantity;
     totalAmount += subtotal;

@@ -28,4 +28,46 @@ export async function updateRetailOrderStatus(formData: FormData) {
 
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${parsed.data.id}`);
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor/envios");
+}
+
+export async function approveTransferOrder(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const order = await prisma.retailOrder.findUnique({ where: { id } });
+  if (!order || order.paymentMethod !== "BANK_TRANSFER") return;
+  if (order.status !== "TRANSFER_REPORTED" && order.status !== "PENDING_TRANSFER") {
+    return;
+  }
+
+  await prisma.retailOrder.update({
+    where: { id },
+    data: { status: "CONFIRMED" },
+  });
+
+  revalidatePath("/admin/pedidos");
+  revalidatePath(`/admin/pedidos/${id}`);
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor/envios");
+}
+
+export async function rejectTransferOrder(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const order = await prisma.retailOrder.findUnique({ where: { id } });
+  if (!order || order.paymentMethod !== "BANK_TRANSFER") return;
+
+  await prisma.retailOrder.update({
+    where: { id },
+    data: { status: "CANCELLED" },
+  });
+
+  revalidatePath("/admin/pedidos");
+  revalidatePath(`/admin/pedidos/${id}`);
+  revalidatePath("/vendedor/pedidos");
 }

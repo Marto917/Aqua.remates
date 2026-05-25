@@ -1,47 +1,29 @@
-/** Lista = transferencia × (1 + LIST_MARKUP). */
-export const LIST_MARKUP = 0.15;
-
 export type ProductPricingFields = {
   listPrice: unknown;
   retailPrice: unknown;
-  discountRetailPercent: number;
 };
 
 export function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** Precio transferencia (base de venta). */
+/** Precio con transferencia bancaria (campo retailPrice). */
 export function getTransferPrice(product: ProductPricingFields): number {
-  const fromRetail = Number(product.retailPrice);
-  if (Number.isFinite(fromRetail) && fromRetail > 0) {
-    return fromRetail;
-  }
+  const transfer = Number(product.retailPrice);
+  if (Number.isFinite(transfer) && transfer > 0) return roundMoney(transfer);
   const list = Number(product.listPrice);
-  const pct = Math.min(100, Math.max(0, product.discountRetailPercent ?? 15));
-  return roundMoney(list * (1 - pct / 100));
+  if (Number.isFinite(list) && list > 0) return roundMoney(list);
+  return 0;
 }
 
-/** Precio de lista mostrado en tienda. */
+/** Precio de lista / Mercado Pago (campo listPrice). */
 export function getListPrice(product: ProductPricingFields): number {
   const list = Number(product.listPrice);
-  if (Number.isFinite(list) && list > 0) return list;
-  return roundMoney(getTransferPrice(product) * (1 + LIST_MARKUP));
+  if (Number.isFinite(list) && list > 0) return roundMoney(list);
+  return getTransferPrice(product);
 }
 
-export function listPriceFromTransfer(transfer: number): number {
-  return roundMoney(transfer * (1 + LIST_MARKUP));
-}
-
-export function getMercadoPagoPrice(
-  product: ProductPricingFields,
-  markupPercent: number,
-): number {
-  const transfer = getTransferPrice(product);
-  const pct = Math.min(100, Math.max(0, markupPercent));
-  return roundMoney(transfer * (1 + pct / 100));
-}
-
-export function shouldShowDiscountBadge(discountPercent: number): boolean {
-  return discountPercent > 0;
+/** Mercado Pago cobra el precio de lista. */
+export function getMercadoPagoPrice(product: ProductPricingFields): number {
+  return getListPrice(product);
 }

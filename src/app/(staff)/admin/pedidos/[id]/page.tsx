@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RetailOrderStatus } from "@prisma/client";
-import { updateRetailOrderStatus } from "../actions";
+import Image from "next/image";
+import { approveTransferOrder, rejectTransferOrder, updateRetailOrderStatus } from "../actions";
+import { IconCheck, IconX } from "@/components/icons/StaffIcons";
 import { formatArs } from "@/lib/currency";
 import {
   retailOrderStatusLabel,
@@ -28,6 +30,12 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
   }
 
   const statusOptions = Object.values(RetailOrderStatus);
+  const isTransfer = order.paymentMethod === "BANK_TRANSFER";
+  const canReviewTransfer =
+    isTransfer &&
+    order.status !== "CANCELLED" &&
+    order.status !== "CONFIRMED" &&
+    (order.status === "TRANSFER_REPORTED" || order.transferProofUrl);
 
   return (
     <div className="space-y-6">
@@ -173,36 +181,105 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="rounded-xl border border-brand/30 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Cambiar estado del pedido</h2>
-        <p className="mt-1 text-xs text-slate-600">
-          Transferencia: pendiente → comprobante → confirmado. Mercado Pago: pendiente de pago → pago aprobado →
-          confirmado al preparar/enviar.
-        </p>
-        <form action={updateRetailOrderStatus} className="mt-4 flex flex-wrap items-end gap-3">
-          <input type="hidden" name="id" value={order.id} />
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-slate-600">Nuevo estado</span>
-            <select
-              name="status"
-              defaultValue={order.status}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>
-                  {retailOrderStatusLabel[s]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+      {isTransfer && order.transferProofUrl ? (
+        <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-900">
+            Comprobante de transferencia
+          </h2>
+          <p className="mt-1 text-xs text-amber-800">
+            Corroborá en el banco que el monto sea exactamente {formatArs(Number(order.totalAmount))}.
+          </p>
+          <a
+            href={order.transferProofUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative mt-4 block aspect-[4/3] max-w-md overflow-hidden rounded-lg border border-amber-200 bg-white"
           >
-            Guardar
-          </button>
-        </form>
-      </section>
+            <Image
+              src={order.transferProofUrl}
+              alt="Comprobante de pago"
+              fill
+              className="object-contain"
+              unoptimized
+            />
+          </a>
+          {order.transferProofUploadedAt ? (
+            <p className="mt-2 text-xs text-slate-600">
+              Subido:{" "}
+              {order.transferProofUploadedAt.toLocaleString("es-AR", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            </p>
+          ) : null}
+        </section>
+      ) : isTransfer && order.status === "PENDING_TRANSFER" ? (
+        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          El cliente aún no subió el comprobante de transferencia.
+        </p>
+      ) : null}
+
+      {canReviewTransfer ? (
+        <section className="rounded-xl border border-brand/30 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">Validar pago por transferencia</h2>
+          <p className="mt-1 text-xs text-slate-600">
+            Si el pago está acreditado, aceptá el pedido para pasarlo a envíos. Si no, decliná.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <form action={approveTransferOrder}>
+              <input type="hidden" name="id" value={order.id} />
+              <button
+                type="submit"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                aria-label="Aceptar pago y confirmar pedido"
+                title="Aceptar"
+              >
+                <IconCheck className="h-5 w-5" />
+              </button>
+            </form>
+            <form action={rejectTransferOrder}>
+              <input type="hidden" name="id" value={order.id} />
+              <button
+                type="submit"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-700"
+                aria-label="Declinar pedido"
+                title="Declinar"
+              >
+                <IconX className="h-5 w-5" />
+              </button>
+            </form>
+          </div>
+        </section>
+      ) : null}
+
+      {!isTransfer || order.status === "CONFIRMED" || order.status === "CANCELLED" ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">Estado del pedido</h2>
+          <form action={updateRetailOrderStatus} className="mt-4 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="id" value={order.id} />
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-slate-600">Estado</span>
+              <select
+                name="status"
+                defaultValue={order.status}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {retailOrderStatusLabel[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+            >
+              Guardar
+            </button>
+          </form>
+        </section>
+      ) : null}
     </div>
   );
 }
