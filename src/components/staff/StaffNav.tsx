@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
@@ -16,9 +17,38 @@ export async function StaffNav({ area }: StaffNavProps) {
   const homeHref = area === "admin" ? "/admin" : "/vendedor";
 
   return (
-    <nav className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap items-center gap-1">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+      <div className="mx-auto max-w-6xl px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href={homeHref} className="flex items-center gap-2 font-semibold text-brand-dark">
+            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-brand">
+              <Image
+                src="/aqua_image.webp"
+                alt=""
+                width={36}
+                height={36}
+                className="h-full w-full object-cover"
+                unoptimized
+              />
+            </span>
+            <span className="text-lg tracking-tight">AQUA — Panel</span>
+          </Link>
+          <div className="text-xs text-slate-500">
+            {ctx.preview ? (
+              <span className="rounded bg-amber-100 px-2 py-1 text-amber-900">Preview backoffice</span>
+            ) : (
+              <span>
+                Sesión:{" "}
+                <strong className="text-slate-800">
+                  {role === UserRole.OWNER ? "Dueño" : role === UserRole.EMPLOYEE ? "Empleado" : role ?? "—"}
+                </strong>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <nav className="border-t border-slate-100 bg-slate-50/80">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-1 px-4 py-2">
           <Link href={homeHref} className={linkClass}>
             Inicio
           </Link>
@@ -51,23 +81,7 @@ export async function StaffNav({ area }: StaffNavProps) {
             </>
           ) : null}
         </div>
-        <div className="text-xs text-slate-500">
-          {ctx.preview ? (
-            <span className="rounded bg-amber-100 px-2 py-1 text-amber-900">Preview backoffice</span>
-          ) : (
-            <span>
-              Sesión:{" "}
-              <strong className="text-slate-800">
-                {role === UserRole.OWNER
-                  ? "Dueño"
-                  : role === UserRole.EMPLOYEE
-                    ? "Empleado"
-                    : role ?? "—"}
-              </strong>
-            </span>
-          )}
-        </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

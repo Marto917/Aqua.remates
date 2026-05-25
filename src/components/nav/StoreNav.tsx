@@ -12,6 +12,30 @@ type Props = {
 };
 
 export async function StoreNav({ session }: Props) {
+  const role = session?.user?.role;
+  const isStaff = role === UserRole.OWNER || role === UserRole.EMPLOYEE;
+
+  if (isStaff) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-4">
+          <Link href="/admin" className="flex items-center gap-2 font-semibold text-brand-dark">
+            <span className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-brand">
+              <Image src="/aqua_image.webp" alt="" width={36} height={36} className="h-full w-full object-cover" unoptimized />
+            </span>
+            <span className="text-lg tracking-tight">AQUA</span>
+          </Link>
+          <Link
+            href="/admin"
+            className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          >
+            Ir al panel
+          </Link>
+        </nav>
+      </header>
+    );
+  }
+
   let profileImage: string | null = null;
   let profileName = session?.user?.name ?? "";
 
