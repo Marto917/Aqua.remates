@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Session } from "next-auth";
@@ -17,14 +18,21 @@ type Props = {
   productId: string;
   initialReviews: Review[];
   session: Session | null;
+  canReview?: boolean;
+  reviewBlockedMessage?: string;
 };
 
-export function ProductReviews({ productId, initialReviews, session }: Props) {
+export function ProductReviews({
+  productId,
+  initialReviews,
+  session,
+  canReview = false,
+  reviewBlockedMessage,
+}: Props) {
   const router = useRouter();
   const [reviews, setReviews] = useState(initialReviews);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [authorName, setAuthorName] = useState(session?.user?.name ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -48,7 +56,6 @@ export function ProductReviews({ productId, initialReviews, session }: Props) {
         body: JSON.stringify({
           rating,
           comment: comment.trim(),
-          authorName: authorName.trim() || undefined,
         }),
       });
       const data = (await res.json()) as { error?: string; review?: Review };
@@ -88,51 +95,50 @@ export function ProductReviews({ productId, initialReviews, session }: Props) {
         )}
       </div>
 
-      <form onSubmit={submit} className="mt-5 space-y-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-        <p className="text-sm font-medium text-slate-800">Dejá tu opinión</p>
-        {!session?.user ? (
+      {!session?.user ? (
+        <p className="mt-5 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <Link href="/login" className="font-medium text-brand-dark underline">
+            Iniciá sesión
+          </Link>{" "}
+          para dejar tu opinión (cuenta con al menos 7 días).
+        </p>
+      ) : canReview ? (
+        <form onSubmit={submit} className="mt-5 space-y-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+          <p className="text-sm font-medium text-slate-800">Dejá tu opinión</p>
+          <div>
+            <p className="mb-2 text-sm text-slate-700">Puntuación</p>
+            <StarRatingInput value={rating} onChange={setRating} />
+            {rating > 0 ? (
+              <p className="mt-1 text-xs text-slate-500">{rating} de 5 estrellas</p>
+            ) : null}
+          </div>
           <label className="block text-sm text-slate-700">
-            Tu nombre
-            <input
-              type="text"
-              value={authorName}
-              onChange={(e) => setAuthorName(e.target.value)}
+            Comentario
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               required
-              maxLength={80}
+              minLength={3}
+              maxLength={2000}
+              rows={3}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
-              placeholder="Nombre o apodo"
+              placeholder="Contanos qué te pareció el producto"
             />
           </label>
-        ) : null}
-        <div>
-          <p className="mb-2 text-sm text-slate-700">Puntuación</p>
-          <StarRatingInput value={rating} onChange={setRating} />
-          {rating > 0 ? (
-            <p className="mt-1 text-xs text-slate-500">{rating} de 5 estrellas</p>
-          ) : null}
-        </div>
-        <label className="block text-sm text-slate-700">
-          Comentario
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            required
-            minLength={3}
-            maxLength={2000}
-            rows={3}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
-            placeholder="Contanos qué te pareció el producto"
-          />
-        </label>
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-brand px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white hover:bg-brand-dark disabled:opacity-60"
-        >
-          {pending ? "Publicando…" : "Publicar opinión"}
-        </button>
-      </form>
+          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-md bg-brand px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white hover:bg-brand-dark disabled:opacity-60"
+          >
+            {pending ? "Publicando…" : "Publicar opinión"}
+          </button>
+        </form>
+      ) : reviewBlockedMessage ? (
+        <p className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {reviewBlockedMessage}
+        </p>
+      ) : null}
 
       <ul className="mt-6 divide-y divide-slate-100">
         {reviews.length === 0 ? (

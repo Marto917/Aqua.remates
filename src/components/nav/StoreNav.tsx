@@ -2,6 +2,7 @@ import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
+import { IconUser } from "@/components/icons/NavIcons";
 import { StoreNavToolbar } from "@/components/nav/StoreNavToolbar";
 import { UserProfileChip } from "@/components/nav/UserProfileChip";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
@@ -65,10 +66,10 @@ export async function StoreNav({ session }: Props) {
               </Link>
               <Link
                 href="/login"
-                className="ml-0.5 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-xs font-bold text-brand-dark sm:hidden"
+                className="ml-0.5 flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brand/30 text-brand-dark hover:bg-brand/5 sm:hidden"
                 aria-label="Ingresar"
               >
-                →
+                <IconUser className="h-5 w-5" />
               </Link>
             </>
           ) : isCustomer ? (

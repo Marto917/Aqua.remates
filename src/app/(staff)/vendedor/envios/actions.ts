@@ -27,7 +27,11 @@ export async function dispatchDeliveryAction(orderId: string): Promise<DispatchR
     return { ok: false, error: "Este pedido no puede emitirse como envío." };
   }
 
-  const code = generateDeliveryCode();
+  const existing = await prisma.retailOrder.findUnique({
+    where: { id: orderId },
+    select: { deliveryCode: true },
+  });
+  const code = existing?.deliveryCode ?? generateDeliveryCode();
   await prisma.retailOrder.update({
     where: { id: orderId },
     data: {

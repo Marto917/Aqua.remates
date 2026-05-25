@@ -24,9 +24,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-brand-dark">Catálogo</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Precio de lista (Mercado Pago) y precio con transferencia en cada producto.
-        </p>
+        <p className="mt-1 text-sm text-slate-600">Explorá por categoría o buscá por nombre.</p>
       </div>
 
       <CatalogToolbar selectedCategory={category} search={q} />

@@ -37,6 +37,9 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
   const [shippingProvince, setShippingProvince] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
   const [shippingNotes, setShippingNotes] = useState("");
+  const [useOtherAddress, setUseOtherAddress] = useState(false);
+  const [saveToProfile, setSaveToProfile] = useState(true);
+  const [hasSavedAddress, setHasSavedAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transferDone, setTransferDone] = useState<{
@@ -80,6 +83,52 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     }
   }, [mercadoPagoEnabled, paymentMethod]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/account/shipping-profile");
+        const data = (await res.json()) as {
+          profile?: {
+            name?: string;
+            email?: string;
+            phone?: string | null;
+            shippingAddress?: string | null;
+            shippingCity?: string | null;
+            shippingProvince?: string | null;
+            shippingPostalCode?: string | null;
+            shippingNotes?: string | null;
+          } | null;
+        };
+        if (cancelled || !data.profile) return;
+        const p = data.profile;
+        if (!buyerName && p.name) setBuyerName(p.name);
+        if (!buyerEmail && p.email) setBuyerEmail(p.email);
+        if (!buyerPhone && p.phone) setBuyerPhone(p.phone);
+        const saved =
+          Boolean(p.shippingAddress?.trim()) &&
+          Boolean(p.shippingCity?.trim()) &&
+          Boolean(p.shippingProvince?.trim()) &&
+          Boolean(p.shippingPostalCode?.trim());
+        setHasSavedAddress(saved);
+        if (saved) {
+          setShippingAddress(p.shippingAddress ?? "");
+          setShippingCity(p.shippingCity ?? "");
+          setShippingProvince(p.shippingProvince ?? "");
+          setShippingPostalCode(p.shippingPostalCode ?? "");
+          setShippingNotes(p.shippingNotes ?? "");
+        }
+      } catch {
+        /* sin sesión */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Solo al montar: precargar perfil una vez
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (lines.length === 0 && !transferDone) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
@@ -117,7 +166,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
         body: JSON.stringify({
           buyerName,
           buyerEmail,
-          buyerPhone: buyerPhone || undefined,
+          buyerPhone: buyerPhone.trim(),
           notes: notes || undefined,
           paymentMethod,
           shippingMethod,
@@ -125,7 +174,8 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
           shippingCity: shippingMethod === "DELIVERY" ? shippingCity : undefined,
           shippingProvince: shippingMethod === "DELIVERY" ? shippingProvince : undefined,
           shippingPostalCode: shippingMethod === "DELIVERY" ? shippingPostalCode : undefined,
-          shippingNotes: shippingNotes || undefined,
+          shippingNotes: shippingMethod === "DELIVERY" ? shippingNotes : undefined,
+          saveToProfile: shippingMethod === "DELIVERY" ? saveToProfile : false,
           lines: lines.map((l) => ({
             variantId: l.variantId,
             productId: l.productId,
@@ -195,9 +245,11 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
               className="w-full rounded-md border px-3 py-2"
             />
             <input
+              required
               value={buyerPhone}
               onChange={(e) => setBuyerPhone(e.target.value)}
-              placeholder="Teléfono / WhatsApp (recomendado)"
+              placeholder="Teléfono / WhatsApp"
+              minLength={8}
               className="w-full rounded-md border px-3 py-2"
             />
           </div>
@@ -227,28 +279,86 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
           </div>
           {shippingMethod === "DELIVERY" && (
             <div className="mt-4 space-y-3">
-              <input
-                required
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                placeholder="Calle y número"
-                className="w-full rounded-md border px-3 py-2"
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  required
-                  value={shippingCity}
-                  onChange={(e) => setShippingCity(e.target.value)}
-                  placeholder="Ciudad"
-                  className="w-full rounded-md border px-3 py-2"
-                />
-                <input
-                  value={shippingProvince}
-                  onChange={(e) => setShippingProvince(e.target.value)}
-                  placeholder="Provincia"
-                  className="w-full rounded-md border px-3 py-2"
-                />
-              </div>
+              {hasSavedAddress && !useOtherAddress ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                  <p className="font-medium text-slate-900">Dirección guardada en tu perfil</p>
+                  <p className="mt-1">
+                    {shippingAddress}, {shippingCity} ({shippingProvince}) — CP {shippingPostalCode}
+                  </p>
+                  {shippingNotes ? <p className="mt-1 text-xs text-slate-500">{shippingNotes}</p> : null}
+                  <button
+                    type="button"
+                    className="mt-2 text-sm font-medium text-brand-dark underline"
+                    onClick={() => setUseOtherAddress(true)}
+                  >
+                    Enviar a otra dirección
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {hasSavedAddress ? (
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-brand-dark underline"
+                      onClick={() => setUseOtherAddress(false)}
+                    >
+                      Usar dirección guardada
+                    </button>
+                  ) : null}
+                  <input
+                    required
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Calle y número"
+                    className="w-full rounded-md border px-3 py-2"
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      required
+                      value={shippingCity}
+                      onChange={(e) => setShippingCity(e.target.value)}
+                      placeholder="Ciudad"
+                      className="w-full rounded-md border px-3 py-2"
+                    />
+                    <input
+                      required
+                      value={shippingProvince}
+                      onChange={(e) => setShippingProvince(e.target.value)}
+                      placeholder="Provincia"
+                      className="w-full rounded-md border px-3 py-2"
+                    />
+                  </div>
+                  <input
+                    required
+                    value={shippingPostalCode}
+                    onChange={(e) => setShippingPostalCode(e.target.value)}
+                    placeholder="Código postal"
+                    className="w-full rounded-md border px-3 py-2"
+                  />
+                  <textarea
+                    value={shippingNotes}
+                    onChange={(e) => setShippingNotes(e.target.value)}
+                    placeholder="Referencias (piso, timbre, entre calles…)"
+                    rows={2}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={saveToProfile}
+                      onChange={(e) => setSaveToProfile(e.target.checked)}
+                    />
+                    Guardar esta dirección en mi perfil
+                  </label>
+                  <p className="text-xs text-slate-500">
+                    También podés editar tus datos en{" "}
+                    <Link href="/cuenta/perfil" className="text-brand-dark underline">
+                      Mi perfil
+                    </Link>
+                    .
+                  </p>
+                </>
+              )}
             </div>
           )}
         </section>

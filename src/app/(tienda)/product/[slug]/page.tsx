@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackToCatalogLink } from "@/components/BackToCatalogLink";
 import { ProductAddToCart } from "@/components/ProductAddToCart";
 import { ProductReviews } from "@/components/ProductReviews";
 import { formatDisplayWords } from "@/lib/display-text";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { canCustomerReview, reviewEligibilityMessage } from "@/lib/review-eligibility";
+import { UserRole } from "@prisma/client";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -49,13 +51,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
       ? initialReviews.reduce((a, r) => a + r.rating, 0) / reviewCount
       : null;
 
+  let canReview = false;
+  let reviewBlockedMessage: string | undefined;
+  if (session?.user?.id && session.user.role === UserRole.CUSTOMER) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { createdAt: true },
+    });
+    if (dbUser) {
+      canReview = canCustomerReview(dbUser.createdAt);
+      if (!canReview) {
+        reviewBlockedMessage = reviewEligibilityMessage(dbUser.createdAt);
+      }
+    }
+  }
+
   return (
     <div className="space-y-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/catalog" className="text-sm font-medium text-brand-dark underline">
-          ← Volver al catálogo
-        </Link>
-      </div>
+      <BackToCatalogLink />
 
       <ProductAddToCart
         product={{
@@ -90,6 +103,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
         productId={product.id}
         initialReviews={initialReviews}
         session={session}
+        canReview={canReview}
+        reviewBlockedMessage={reviewBlockedMessage}
       />
     </div>
   );

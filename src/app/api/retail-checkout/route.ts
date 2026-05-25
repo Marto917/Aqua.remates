@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { BillingMode, UserRole } from "@prisma/client";
 import { z } from "zod";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
@@ -16,7 +18,7 @@ const checkoutSchema = z
   .object({
     buyerName: z.string().min(2),
     buyerEmail: z.string().email(),
-    buyerPhone: z.string().optional(),
+    buyerPhone: z.string().trim().min(8, "Indicá un teléfono o WhatsApp válido."),
     notes: z.string().optional(),
     paymentMethod: z.enum(["BANK_TRANSFER", "MERCADO_PAGO"]),
     shippingMethod: z.enum(["PICKUP", "DELIVERY", "SHIPPING_TO_COORDINATE"]),
@@ -25,6 +27,7 @@ const checkoutSchema = z
     shippingProvince: z.string().optional(),
     shippingPostalCode: z.string().optional(),
     shippingNotes: z.string().optional(),
+    saveToProfile: z.boolean().optional(),
     lines: z.array(lineSchema).min(1),
   })
   .superRefine((data, ctx) => {
@@ -34,6 +37,12 @@ const checkoutSchema = z
       }
       if (!data.shippingCity?.trim()) {
         ctx.addIssue({ code: "custom", message: "Indicá la ciudad.", path: ["shippingCity"] });
+      }
+      if (!data.shippingProvince?.trim()) {
+        ctx.addIssue({ code: "custom", message: "Indicá la provincia.", path: ["shippingProvince"] });
+      }
+      if (!data.shippingPostalCode?.trim()) {
+        ctx.addIssue({ code: "custom", message: "Indicá el código postal.", path: ["shippingPostalCode"] });
       }
     }
     if (data.paymentMethod === "MERCADO_PAGO" && !isMercadoPagoConfigured()) {
@@ -65,17 +74,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: resolved.error }, { status: 400 });
   }
 
+  const session = await getSafeSession();
+  const customerId =
+    session?.user?.id && session.user.role === UserRole.CUSTOMER ? session.user.id : null;
+
   const settings = await getStoreSettings();
   const { cart } = resolved;
   const isTransfer = data.paymentMethod === "BANK_TRANSFER";
   const status = isTransfer ? "PENDING_TRANSFER" : "PENDING_PAYMENT";
+  const billingMode: BillingMode = isTransfer ? "NEGRO" : "BLANCO";
 
   const order = await prisma.retailOrder.create({
     data: {
+      customerId,
       buyerName: data.buyerName.trim(),
       buyerEmail: data.buyerEmail.trim().toLowerCase(),
-      buyerPhone: data.buyerPhone?.trim() || null,
+      buyerPhone: data.buyerPhone.trim(),
       notes: data.notes?.trim() || null,
+      billingMode,
       paymentMethod: data.paymentMethod,
       shippingMethod: data.shippingMethod,
       shippingAddress: data.shippingAddress?.trim() || null,
@@ -101,6 +117,29 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  if (customerId && data.saveToProfile) {
+    await prisma.user.update({
+      where: { id: customerId },
+      data: {
+        phone: data.buyerPhone.trim(),
+        ...(data.shippingMethod === "DELIVERY"
+          ? {
+              defaultShippingAddress: data.shippingAddress?.trim() || null,
+              defaultShippingCity: data.shippingCity?.trim() || null,
+              defaultShippingProvince: data.shippingProvince?.trim() || null,
+              defaultShippingPostalCode: data.shippingPostalCode?.trim() || null,
+              defaultShippingNotes: data.shippingNotes?.trim() || null,
+            }
+          : {}),
+      },
+    });
+  } else if (customerId) {
+    await prisma.user.update({
+      where: { id: customerId },
+      data: { phone: data.buyerPhone.trim() },
+    });
+  }
 
   if (isTransfer) {
     return NextResponse.json({

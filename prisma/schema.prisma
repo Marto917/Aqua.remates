@@ -109,6 +109,13 @@ model User {
   emailVerificationExpires   DateTime?
   /// Foto de perfil (Google) o avatar personalizado.
   imageUrl                 String?
+  /// Teléfono / WhatsApp para envíos y contacto.
+  phone                    String?
+  defaultShippingAddress   String?
+  defaultShippingCity      String?
+  defaultShippingProvince  String?
+  defaultShippingPostalCode String?
+  defaultShippingNotes     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

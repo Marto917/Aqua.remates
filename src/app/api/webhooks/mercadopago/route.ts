@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { confirmRetailOrderForCustomer } from "@/lib/confirm-retail-order";
 import { fetchMercadoPagoPayment, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 
@@ -43,10 +44,15 @@ export async function POST(req: Request) {
       await prisma.retailOrder.update({
         where: { id: orderId },
         data: {
-          status: "PAYMENT_APPROVED",
           mercadoPagoPaymentId: String(payment.id ?? id),
+          ...(order.status === "PENDING_PAYMENT" ? { status: "PAYMENT_APPROVED" } : {}),
         },
       });
+      try {
+        await confirmRetailOrderForCustomer(orderId);
+      } catch (e) {
+        console.error("Confirmación post-MP:", e);
+      }
     } else if (status === "cancelled" || status === "rejected") {
       if (order.status === "PENDING_PAYMENT") {
         await prisma.retailOrder.update({

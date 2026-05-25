@@ -1,14 +1,19 @@
 import { SignOutButton } from "@/components/SignOutButton";
+import { CustomerShippingProfileForm } from "@/components/cuenta/CustomerShippingProfileForm";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import { updateProfileImageAction } from "./actions";
+import { updateProfileImageAction, updateShippingProfileAction } from "./actions";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { resolveUserAvatarUrl } from "@/lib/user-avatar";
 
-export default async function PerfilPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function PerfilPage({ searchParams }: PageProps) {
   const session = await getSafeSession();
   if (!session?.user?.id) {
     redirect("/login?callbackUrl=/cuenta/perfil");
@@ -17,9 +22,22 @@ export default async function PerfilPage() {
     redirect("/");
   }
 
+  const sp = await searchParams;
+  const phoneError = sp.error === "phone";
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, imageUrl: true },
+    select: {
+      name: true,
+      email: true,
+      imageUrl: true,
+      phone: true,
+      defaultShippingAddress: true,
+      defaultShippingCity: true,
+      defaultShippingProvince: true,
+      defaultShippingPostalCode: true,
+      defaultShippingNotes: true,
+    },
   });
 
   if (!user) {
@@ -62,10 +80,6 @@ export default async function PerfilPage() {
             placeholder="https://..."
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           />
-          <p className="text-xs text-slate-500">
-            Si entraste con Google, tu foto se actualiza sola. Podés pegar otra URL o dejar vacío para usar la imagen
-            predeterminada.
-          </p>
           <button
             type="submit"
             className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
@@ -73,6 +87,22 @@ export default async function PerfilPage() {
             Guardar foto
           </button>
         </form>
+
+        {phoneError ? (
+          <p className="mt-3 text-sm text-rose-600">El teléfono debe tener al menos 8 caracteres.</p>
+        ) : null}
+
+        <CustomerShippingProfileForm
+          action={updateShippingProfileAction}
+          initial={{
+            phone: user.phone ?? "",
+            shippingAddress: user.defaultShippingAddress ?? "",
+            shippingCity: user.defaultShippingCity ?? "",
+            shippingProvince: user.defaultShippingProvince ?? "",
+            shippingPostalCode: user.defaultShippingPostalCode ?? "",
+            shippingNotes: user.defaultShippingNotes ?? "",
+          }}
+        />
       </section>
 
       <div className="flex flex-wrap gap-3 text-sm">

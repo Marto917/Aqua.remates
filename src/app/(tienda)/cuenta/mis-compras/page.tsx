@@ -71,7 +71,11 @@ export default async function MisComprasPage() {
                   Envío: {deliveryDispatchStatusLabel(order.deliveryStatus)}
                 </p>
               ) : null}
-              {order.deliveryStatus === "DISPATCHED" && order.deliveryCode ? (
+              {isHomeDelivery(order.shippingMethod) &&
+              order.deliveryCode &&
+              (order.status === "CONFIRMED" ||
+                order.deliveryStatus === "DISPATCHED" ||
+                order.deliveryStatus === "PENDING") ? (
                 <DeliveryCodeForCustomer code={order.deliveryCode} className="mt-3" />
               ) : null}
               {order.deliveryStatus === "DELIVERED" ? (

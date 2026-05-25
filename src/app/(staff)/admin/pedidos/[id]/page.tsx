@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RetailOrderStatus } from "@prisma/client";
 import Image from "next/image";
-import { approveTransferOrder, rejectTransferOrder, updateRetailOrderStatus } from "../actions";
-import { IconCheck, IconX } from "@/components/icons/StaffIcons";
+import { updateRetailOrderStatus } from "../actions";
+import { TransferReviewButtons } from "@/components/staff/TransferReviewButtons";
 import { formatArs } from "@/lib/currency";
 import {
   retailOrderStatusLabel,
@@ -11,19 +11,47 @@ import {
   retailShippingMethodLabel,
 } from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
+import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { isHomeDelivery } from "@/lib/shipping";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
 
 export default async function AdminPedidoDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const order = await prisma.retailOrder.findUnique({
-    where: { id },
-    include: {
-      items: { include: { product: true, variant: true } },
-      customer: { select: { email: true, name: true } },
-    },
-  });
+
+  let order: Awaited<
+    ReturnType<
+      typeof prisma.retailOrder.findUnique<{
+        include: {
+          items: { include: { product: true; variant: true } };
+          customer: { select: { email: true; name: true } };
+        };
+      }>
+    >
+  >;
+
+  try {
+    order = await prisma.retailOrder.findUnique({
+      where: { id },
+      include: {
+        items: { include: { product: true, variant: true } },
+        customer: { select: { email: true, name: true } },
+      },
+    });
+  } catch (e) {
+    console.error("AdminPedidoDetailPage load:", e);
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
+        <h1 className="font-semibold">No se pudo cargar el pedido</h1>
+        <p className="mt-2">{staffActionErrorMessage(e)}</p>
+        <Link href="/admin/pedidos" className="mt-4 inline-block font-medium text-brand-dark underline">
+          Volver a pedidos
+        </Link>
+      </div>
+    );
+  }
 
   if (!order) {
     notFound();
@@ -35,7 +63,7 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
     isTransfer &&
     order.status !== "CANCELLED" &&
     order.status !== "CONFIRMED" &&
-    (order.status === "TRANSFER_REPORTED" || order.transferProofUrl);
+    (order.status === "TRANSFER_REPORTED" || order.status === "PENDING_TRANSFER");
 
   return (
     <div className="space-y-6">
@@ -86,10 +114,6 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
                 <dd className="text-right text-slate-800">{order.customer.email}</dd>
               </div>
             ) : null}
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Facturación</dt>
-              <dd className="text-right text-slate-800">{order.billingMode}</dd>
-            </div>
           </dl>
         </section>
 
@@ -225,29 +249,8 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
           <p className="mt-1 text-xs text-slate-600">
             Si el pago está acreditado, aceptá el pedido para pasarlo a envíos. Si no, decliná.
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <form action={approveTransferOrder}>
-              <input type="hidden" name="id" value={order.id} />
-              <button
-                type="submit"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
-                aria-label="Aceptar pago y confirmar pedido"
-                title="Aceptar"
-              >
-                <IconCheck className="h-5 w-5" />
-              </button>
-            </form>
-            <form action={rejectTransferOrder}>
-              <input type="hidden" name="id" value={order.id} />
-              <button
-                type="submit"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-700"
-                aria-label="Declinar pedido"
-                title="Declinar"
-              >
-                <IconX className="h-5 w-5" />
-              </button>
-            </form>
+          <div className="mt-4">
+            <TransferReviewButtons orderId={order.id} />
           </div>
         </section>
       ) : null}
