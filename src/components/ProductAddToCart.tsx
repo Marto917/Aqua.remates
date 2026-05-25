@@ -1,22 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Suspense } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import { useCart } from "@/contexts/cart-context";
-import { useSearchParams } from "next/navigation";
-import type { PriceMode } from "@/lib/catalog-pricing";
+import { useStoreSettings } from "@/contexts/store-settings-context";
+import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
-import { retailDiscountBadgePercent } from "@/lib/product-pricing-display";
-import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
+import {
+  getDiscountBadgeLabel,
+  shouldShowDiscountBadge,
+} from "@/lib/product-pricing-display";
+import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type Variant = {
   id: string;
   colorLabel: string;
   imageUrl: string | null;
   imagePosition?: string | null;
+  imageScale?: unknown;
 };
 
 type Product = {
@@ -24,11 +27,11 @@ type Product = {
   name: string;
   imageUrl: string;
   imagePosition?: string | null;
+  imageScale?: unknown;
   listPrice: unknown;
   retailPrice: unknown;
-  wholesalePrice: unknown;
   discountRetailPercent: number;
-  discountWholesalePercent: number;
+  discountBadgeLabel?: string | null;
 };
 
 type ProductAddToCartProps = {
@@ -41,10 +44,9 @@ type ProductAddToCartProps = {
   reviewCount: number;
 };
 
-function StarsDisplay({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
-  const cls = size === "sm" ? "text-base" : "text-xl";
+function StarsDisplay({ rating }: { rating: number }) {
   return (
-    <span className={`${cls} text-amber-400`} aria-hidden>
+    <span className="text-xl text-amber-400" aria-hidden>
       {Array.from({ length: 5 }, (_, i) => (
         <span key={i}>{i < Math.round(rating) ? "★" : "☆"}</span>
       ))}
@@ -52,7 +54,7 @@ function StarsDisplay({ rating, size = "md" }: { rating: number; size?: "sm" | "
   );
 }
 
-function ProductAddToCartInner({
+export function ProductAddToCart({
   product,
   variants,
   title,
@@ -61,43 +63,47 @@ function ProductAddToCartInner({
   reviewAverage,
   reviewCount,
 }: ProductAddToCartProps) {
-  const searchParams = useSearchParams();
-  const priceMode: PriceMode = searchParams.get("priceMode") === "wholesale" ? "wholesale" : "retail";
-
+  const settings = useStoreSettings();
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
   const [qty, setQty] = useState(1);
-  const { addLine, mode, lines } = useCart();
+  const [added, setAdded] = useState(false);
+  const { addLine, hydrated } = useCart();
 
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
   const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
   const imagePosition = selected?.imagePosition ?? product.imagePosition;
-  const badge =
-    priceMode === "retail" ? retailDiscountBadgePercent(product) : null;
+  const imageScale = Number(selected?.imageScale ?? product.imageScale ?? 1);
+  const showBadge = shouldShowDiscountBadge(product.discountRetailPercent);
+  const badgeLabel = getDiscountBadgeLabel(product, settings);
 
-  const totalUnitsThisProduct = useMemo(() => {
-    const forProduct = lines.filter((l) => l.productId === product.id);
-    const sum = forProduct.reduce((a, l) => a + l.quantity, 0);
-    const line = forProduct.find((l) => l.variantId === variantId);
-    if (line) return sum - line.quantity + qty;
-    return sum + qty;
-  }, [lines, product.id, variantId, qty]);
-
-  const previewTotals = useMemo(() => {
-    const m = quantityByProductId(lines.map((l) => ({ productId: l.productId, quantity: l.quantity })));
-    m.set(product.id, totalUnitsThisProduct);
-    return m;
-  }, [lines, product.id, totalUnitsThisProduct]);
-
-  const effectiveMode: PriceMode = getEffectivePriceModeForProduct(mode, product.id, previewTotals);
-  const displayMode = priceMode === "wholesale" ? effectiveMode : "retail";
-
-  const retail = Number(product.retailPrice);
-  const wholesale = Number(product.wholesalePrice);
-  const dr = product.discountRetailPercent;
-  const dw = product.discountWholesalePercent;
+  const pricing = useMemo(
+    () => ({
+      listPrice: getListPrice(product),
+      transferPrice: getTransferPrice(product),
+      discountPercent: product.discountRetailPercent,
+    }),
+    [product],
+  );
 
   if (!selected) {
     return <p className="text-sm text-rose-600">No hay variantes disponibles.</p>;
+  }
+
+  function handleAdd() {
+    addLine({
+      variantId: selected.id,
+      productId: product.id,
+      productName: title,
+      colorLabel: formatDisplayWords(selected.colorLabel),
+      imageUrl: displayImage,
+      listPrice: pricing.listPrice,
+      transferPrice: pricing.transferPrice,
+      discountPercent: pricing.discountPercent,
+      quantity: qty,
+    });
+    setAdded(true);
+    setQty(1);
+    setTimeout(() => setAdded(false), 2500);
   }
 
   return (
@@ -108,12 +114,13 @@ function ProductAddToCartInner({
             src={displayImage}
             alt={title}
             position={imagePosition}
+            scale={imageScale}
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
-          {badge != null && badge > 0 ? (
-            <span className="absolute left-3 top-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-lg">
-              -{badge}%
+          {showBadge ? (
+            <span className="absolute left-2 top-2 flex min-h-[4.5rem] min-w-[4.5rem] max-w-[6rem] items-center justify-center rounded-full bg-brand px-2.5 py-1 text-center text-[10px] font-bold uppercase leading-tight text-white shadow-lg sm:min-h-20 sm:min-w-20 sm:text-xs">
+              {badgeLabel}
             </span>
           ) : null}
         </div>
@@ -147,30 +154,37 @@ function ProductAddToCartInner({
           )}
         </div>
 
-        <ProductPriceBlock product={product} mode={displayMode} size="detail" />
+        <ProductPriceBlock product={product} settings={settings} size="detail" showMercadoPago />
 
         <div>
           <p className="mb-2 text-sm font-semibold text-slate-800">Color</p>
           <div className="flex flex-wrap gap-2">
             {variants.map((v) => {
               const isPicked = v.id === variantId;
+              const bg = swatchColorForLabel(v.colorLabel);
               return (
                 <button
                   key={v.id}
                   type="button"
                   onClick={() => setVariantId(v.id)}
                   title={formatDisplayWords(v.colorLabel)}
-                  className={`rounded-lg border px-3 py-2 text-sm transition ${
+                  aria-label={`Color ${formatDisplayWords(v.colorLabel)}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full border-2 transition ${
                     isPicked
-                      ? "border-brand-dark bg-brand-muted font-semibold text-brand-dark"
-                      : "border-slate-200 text-slate-700 hover:border-slate-400"
+                      ? "border-brand-dark ring-2 ring-brand/50 ring-offset-2"
+                      : "border-slate-200 hover:border-slate-400"
                   }`}
-                >
-                  {formatDisplayWords(v.colorLabel)}
-                </button>
+                  style={{ backgroundColor: bg }}
+                />
               );
             })}
           </div>
+          <p className="mt-2 text-sm text-slate-600">
+            Seleccionado:{" "}
+            <span className="font-medium text-slate-900">
+              {formatDisplayWords(selected.colorLabel)}
+            </span>
+          </p>
         </div>
 
         <label className="flex w-fit items-center gap-3 text-sm font-medium text-slate-800">
@@ -186,34 +200,13 @@ function ProductAddToCartInner({
 
         <button
           type="button"
-          onClick={() => {
-            addLine({
-              variantId: selected.id,
-              productId: product.id,
-              productName: title,
-              colorLabel: formatDisplayWords(selected.colorLabel),
-              imageUrl: displayImage,
-              retailPrice: retail,
-              wholesalePrice: wholesale,
-              discountRetailPercent: dr,
-              discountWholesalePercent: dw,
-              quantity: qty,
-            });
-            setQty(1);
-          }}
-          className="w-full rounded-md bg-brand py-4 text-base font-bold uppercase tracking-wide text-white shadow-md hover:bg-brand-dark"
+          disabled={!hydrated}
+          onClick={handleAdd}
+          className="w-full rounded-md bg-brand py-4 text-base font-bold uppercase tracking-wide text-white shadow-md hover:bg-brand-dark disabled:opacity-60"
         >
-          Agregar al carrito
+          {!hydrated ? "Cargando carrito…" : added ? "✓ Agregado al carrito" : "Agregar al carrito"}
         </button>
       </div>
     </div>
-  );
-}
-
-export function ProductAddToCart(props: ProductAddToCartProps) {
-  return (
-    <Suspense fallback={<p className="text-sm text-slate-500">Cargando producto…</p>}>
-      <ProductAddToCartInner {...props} />
-    </Suspense>
   );
 }

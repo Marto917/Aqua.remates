@@ -1,15 +1,15 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { CATEGORY_NAMES } from "@/lib/categories";
 import { COLOR_OPTIONS } from "@/lib/color-options";
 
 type Props = {
   initialError?: string;
   supplierNames?: string[];
+  categories: { id: string; name: string; slug: string }[];
 };
 
-export function AdminProductCreateForm({ initialError, supplierNames = [] }: Props) {
+export function AdminProductCreateForm({ initialError, supplierNames = [], categories }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
@@ -138,54 +138,44 @@ export function AdminProductCreateForm({ initialError, supplierNames = [] }: Pro
             className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
           />
         </div>
+        <input
+          name="sku"
+          placeholder="Código de producto (QR / escaneo)"
+          className="rounded-md border px-3 py-2 md:col-span-2"
+        />
         <select name="categoryName" required className="rounded-md border px-3 py-2">
           <option value="">Seleccionar categoría</option>
-          {CATEGORY_NAMES.map((category) => (
-            <option key={category} value={category}>
-              {category}
+          {categories.map((category) => (
+            <option key={category.id} value={category.name}>
+              {category.name}
             </option>
           ))}
         </select>
         <input
-          name="listPrice"
+          name="transferPrice"
           required
           type="number"
           step="0.01"
-          placeholder="Precio de lista"
-          className="rounded-md border px-3 py-2"
-        />
-        <input
-          name="retailPrice"
-          required
-          type="number"
-          step="0.01"
-          placeholder="Precio minorista"
-          className="rounded-md border px-3 py-2"
-        />
-        <input
-          name="wholesalePrice"
-          required
-          type="number"
-          step="0.01"
-          placeholder="Precio mayorista"
+          placeholder="Precio con transferencia"
           className="rounded-md border px-3 py-2"
         />
         <input
           name="discountRetailPercent"
           type="number"
           min="0"
-          max="100"
-          placeholder="Descuento minorista (%) - opcional"
+          max="90"
+          defaultValue={15}
+          placeholder="Descuento sobre lista (%)"
           className="rounded-md border px-3 py-2"
         />
         <input
-          name="discountWholesalePercent"
-          type="number"
-          min="0"
-          max="100"
-          placeholder="Descuento mayorista (%) - opcional"
-          className="rounded-md border px-3 py-2"
+          name="discountBadgeLabel"
+          placeholder="Texto badge (opcional)"
+          className="rounded-md border px-3 py-2 md:col-span-2"
         />
+        <p className="md:col-span-2 text-xs text-slate-500">
+          El precio de lista se calcula automáticamente: transferencia + 15%.
+        </p>
       </div>
 
       <textarea

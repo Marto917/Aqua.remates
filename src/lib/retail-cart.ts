@@ -1,9 +1,6 @@
-import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
+import { getMercadoPagoPrice, getTransferPrice } from "@/lib/store-pricing";
+import { getStoreSettings } from "@/lib/store-settings";
 import { prisma } from "@/lib/prisma";
-import {
-  getEffectivePriceModeForProduct,
-  quantityByProductId,
-} from "@/lib/wholesale-pricing";
 
 export type RetailCheckoutLineInput = {
   variantId: string;
@@ -28,21 +25,19 @@ export type ResolvedRetailCart = {
 
 export async function resolveRetailCartLines(
   inputs: RetailCheckoutLineInput[],
-  mode: PriceMode,
+  paymentMethod: "BANK_TRANSFER" | "MERCADO_PAGO",
 ): Promise<{ ok: true; cart: ResolvedRetailCart } | { ok: false; error: string }> {
   if (inputs.length === 0) {
     return { ok: false, error: "El carrito está vacío." };
   }
 
+  const settings = await getStoreSettings();
   const variantIds = [...new Set(inputs.map((l) => l.variantId))];
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: variantIds }, isActive: true },
     include: { product: true },
   });
   const byId = new Map(variants.map((v) => [v.id, v]));
-
-  const qtyRows = inputs.map((l) => ({ productId: l.productId, quantity: l.quantity }));
-  const totalsByProduct = quantityByProductId(qtyRows);
 
   const lines: ResolvedRetailLine[] = [];
   let totalAmount = 0;
@@ -59,16 +54,17 @@ export async function resolveRetailCartLines(
       return { ok: false, error: "Cantidad inválida." };
     }
 
-    const eff = getEffectivePriceModeForProduct(mode, input.productId, totalsByProduct);
-    const unitPrice = getFinalUnitPrice(
-      {
-        retailPrice: Number(variant.product.retailPrice),
-        wholesalePrice: Number(variant.product.wholesalePrice),
-        discountRetailPercent: variant.product.discountRetailPercent,
-        discountWholesalePercent: variant.product.discountWholesalePercent,
-      },
-      eff,
-    );
+    const pricing = {
+      listPrice: variant.product.listPrice,
+      retailPrice: variant.product.retailPrice,
+      discountRetailPercent: variant.product.discountRetailPercent,
+    };
+
+    const unitPrice =
+      paymentMethod === "MERCADO_PAGO"
+        ? getMercadoPagoPrice(pricing, settings.mercadoPagoMarkupPercent)
+        : getTransferPrice(pricing);
+
     const subtotal = unitPrice * input.quantity;
     totalAmount += subtotal;
     lines.push({

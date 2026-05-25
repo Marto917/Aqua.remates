@@ -3,8 +3,8 @@
   "functions": {
     "/api/admin/banners": {},
     "/api/admin/export-catalog": {},
+    "/api/admin/products": {},
     "/api/images/default-product": {},
-    "/api/search-suggestions": {},
-    "/api/admin/products": {}
+    "/api/search-suggestions": {}
   }
 }

@@ -134,6 +134,18 @@
       "namedRegex": "^/admin/aprobaciones(?:/)?$"
     },
     {
+      "page": "/admin/categorias",
+      "regex": "^/admin/categorias(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/categorias(?:/)?$"
+    },
+    {
+      "page": "/admin/configuracion",
+      "regex": "^/admin/configuracion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/configuracion(?:/)?$"
+    },
+    {
       "page": "/admin/finance",
       "regex": "^/admin/finance(?:/)?$",
       "routeKeys": {},

@@ -162,17 +162,26 @@ model Product {
   id                       String            @id @default(cuid())
   name                     String
   slug                     String            @unique
+  /// Código para QR / escaneo en armado de pedidos.
+  sku                      String?           @unique
   supplierName             String?
   description              String
   /// Imagen por defecto si la variante no tiene imagen propia.
   imageUrl                 String
   /// Encuadre CSS object-position, ej. "50% 35%"
   imagePosition            String?           @default("50% 50%")
+  /// Zoom visual 0.8–1.5
+  imageScale               Decimal           @default(1) @db.Decimal(4, 2)
+  /// Precio de lista (= precio transferencia × 1.15 por defecto).
   listPrice                Decimal           @db.Decimal(10, 2)
+  /// Precio con transferencia bancaria.
   retailPrice              Decimal           @db.Decimal(10, 2)
   wholesalePrice           Decimal           @db.Decimal(10, 2)
-  discountRetailPercent    Int               @default(0)
+  /// Descuento % sobre lista → precio transferencia (default 15).
+  discountRetailPercent    Int               @default(15)
   discountWholesalePercent Int               @default(0)
+  /// Texto del badge (sin números). Vacío = usar el de la tienda.
+  discountBadgeLabel       String?
   isActive                 Boolean           @default(true)
   isBestSeller             Boolean           @default(false)
   categoryId               String
@@ -193,6 +202,7 @@ model ProductVariant {
   colorLabel String
   imageUrl  String?
   imagePosition String?  @default("50% 50%")
+  imageScale    Decimal  @default(1) @db.Decimal(4, 2)
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   cartItems CartItem[]
@@ -358,4 +368,17 @@ model Banner {
   endsAt    DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+/// Configuración global de la tienda (datos bancarios, recargos, textos).
+model StoreSettings {
+  id                      String   @id @default("default")
+  bankHolder              String   @default("Aqua SRL")
+  bankAlias               String   @default("aqua.tienda")
+  bankCbu                 String   @default("")
+  bankExtraNotes          String?
+  transferDiscountPercent Int      @default(15)
+  mercadoPagoMarkupPercent Int     @default(10)
+  discountBadgeLabel      String   @default("descuento transferencia")
+  updatedAt               DateTime @updatedAt
 }

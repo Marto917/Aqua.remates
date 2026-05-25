@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { BANK_TRANSFER } from "@/lib/constants";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
+import { getStoreSettings } from "@/lib/store-settings";
 
 const lineSchema = z.object({
   variantId: z.string().min(1),
@@ -25,13 +25,9 @@ const checkoutSchema = z
     shippingProvince: z.string().optional(),
     shippingPostalCode: z.string().optional(),
     shippingNotes: z.string().optional(),
-    mode: z.enum(["retail", "wholesale"]),
     lines: z.array(lineSchema).min(1),
   })
   .superRefine((data, ctx) => {
-    if (data.mode !== "retail") {
-      ctx.addIssue({ code: "custom", message: "El checkout minorista solo aplica en modo minorista.", path: ["mode"] });
-    }
     if (data.shippingMethod === "DELIVERY") {
       if (!data.shippingAddress?.trim()) {
         ctx.addIssue({ code: "custom", message: "Indicá la dirección de envío.", path: ["shippingAddress"] });
@@ -64,11 +60,12 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
-  const resolved = await resolveRetailCartLines(data.lines, "retail");
+  const resolved = await resolveRetailCartLines(data.lines, data.paymentMethod);
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: 400 });
   }
 
+  const settings = await getStoreSettings();
   const { cart } = resolved;
   const isTransfer = data.paymentMethod === "BANK_TRANSFER";
   const status = isTransfer ? "PENDING_TRANSFER" : "PENDING_PAYMENT";
@@ -89,8 +86,8 @@ export async function POST(req: Request) {
       deliveryStatus: initialDeliveryStatus(data.shippingMethod),
       totalAmount: cart.totalAmount,
       status,
-      transferAlias: isTransfer ? BANK_TRANSFER.alias : null,
-      transferCbu: isTransfer ? BANK_TRANSFER.cbu : null,
+      transferAlias: isTransfer ? settings.bankAlias : null,
+      transferCbu: isTransfer ? settings.bankCbu : null,
       items: {
         create: cart.lines.map((line) => ({
           productId: line.productId,
@@ -109,7 +106,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       orderId: order.id,
       paymentMethod: "BANK_TRANSFER",
-      transfer: BANK_TRANSFER,
+      transfer: {
+        holder: settings.bankHolder,
+        alias: settings.bankAlias,
+        cbu: settings.bankCbu,
+        notes: settings.bankExtraNotes,
+      },
       totalAmount: cart.totalAmount,
     });
   }

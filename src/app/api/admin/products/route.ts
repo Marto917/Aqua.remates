@@ -2,11 +2,13 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
-import { categorySlugFromName, CATEGORY_NAMES, type CategoryName } from "@/lib/categories";
+import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
+import { listPriceFromTransfer } from "@/lib/store-pricing";
+import { getStoreSettings } from "@/lib/store-settings";
 import { ensureUniqueProductSlug } from "@/lib/unique-product-slug";
 
 export const runtime = "nodejs";
@@ -37,24 +39,17 @@ const discountPercentSchema = z.preprocess(
   z.number().int().min(0).max(100),
 );
 
-const categoryNameSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .refine((value): value is CategoryName => CATEGORY_NAMES.includes(value as CategoryName), {
-    message: "Categoria invalida",
-  });
+const categoryNameSchema = z.string().trim().min(2).max(40);
 
 const productSchema = z.object({
   name: z.string().trim().min(2),
+  sku: z.string().trim().max(64).optional(),
   supplierName: z.string().trim().min(2, "El proveedor es obligatorio."),
   description: z.string().optional().transform((value) => value?.trim() ?? ""),
   categoryName: categoryNameSchema,
-  listPrice: positiveAmountSchema,
-  retailPrice: positiveAmountSchema,
-  wholesalePrice: positiveAmountSchema,
-  discountRetailPercent: discountPercentSchema.default(0),
-  discountWholesalePercent: discountPercentSchema.default(0),
+  transferPrice: positiveAmountSchema,
+  discountRetailPercent: discountPercentSchema.default(15),
+  discountBadgeLabel: z.string().trim().max(80).optional(),
   isBestSeller: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -111,40 +106,35 @@ export async function POST(req: Request) {
     return errorResponse(req, 400, "El proveedor es obligatorio.");
   }
 
-  const listPriceCandidate = parseNumericInput(formData.get("listPrice"));
-  const retailPriceCandidate = parseNumericInput(formData.get("retailPrice"));
-  const wholesalePriceCandidate = parseNumericInput(formData.get("wholesalePrice"));
+  const transferCandidate = parseNumericInput(formData.get("transferPrice") ?? formData.get("retailPrice"));
+  const settings = await getStoreSettings();
 
   const normalizedData = parsed.success
     ? parsed.data
     : {
         name: rawName,
+        sku: String(formData.get("sku") ?? "").trim() || undefined,
         supplierName: rawSupplierName,
         description: rawDescription,
-        categoryName: CATEGORY_NAMES.includes(rawCategory as CategoryName)
-          ? (rawCategory as CategoryName)
-          : CATEGORY_NAMES[0],
-        listPrice: listPriceCandidate && listPriceCandidate > 0 ? listPriceCandidate : 1,
-        retailPrice:
-          retailPriceCandidate && retailPriceCandidate > 0
-            ? retailPriceCandidate
-            : listPriceCandidate && listPriceCandidate > 0
-              ? listPriceCandidate
-              : 1,
-        wholesalePrice:
-          wholesalePriceCandidate && wholesalePriceCandidate > 0
-            ? wholesalePriceCandidate
-            : retailPriceCandidate && retailPriceCandidate > 0
-              ? retailPriceCandidate
-              : 1,
-        discountRetailPercent: Math.max(0, Math.min(100, Math.round(parseNumericInput(formData.get("discountRetailPercent")) ?? 0))),
-        discountWholesalePercent: Math.max(
+        categoryName: rawCategory || "bazar",
+        transferPrice: transferCandidate && transferCandidate > 0 ? transferCandidate : 1,
+        discountRetailPercent: Math.max(
           0,
-          Math.min(100, Math.round(parseNumericInput(formData.get("discountWholesalePercent")) ?? 0)),
+          Math.min(
+            100,
+            Math.round(
+              parseNumericInput(formData.get("discountRetailPercent")) ??
+                settings.transferDiscountPercent,
+            ),
+          ),
         ),
+        discountBadgeLabel: String(formData.get("discountBadgeLabel") ?? "").trim() || undefined,
         isBestSeller: formData.get("isBestSeller") === "on",
         isActive: formData.get("isActive") === "on",
       };
+
+  const transferPrice = normalizedData.transferPrice;
+  const listPrice = listPriceFromTransfer(transferPrice);
 
   const file = formData.get("imageFile");
   let imageUrl = DEFAULT_PRODUCT_IMAGE;
@@ -172,15 +162,17 @@ export async function POST(req: Request) {
   const product = await prisma.product.create({
     data: {
       name: normalizedData.name,
+      sku: normalizedData.sku || null,
       supplierName: normalizedData.supplierName,
       slug: productSlug,
       description: normalizedData.description,
       imageUrl,
-      listPrice: normalizedData.listPrice,
-      retailPrice: normalizedData.retailPrice,
-      wholesalePrice: normalizedData.wholesalePrice,
+      listPrice,
+      retailPrice: transferPrice,
+      wholesalePrice: transferPrice,
       discountRetailPercent: normalizedData.discountRetailPercent,
-      discountWholesalePercent: normalizedData.discountWholesalePercent,
+      discountWholesalePercent: 0,
+      discountBadgeLabel: normalizedData.discountBadgeLabel ?? null,
       isBestSeller: normalizedData.isBestSeller,
       isActive: normalizedData.isActive,
       category: {

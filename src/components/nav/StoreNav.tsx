@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
+import { CartNavButton } from "@/components/CartNavButton";
 import { SignOutButton } from "@/components/SignOutButton";
-import { IconCart, IconCatalog, IconHome } from "@/components/icons/NavIcons";
+import { IconCatalog, IconHome } from "@/components/icons/NavIcons";
 import { SiteLogo } from "@/components/SiteLogo";
 import { UserProfileChip } from "@/components/nav/UserProfileChip";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
@@ -40,7 +41,7 @@ export async function StoreNav({ session }: Props) {
           className="flex shrink-0 items-center font-semibold text-brand-dark"
           aria-label="Inicio AQUA"
         >
-          <SiteLogo size={44} />
+          <SiteLogo />
         </Link>
 
         <div className="flex justify-center px-1">
@@ -62,13 +63,7 @@ export async function StoreNav({ session }: Props) {
           >
             <IconCatalog />
           </Link>
-          <Link
-            href="/carrito"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
-            aria-label="Carrito"
-          >
-            <IconCart />
-          </Link>
+          <CartNavButton />
 
           {!isLoggedIn ? (
             <>

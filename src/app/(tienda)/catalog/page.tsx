@@ -1,9 +1,6 @@
-import { Suspense } from "react";
-import { CatalogPriceModeSync } from "@/components/CatalogPriceModeSync";
 import { CatalogToolbar } from "@/components/CatalogToolbar";
-import { PriceModeSwitch } from "@/components/PriceModeSwitch";
 import { ProductCard } from "@/components/ProductCard";
-import { getCatalogData, type PriceMode } from "@/lib/catalog";
+import { getCatalogData } from "@/lib/catalog";
 
 type CatalogPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -13,12 +10,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : undefined;
   const category = typeof params.category === "string" ? params.category : undefined;
-  const priceMode: PriceMode = params.priceMode === "wholesale" ? "wholesale" : "retail";
 
   let products: Awaited<ReturnType<typeof getCatalogData>>["products"] = [];
 
   try {
-    const data = await getCatalogData({ q, category, priceMode });
+    const data = await getCatalogData({ q, category });
     products = data.products;
   } catch (error) {
     console.error("No se pudo cargar el catalogo:", error);
@@ -26,25 +22,18 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   return (
     <div className="space-y-6">
-      <Suspense fallback={null}>
-        <CatalogPriceModeSync />
-      </Suspense>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
         <h1 className="text-2xl font-semibold text-brand-dark">Catálogo</h1>
-        <Suspense fallback={null}>
-          <PriceModeSwitch />
-        </Suspense>
+        <p className="mt-1 text-sm text-slate-600">
+          Precio de lista y precio con transferencia en cada producto.
+        </p>
       </div>
 
-      <CatalogToolbar
-        selectedCategory={category}
-        search={q}
-        priceMode={priceMode}
-      />
+      <CatalogToolbar selectedCategory={category} search={q} />
 
       <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
         {products.length > 0 ? (
-          products.map((product) => <ProductCard key={product.id} product={product} mode={priceMode} />)
+          products.map((product) => <ProductCard key={product.id} product={product} />)
         ) : (
           <p className="text-sm text-slate-600">No encontramos productos con esos filtros.</p>
         )}

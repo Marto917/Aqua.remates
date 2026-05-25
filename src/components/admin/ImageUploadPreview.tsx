@@ -6,44 +6,48 @@ import { ProductImage } from "@/components/ProductImage";
 type Props = {
   name: string;
   positionName: string;
+  scaleName?: string;
   label: string;
   currentUrl?: string | null;
   currentPosition?: string | null;
-  aspectClass?: string;
+  currentScale?: unknown;
+  previewMode?: "card" | "detail";
 };
 
 export function ImageUploadPreview({
   name,
   positionName,
+  scaleName = "imageScale",
   label,
   currentUrl,
   currentPosition,
-  aspectClass = "aspect-[4/3]",
+  currentScale,
+  previewMode = "card",
 }: Props) {
   const initial = parseObjectPosition(currentPosition ?? "50% 50%");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [posX, setPosX] = useState(initial.x);
   const [posY, setPosY] = useState(initial.y);
+  const [scale, setScale] = useState(() => {
+    const n = Number(currentScale);
+    return Number.isFinite(n) ? Math.min(1.5, Math.max(0.8, n)) : 1;
+  });
   const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     return () => {
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-      }
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     };
   }, []);
 
   const displayUrl = previewUrl ?? currentUrl ?? null;
   const objectPosition = `${posX}% ${posY}%`;
+  const aspectClass = previewMode === "detail" ? "aspect-[3/4] max-w-md" : "aspect-[3/4]";
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-    }
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     const url = URL.createObjectURL(file);
     blobUrlRef.current = url;
     setPreviewUrl(url);
@@ -52,17 +56,36 @@ export function ImageUploadPreview({
   return (
     <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
       <p className="text-sm font-medium text-slate-800">{label}</p>
-      <div className={`relative w-full overflow-hidden rounded-lg bg-slate-200 ${aspectClass}`}>
+      <p className="text-xs text-slate-500">
+        Vista previa como en la {previewMode === "detail" ? "ficha del producto" : "grilla del catálogo"}.
+      </p>
+      <div className={`relative w-full overflow-hidden rounded-lg bg-slate-100 ${aspectClass}`}>
         {displayUrl ? (
-          <ProductImage src={displayUrl} alt="Vista previa" position={objectPosition} sizes="400px" />
+          <ProductImage
+            src={displayUrl}
+            alt="Vista previa"
+            position={objectPosition}
+            scale={scale}
+            sizes="400px"
+          />
         ) : (
-          <div className="flex h-full min-h-[120px] items-center justify-center text-sm text-slate-500">
+          <div className="flex h-full min-h-[160px] items-center justify-center text-sm text-slate-500">
             Sin imagen
           </div>
         )}
       </div>
-      <p className="text-xs text-slate-500">Así se verá en la tienda. Ajustá el encuadre:</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="text-xs text-slate-600 sm:col-span-3">
+          Zoom ({Math.round(scale * 100)}%)
+          <input
+            type="range"
+            min={80}
+            max={150}
+            value={Math.round(scale * 100)}
+            onChange={(e) => setScale(Number(e.target.value) / 100)}
+            className="mt-1 w-full accent-brand"
+          />
+        </label>
         <label className="text-xs text-slate-600">
           Horizontal ({posX}%)
           <input
@@ -87,6 +110,7 @@ export function ImageUploadPreview({
         </label>
       </div>
       <input type="hidden" name={positionName} value={objectPosition} />
+      <input type="hidden" name={scaleName} value={String(scale)} />
       <input
         type="file"
         name={name}

@@ -25,7 +25,7 @@ export async function StaffNav({ area }: StaffNavProps) {
       <div className="mx-auto max-w-6xl px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href={homeHref} className="font-semibold text-brand-dark">
-            <SiteLogo size={40} />
+            <SiteLogo />
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             {ctx.preview ? (
@@ -69,6 +69,12 @@ export async function StaffNav({ area }: StaffNavProps) {
           </Link>
           <Link href="/admin/productos" className={linkClass}>
             Catálogo
+          </Link>
+          <Link href="/admin/categorias" className={linkClass}>
+            Categorías
+          </Link>
+          <Link href="/admin/configuracion" className={linkClass}>
+            Configuración
           </Link>
           {showUsers ? (
             <Link href="/admin/usuarios" className={linkClass}>

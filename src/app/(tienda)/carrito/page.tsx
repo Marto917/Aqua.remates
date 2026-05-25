@@ -1,21 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
-import { getEffectivePriceModeForProduct } from "@/lib/wholesale-pricing";
-import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
 import { formatDisplayWords } from "@/lib/display-text";
-import { ERROR_PRODUCT_IMAGE, resolveProductImageUrl } from "@/lib/product-images";
+import { resolveProductImageUrl } from "@/lib/product-images";
+import { getTransferPrice } from "@/lib/store-pricing";
 
 export default function CarritoPage() {
-  const { lines, mode, setQuantity, removeLine, subtotalDisplay, totalsByProduct } = useCart();
+  const { lines, setQuantity, removeLine, subtotalTransfer } = useCart();
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-brand-dark">Carrito</h1>
       <p className="text-sm text-slate-600">
-        Modo actual: <strong>{mode === "wholesale" ? "Mayorista" : "Minorista"}</strong>. En mayorista, el precio
-        mayorista aplica cuando sumás 2 o más unidades del mismo producto (entre colores).
+        Los totales son con <strong>precio transferencia</strong>. En el checkout podés elegir transferencia o
+        Mercado Pago (con un recargo).
       </p>
 
       {lines.length === 0 ? (
@@ -28,16 +28,11 @@ export default function CarritoPage() {
       ) : (
         <ul className="space-y-4">
           {lines.map((line) => {
-            const eff: PriceMode = getEffectivePriceModeForProduct(mode, line.productId, totalsByProduct);
-            const unit = getFinalUnitPrice(
-              {
-                retailPrice: line.retailPrice,
-                wholesalePrice: line.wholesalePrice,
-                discountRetailPercent: line.discountRetailPercent,
-                discountWholesalePercent: line.discountWholesalePercent,
-              },
-              eff,
-            );
+            const unit = getTransferPrice({
+              listPrice: line.listPrice,
+              retailPrice: line.transferPrice,
+              discountRetailPercent: line.discountPercent,
+            });
             const lineTotal = unit * line.quantity;
             return (
               <li
@@ -45,26 +40,18 @@ export default function CarritoPage() {
                 className="flex gap-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
               >
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={resolveProductImageUrl(line.imageUrl)}
                     alt=""
-                    className="h-full w-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.src = ERROR_PRODUCT_IMAGE;
-                    }}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900">
-                    {formatDisplayWords(line.productName)}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    Color: {formatDisplayWords(line.colorLabel)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {eff === "wholesale" ? "Precio mayorista" : "Precio minorista"} c/u
-                  </p>
+                  <p className="font-semibold text-slate-900">{formatDisplayWords(line.productName)}</p>
+                  <p className="text-sm text-slate-500">Color: {formatDisplayWords(line.colorLabel)}</p>
+                  <p className="text-xs text-slate-500">Precio transferencia c/u</p>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     <label className="flex items-center gap-2 text-sm">
                       Cant.
@@ -99,24 +86,15 @@ export default function CarritoPage() {
       {lines.length > 0 && (
         <div className="flex flex-col items-stretch justify-between gap-4 rounded-xl border bg-white p-4 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm text-slate-500">Total estimado</p>
-            <p className="text-2xl font-bold text-brand-dark">{subtotalDisplay}</p>
+            <p className="text-sm text-slate-500">Total (transferencia)</p>
+            <p className="text-2xl font-bold text-brand-dark">{subtotalTransfer}</p>
           </div>
-          {mode === "retail" ? (
-            <Link
-              href="/checkout"
-              className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
-            >
-              Continuar al pago
-            </Link>
-          ) : (
-            <Link
-              href="/mayorista/checkout"
-              className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
-            >
-              Enviar pedido mayorista
-            </Link>
-          )}
+          <Link
+            href="/checkout"
+            className="rounded-full bg-brand px-8 py-3 text-center text-base font-semibold text-white hover:bg-brand-dark"
+          >
+            Continuar al pago
+          </Link>
         </div>
       )}
     </div>

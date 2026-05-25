@@ -79,13 +79,13 @@ export default async function HomePage() {
             </p>
             <div className="mt-6 flex flex-col items-stretch justify-center gap-3 min-[420px]:flex-row min-[420px]:flex-wrap sm:justify-start">
               <Link
-                href="/catalog?priceMode=retail"
+                href="/catalog"
                 className="inline-flex min-h-12 w-full min-[420px]:w-auto items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 active:bg-brand-dark sm:min-h-0 sm:py-2.5 sm:hover:bg-brand-dark"
               >
                 Ver catálogo
               </Link>
               <Link
-                href="/catalog?priceMode=wholesale"
+                href="/catalog"
                 className="inline-flex min-h-12 w-full min-[420px]:w-auto min-[420px]:flex-1 items-center justify-center rounded-full border-2 border-slate-200 bg-white/90 px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm active:bg-slate-50 sm:min-h-0 sm:min-w-0 sm:flex-none sm:py-2.5 sm:hover:border-brand/40 sm:hover:bg-brand-muted/50"
               >
                 Soy comercio — mayorista
@@ -122,7 +122,7 @@ export default async function HomePage() {
             </p>
           </div>
           <Link
-            href="/catalog?priceMode=retail"
+            href="/catalog"
             className="group inline-flex min-h-11 items-center justify-center gap-1 self-center text-sm font-semibold text-brand-dark sm:self-start"
           >
             Ver catálogo completo
@@ -133,7 +133,7 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {homeProducts.length > 0 ? (
-            homeProducts.map((product) => <ProductCard key={product.id} product={product} mode="retail" />)
+            homeProducts.map((product) => <ProductCard key={product.id} product={product} />)
           ) : (
             <p className="col-span-full rounded-2xl border border-dashed border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 px-6 py-12 text-center text-slate-600">
               Aún no hay productos. Podés usar{" "}
@@ -233,7 +233,7 @@ export default async function HomePage() {
             Modo mayorista, carrito y solicitud. Un vendedor te contacta para cerrar el pedido.
           </p>
           <Link
-            href="/catalog?priceMode=wholesale"
+            href="/catalog"
             className="relative mt-5 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-brand-dark underline-offset-4 sm:inline sm:w-auto sm:justify-start sm:hover:underline"
           >
             Ir al catálogo mayorista →
@@ -246,7 +246,7 @@ export default async function HomePage() {
             Precio minorista claro, pago por transferencia y retiro o envío coordinado.
           </p>
           <Link
-            href="/catalog?priceMode=retail"
+            href="/catalog"
             className="relative mt-5 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-brand-dark underline-offset-4 sm:inline sm:w-auto sm:justify-start sm:hover:underline"
           >
             Comprar minorista →

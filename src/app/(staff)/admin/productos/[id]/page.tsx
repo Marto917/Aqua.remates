@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
-import { CATEGORY_NAMES } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -20,6 +19,8 @@ export default async function AdminProductoImagenesPage({
     where: { id },
     include: { variants: { orderBy: { sortOrder: "asc" } }, category: true },
   });
+
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
 
   if (!product) {
     notFound();
@@ -66,20 +67,16 @@ export default async function AdminProductoImagenesPage({
             <span className="mb-1 block text-slate-600">Categoría del producto</span>
             <select
               name="categoryName"
-              defaultValue={
-                CATEGORY_NAMES.includes(product.category.name as (typeof CATEGORY_NAMES)[number])
-                  ? product.category.name
-                  : ""
-              }
+              defaultValue={product.category.name}
               required
               className="rounded-md border px-3 py-2"
             >
               <option value="" disabled>
                 Seleccionar categoría
               </option>
-              {CATEGORY_NAMES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -104,9 +101,12 @@ export default async function AdminProductoImagenesPage({
         <ImageUploadPreview
           name="productImageFile"
           positionName="productImagePosition"
+          scaleName="productImageScale"
           label="Imagen principal (vista en catálogo y ficha)"
           currentUrl={product.imageUrl}
           currentPosition={product.imagePosition}
+          currentScale={product.imageScale}
+          previewMode="card"
         />
 
         <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -126,9 +126,11 @@ export default async function AdminProductoImagenesPage({
                 key={variant.id}
                 name={`variantImage_${variant.id}`}
                 positionName={`variantImagePosition_${variant.id}`}
+                scaleName={`variantImageScale_${variant.id}`}
                 label={`Color: ${variant.colorLabel}`}
                 currentUrl={variant.imageUrl || product.imageUrl}
                 currentPosition={variant.imagePosition ?? product.imagePosition}
+                currentScale={variant.imageScale ?? product.imageScale}
               />
             ))
           )}

@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProductAddToCart } from "@/components/ProductAddToCart";
 import { ProductReviews } from "@/components/ProductReviews";
-import { PriceModeSwitch } from "@/components/PriceModeSwitch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
@@ -57,9 +55,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <Link href="/catalog" className="text-sm font-medium text-brand-dark underline">
           ← Volver al catálogo
         </Link>
-        <Suspense fallback={null}>
-          <PriceModeSwitch />
-        </Suspense>
       </div>
 
       <ProductAddToCart
@@ -70,9 +65,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
           imagePosition: product.imagePosition,
           listPrice: product.listPrice,
           retailPrice: product.retailPrice,
-          wholesalePrice: product.wholesalePrice,
           discountRetailPercent: product.discountRetailPercent,
-          discountWholesalePercent: product.discountWholesalePercent,
+          discountBadgeLabel: product.discountBadgeLabel,
+          imageScale: product.imageScale,
         }}
         variants={product.variants.map((v) => ({
           id: v.id,

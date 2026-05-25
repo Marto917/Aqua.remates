@@ -2,17 +2,24 @@ import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
-import { categorySlugFromName, CATEGORY_NAMES } from "@/lib/categories";
+import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
 
+function parseScale(value: FormDataEntryValue | null): number | undefined {
+  if (value == null) return undefined;
+  const n = Number(String(value));
+  if (!Number.isFinite(n)) return undefined;
+  return Math.min(1.5, Math.max(0.8, n));
+}
+
 const updateAvailabilitySchema = z.object({
   isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
 const updateCategorySchema = z.object({
-  categoryName: z.enum(CATEGORY_NAMES),
+  categoryName: z.string().trim().min(2).max(40),
 });
 
 export async function POST(
@@ -58,19 +65,21 @@ export async function POST(
       }
     }
 
-    if (productImageUrl) {
-      await prisma.product.update({
-        where: { id },
-        data: { imageUrl: productImageUrl },
-      });
-    }
-
     const productPosition = String(formData.get("productImagePosition") ?? "").trim();
+    const productScale = parseScale(formData.get("productImageScale"));
+    const productUpdates: { imageUrl?: string; imagePosition?: string; imageScale?: number } = {};
+
+    if (productImageUrl) {
+      productUpdates.imageUrl = productImageUrl;
+    }
     if (productPosition) {
-      await prisma.product.update({
-        where: { id },
-        data: { imagePosition: productPosition },
-      });
+      productUpdates.imagePosition = productPosition;
+    }
+    if (productScale != null) {
+      productUpdates.imageScale = productScale;
+    }
+    if (Object.keys(productUpdates).length > 0) {
+      await prisma.product.update({ where: { id }, data: productUpdates });
     }
 
     const variantEntries = Array.from(formData.entries()).filter(([key]) =>

@@ -1,13 +1,9 @@
 "use client";
 
-import { getFinalUnitPrice, type PriceMode } from "@/lib/catalog-pricing";
-import {
-  getEffectivePriceModeForProduct,
-  quantityByProductId,
-} from "@/lib/wholesale-pricing";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { getTransferPrice } from "@/lib/store-pricing";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-const STORAGE_KEY = "aqua-cart-v2";
+const STORAGE_KEY = "aqua-cart-v3";
 
 export type CartLine = {
   variantId: string;
@@ -16,30 +12,27 @@ export type CartLine = {
   productName: string;
   colorLabel: string;
   imageUrl: string;
-  retailPrice: number;
-  wholesalePrice: number;
-  discountRetailPercent: number;
-  discountWholesalePercent: number;
+  listPrice: number;
+  transferPrice: number;
+  discountPercent: number;
 };
 
 type CartState = {
-  mode: PriceMode;
   lines: CartLine[];
 };
 
-const defaultState: CartState = { mode: "retail", lines: [] };
+const defaultState: CartState = { lines: [] };
 
 type CartContextValue = {
-  mode: PriceMode;
-  setMode: (mode: PriceMode) => void;
   lines: CartLine[];
   addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   removeLine: (variantId: string) => void;
   clearLines: () => void;
   totalItems: number;
-  subtotalDisplay: string;
-  totalsByProduct: Map<string, number>;
+  subtotalTransfer: string;
+  subtotalTransferAmount: number;
+  hydrated: boolean;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -51,7 +44,7 @@ function loadState(): CartState {
     if (raw) {
       const parsed = JSON.parse(raw) as CartState;
       if (parsed && Array.isArray(parsed.lines)) {
-        return { mode: parsed.mode === "wholesale" ? "wholesale" : "retail", lines: parsed.lines };
+        return { lines: parsed.lines };
       }
     }
   } catch {
@@ -68,26 +61,32 @@ function persistState(state: CartState) {
   }
 }
 
+function lineSubtotal(line: CartLine): number {
+  return getTransferPrice({
+    listPrice: line.listPrice,
+    retailPrice: line.transferPrice,
+    discountRetailPercent: line.discountPercent,
+  }) * line.quantity;
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CartState>(defaultState);
+  const [hydrated, setHydrated] = useState(false);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    // Hidratar carrito desde localStorage solo en el cliente.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga única post-mount
-    setState(loadState());
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const stored = loadState();
+    queueMicrotask(() => {
+      setState((current) => (current.lines.length > 0 ? current : stored));
+      setHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
-    persistState(state);
-  }, [state]);
-
-  const setMode = useCallback((mode: PriceMode) => {
-    setState((s) => ({ ...s, mode }));
-  }, []);
-
-  const clearLines = useCallback(() => {
-    setState((s) => ({ ...s, lines: [] }));
-  }, []);
+    if (hydrated) persistState(state);
+  }, [state, hydrated]);
 
   const addLine = useCallback((line: Omit<CartLine, "quantity"> & { quantity?: number }) => {
     const qty = line.quantity ?? 1;
@@ -96,10 +95,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (idx >= 0) {
         const next = [...s.lines];
         next[idx] = { ...next[idx], quantity: next[idx].quantity + qty };
-        return { ...s, lines: next };
+        return { lines: next };
       }
       return {
-        ...s,
         lines: [
           ...s.lines,
           {
@@ -108,10 +106,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             productName: line.productName,
             colorLabel: line.colorLabel,
             imageUrl: line.imageUrl,
-            retailPrice: line.retailPrice,
-            wholesalePrice: line.wholesalePrice,
-            discountRetailPercent: line.discountRetailPercent,
-            discountWholesalePercent: line.discountWholesalePercent,
+            listPrice: line.listPrice,
+            transferPrice: line.transferPrice,
+            discountPercent: line.discountPercent,
             quantity: qty,
           },
         ],
@@ -122,41 +119,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const setQuantity = useCallback((variantId: string, quantity: number) => {
     setState((s) => {
       if (quantity <= 0) {
-        return { ...s, lines: s.lines.filter((l) => l.variantId !== variantId) };
+        return { lines: s.lines.filter((l) => l.variantId !== variantId) };
       }
       return {
-        ...s,
         lines: s.lines.map((l) => (l.variantId === variantId ? { ...l, quantity } : l)),
       };
     });
   }, []);
 
   const removeLine = useCallback((variantId: string) => {
-    setState((s) => ({ ...s, lines: s.lines.filter((l) => l.variantId !== variantId) }));
+    setState((s) => ({ lines: s.lines.filter((l) => l.variantId !== variantId) }));
   }, []);
 
-  const totalsByProduct = useMemo(
-    () => quantityByProductId(state.lines.map((l) => ({ productId: l.productId, quantity: l.quantity }))),
+  const clearLines = useCallback(() => {
+    setState({ lines: [] });
+  }, []);
+
+  const subtotalTransferAmount = useMemo(
+    () => state.lines.reduce((a, l) => a + lineSubtotal(l), 0),
     [state.lines],
   );
 
-  const subtotalDisplay = useMemo(() => {
-    let sum = 0;
-    for (const line of state.lines) {
-      const eff = getEffectivePriceModeForProduct(state.mode, line.productId, totalsByProduct);
-      const unit = getFinalUnitPrice(
-        {
-          retailPrice: line.retailPrice,
-          wholesalePrice: line.wholesalePrice,
-          discountRetailPercent: line.discountRetailPercent,
-          discountWholesalePercent: line.discountWholesalePercent,
-        },
-        eff,
-      );
-      sum += unit * line.quantity;
-    }
-    return sum.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  }, [state.lines, state.mode, totalsByProduct]);
+  const subtotalTransfer = useMemo(
+    () =>
+      subtotalTransferAmount.toLocaleString("es-AR", {
+        style: "currency",
+        currency: "ARS",
+      }),
+    [subtotalTransferAmount],
+  );
 
   const totalItems = useMemo(
     () => state.lines.reduce((a, l) => a + l.quantity, 0),
@@ -165,28 +156,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
-      mode: state.mode,
-      setMode,
       lines: state.lines,
       addLine,
       setQuantity,
       removeLine,
       clearLines,
       totalItems,
-      subtotalDisplay,
-      totalsByProduct,
+      subtotalTransfer,
+      subtotalTransferAmount,
+      hydrated,
     }),
     [
-      state.mode,
       state.lines,
-      setMode,
       addLine,
       setQuantity,
       removeLine,
       clearLines,
       totalItems,
-      subtotalDisplay,
-      totalsByProduct,
+      subtotalTransfer,
+      subtotalTransferAmount,
+      hydrated,
     ],
   );
 

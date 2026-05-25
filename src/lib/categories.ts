@@ -1,6 +1,7 @@
 import { slugify } from "@/lib/slugify";
 
-export const CATEGORY_NAMES = [
+/** Categorías base (sin cocina ni herramientas; migrar a bazar / ferretería). */
+export const DEFAULT_CATEGORY_NAMES = [
   "bazar",
   "marroquineria",
   "blanqueria",
@@ -9,18 +10,11 @@ export const CATEGORY_NAMES = [
   "baño",
   "plastico",
   "ferreteria",
-  "herramientas",
-  "cocina",
   "regaleria",
 ] as const;
 
-export type CategoryName = (typeof CATEGORY_NAMES)[number];
+export type DefaultCategoryName = (typeof DEFAULT_CATEGORY_NAMES)[number];
 
 export function categorySlugFromName(name: string): string {
   return name === "baño" ? "banio" : slugify(name);
 }
-
-export const FIXED_CATEGORIES = CATEGORY_NAMES.map((name) => ({
-  name,
-  slug: categorySlugFromName(name),
-}));

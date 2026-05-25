@@ -12,6 +12,7 @@ type Props = {
   src: string | null | undefined;
   alt: string;
   position?: string | null;
+  scale?: number;
   className?: string;
   fill?: boolean;
   sizes?: string;
@@ -22,6 +23,7 @@ export function ProductImage({
   src,
   alt,
   position = "50% 50%",
+  scale = 1,
   className = "object-cover",
   fill = true,
   sizes = "(max-width: 640px) 100vw, 400px",
@@ -35,6 +37,7 @@ export function ProductImage({
   }, [resolved]);
 
   const objectPosition = position?.trim() || "50% 50%";
+  const safeScale = Number.isFinite(scale) && scale > 0 ? Math.min(1.5, Math.max(0.8, scale)) : 1;
 
   return (
     <Image
@@ -42,7 +45,10 @@ export function ProductImage({
       alt={alt}
       fill={fill}
       className={className}
-      style={{ objectPosition }}
+      style={{
+        objectPosition,
+        transform: safeScale !== 1 ? `scale(${safeScale})` : undefined,
+      }}
       sizes={sizes}
       priority={priority}
       unoptimized={imgSrc === DEFAULT_PRODUCT_IMAGE || imgSrc === ERROR_PRODUCT_IMAGE}

@@ -1,29 +1,27 @@
 import { prisma } from "@/lib/prisma";
-import type { CatalogFilters } from "@/lib/catalog-pricing";
 
-export type { PriceMode, CatalogFilters } from "@/lib/catalog-pricing";
-export {
-  getDiscountPercentForMode,
-  getFinalUnitPrice,
-  getListingPriceLabel,
-  getProductDisplayPrice,
-} from "@/lib/catalog-pricing";
+export type CatalogFilters = {
+  q?: string;
+  category?: string;
+};
 
 export async function getCatalogData(filters: CatalogFilters) {
+  const q = filters.q?.trim();
+
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
-      name: filters.q
+      ...(q
         ? {
-            contains: filters.q,
-            mode: "insensitive",
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { description: { contains: q, mode: "insensitive" } },
+              { sku: { contains: q, mode: "insensitive" } },
+              { category: { name: { contains: q, mode: "insensitive" } } },
+            ],
           }
-        : undefined,
-      category: filters.category
-        ? {
-            slug: filters.category,
-          }
-        : undefined,
+        : {}),
+      category: filters.category ? { slug: filters.category } : undefined,
     },
     include: {
       category: true,
@@ -32,16 +30,10 @@ export async function getCatalogData(filters: CatalogFilters) {
         orderBy: { sortOrder: "asc" },
       },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { updatedAt: "desc" },
   });
 
-  const categories = await prisma.category.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
 
   return { products, categories };
 }

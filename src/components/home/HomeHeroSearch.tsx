@@ -17,9 +17,17 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+type Suggestion = {
+  id: string;
+  slug: string;
+  name: string;
+  sku?: string | null;
+  category?: string;
+};
+
 export function HomeHeroSearch() {
   const [q, setQ] = useState("");
-  const [suggestions, setSuggestions] = useState<Array<{ id: string; slug: string; name: string }>>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -32,9 +40,7 @@ export function HomeHeroSearch() {
         const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(term)}`, {
           signal: controller.signal,
         });
-        const data = (await res.json()) as {
-          items?: Array<{ id: string; slug: string; name: string }>;
-        };
+        const data = (await res.json()) as { items?: Suggestion[] };
         const items = data.items ?? [];
         setSuggestions(items);
         setOpen(items.length > 0);
@@ -42,7 +48,7 @@ export function HomeHeroSearch() {
         setSuggestions([]);
         setOpen(false);
       }
-    }, 180);
+    }, 200);
 
     return () => {
       clearTimeout(timer);
@@ -60,24 +66,16 @@ export function HomeHeroSearch() {
         <input
           name="q"
           value={q}
-          onChange={(e) => {
-            const next = e.target.value;
-            setQ(next);
-            if (next.trim().length < 2) {
-              setSuggestions([]);
-              setOpen(false);
-            }
-          }}
+          onChange={(e) => setQ(e.target.value)}
           onFocus={() => setOpen(suggestions.length > 0)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
-          placeholder="Buscá en el catálogo: cocina, baño, ferretería…"
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Buscar productos, código SKU, categoría…"
           className="min-h-[52px] w-full flex-1 border-0 bg-transparent px-4 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:pl-2"
           autoComplete="off"
         />
-        <input type="hidden" name="priceMode" value="retail" />
         <button
           type="submit"
-          className="m-1.5 shrink-0 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/30 transition hover:bg-brand-dark sm:m-0 sm:my-1.5 sm:rounded-full"
+          className="m-1.5 shrink-0 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/30 transition hover:bg-brand-dark sm:m-0 sm:my-1.5"
         >
           Buscar
         </button>
@@ -88,11 +86,21 @@ export function HomeHeroSearch() {
             <Link
               key={item.id}
               href={`/product/${item.slug}`}
-              className="block border-b border-slate-100 px-4 py-2.5 text-sm text-slate-700 hover:bg-brand-muted/40 last:border-b-0"
+              className="block border-b border-slate-100 px-4 py-2.5 hover:bg-brand-muted/40 last:border-b-0"
             >
-              {item.name}
+              <p className="text-sm font-medium text-slate-900">{item.name}</p>
+              <p className="text-xs text-slate-500">
+                {item.sku ? `Código ${item.sku}` : "Sin código"}
+                {item.category ? ` · ${item.category}` : ""}
+              </p>
             </Link>
           ))}
+          <Link
+            href={`/catalog?q=${encodeURIComponent(q.trim())}`}
+            className="block bg-slate-50 px-4 py-2 text-center text-xs font-semibold text-brand-dark"
+          >
+            Ver todos los resultados en el catálogo
+          </Link>
         </div>
       ) : null}
     </form>
