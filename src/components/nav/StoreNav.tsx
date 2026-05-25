@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import { CartNavButton } from "@/components/CartNavButton";
 import { SignOutButton } from "@/components/SignOutButton";
-import { IconCatalog, IconHome, IconSearch } from "@/components/icons/NavIcons";
 import { SiteLogo } from "@/components/SiteLogo";
+import { StoreNavToolbar } from "@/components/nav/StoreNavToolbar";
 import { UserProfileChip } from "@/components/nav/UserProfileChip";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
 import { prisma } from "@/lib/prisma";
@@ -34,7 +33,7 @@ export async function StoreNav({ session }: Props) {
   const isLoggedIn = Boolean(session?.user);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90">
+    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 relative">
       <nav className="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/"
@@ -48,30 +47,8 @@ export async function StoreNav({ session }: Props) {
           <WholesaleModeToggle />
         </div>
 
-        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-          <Link
-            href="/"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
-            aria-label="Inicio"
-          >
-            <IconHome />
-          </Link>
-          <Link
-            href="/#buscar"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
-            aria-label="Buscar productos"
-          >
-            <IconSearch />
-          </Link>
-          <Link
-            href="/catalog"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
-            aria-label="Catálogo"
-          >
-            <IconCatalog />
-          </Link>
-          <CartNavButton />
-
+        <div className="flex items-center justify-end gap-0.5">
+          <StoreNavToolbar />
           {!isLoggedIn ? (
             <>
               <Link

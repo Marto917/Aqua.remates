@@ -39,10 +39,23 @@ export async function GET(req: Request) {
       slug: true,
       name: true,
       sku: true,
+      imageUrl: true,
       description: true,
       category: { select: { name: true } },
     },
     take: 24,
+  });
+
+  const total = await prisma.product.count({
+    where: {
+      isActive: true,
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { category: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    },
   });
 
   const ranked = products
@@ -53,13 +66,14 @@ export async function GET(req: Request) {
     .filter((p) => p._score > 0)
     .sort((a, b) => b._score - a._score)
     .slice(0, 8)
-    .map(({ id, slug, name, sku, category }) => ({
+    .map(({ id, slug, name, sku, imageUrl, category }) => ({
       id,
       slug,
       name,
       sku,
+      imageUrl,
       category: category.name,
     }));
 
-  return NextResponse.json({ items: ranked });
+  return NextResponse.json({ items: ranked, total });
 }

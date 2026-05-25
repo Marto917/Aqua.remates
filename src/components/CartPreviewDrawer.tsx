@@ -15,11 +15,8 @@ export function CartPreviewDrawer({ open, onClose }: Props) {
   const { lines, subtotalTransfer, setQuantity, removeLine, totalItems } = useCart();
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
@@ -28,7 +25,7 @@ export function CartPreviewDrawer({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] sm:hidden">
+    <div className="fixed inset-0 z-[60] max-sm:block sm:hidden">
       <button
         type="button"
         className="absolute inset-0 bg-black/40"

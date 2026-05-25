@@ -1,5 +1,6 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/admin/categories/migrate-products/route": "app/api/admin/categories/migrate-products/route.js",
   "/api/admin/categories/route": "app/api/admin/categories/route.js",
   "/api/admin/products/[id]/route": "app/api/admin/products/[id]/route.js",
   "/api/admin/riders/route": "app/api/admin/riders/route.js",

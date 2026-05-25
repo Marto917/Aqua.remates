@@ -1,5 +1,6 @@
 {
   "/_not-found/page": "/_not-found",
+  "/api/admin/categories/migrate-products/route": "/api/admin/categories/migrate-products",
   "/api/admin/categories/route": "/api/admin/categories",
   "/api/admin/products/[id]/route": "/api/admin/products/[id]",
   "/api/admin/riders/route": "/api/admin/riders",

@@ -4,8 +4,8 @@
     "/api/admin/banners": {},
     "/api/admin/export-catalog": {},
     "/api/images/default-product": {},
-    "/api/admin/products": {},
     "/api/retail-orders/[orderId]/transfer-proof": {},
+    "/api/admin/products": {},
     "/api/search-suggestions": {}
   }
 }

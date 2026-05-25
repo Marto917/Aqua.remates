@@ -44,12 +44,16 @@ export function AdminProductEditDetails({
           placeholder="Nombre"
           className="rounded-md border px-3 py-2 md:col-span-2"
         />
-        <input
-          name="sku"
-          defaultValue={sku ?? ""}
-          placeholder="Código SKU"
-          className="rounded-md border px-3 py-2"
-        />
+        <div>
+          <input
+            name="sku"
+            defaultValue={sku ?? ""}
+            placeholder="Código / barras"
+            autoComplete="off"
+            className="w-full rounded-md border px-3 py-2 font-mono text-sm"
+          />
+          <p className="mt-1 text-xs text-slate-500">Escaneo con lector USB; no visible en la tienda.</p>
+        </div>
         <input
           name="supplierName"
           defaultValue={supplierName ?? ""}

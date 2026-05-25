@@ -1,0 +1,74 @@
+================================================================================
+  aquaremates.com.ar — Donweb + Railway (paso a paso)
+================================================================================
+
+Si Railway dice "Waiting for DNS update" (triángulo amarillo), casi siempre
+falta configurar la Zona DNS en Donweb o los registros no coinciden con Railway.
+
+DIAGNÓSTICO RÁPIDO
+- En Railway: Custom Domain → "Show DNS records" (copiá CNAME + TXT de AHÍ).
+- Si al buscar el dominio en internet no resuelve, Donweb aún no publicó DNS.
+
+Compraste el dominio en Donweb. Railway te muestra estos registros DNS.
+
+1) RAILWAY (primero)
+   - Servicio Web → Settings → Networking → Custom Domain
+   - Agregá: aquaremates.com.ar
+   - Agregá también: www.aquaremates.com.ar (recomendado)
+   - Copiá los valores DNS que te muestra (pueden cambiar; usá los de TU pantalla)
+
+2) DONWEB — Crear / editar Zona DNS (OBLIGATORIO)
+   Donweb → Mis servicios → Dominios → aquaremates.com.ar → Gestionar
+   → Nameservers y Zona DNS
+
+   Si NO existe zona DNS: "Crear zona DNS" (a veces pide un registro A inicial;
+   podés borrarlo después si Railway usa solo CNAME).
+
+   Nameservers: deben ser los de Donweb (ns1.donweb.com / ns2... según tu panel).
+   No mezcles Cloudflare u otro proveedor salvo que configures todo allá.
+
+3) DONWEB — Registros que Railway pide (los dos son obligatorios)
+
+   Abrí "Show DNS records" en Railway para aquaremates.com.ar y para www.
+
+   Para el dominio raíz (aquaremates.com.ar):
+   - TXT  Nombre: _railway-verify.aquaremates.com.ar  (o solo _railway-verify)
+          Valor: railway-verify=... (copiar completo de Railway)
+   - CNAME Nombre: aquaremates.com.ar  (en Donweb el nombre suele ser el dominio completo)
+           Valor: xxxxx.up.railway.app  (el CNAME exacto de Railway, NO el viejo hcjr018j)
+
+   Para www:
+   - Mismo TXT si Railway lo repite, o el que indique para www
+   - CNAME Nombre: www.aquaremates.com.ar
+           Valor: el CNAME de Railway para www (puede ser distinto al de raíz)
+
+   IMPORTANTE en Donweb:
+   - Borrá registros A / AAAA del mismo nombre que apunten a parking o a otra IP.
+   - No puede haber A y CNAME a la vez para el mismo host.
+   - El campo "Nombre" en Donweb a menudo es el FQDN completo (ej. www.aquaremates.com.ar).
+
+   Guardá y esperá propagación (15 min a 48 h; suele ser < 2 h).
+
+   Si Donweb NO permite CNAME en raíz (aquaremates.com.ar):
+   - Opción A: usar solo www (www.aquaremates.com.ar) y en Donweb redirigir @ → www
+   - Opción B: pasar DNS a Cloudflare (gratis) y usar CNAME flattening en @
+
+3) VARIABLES EN RAILWAY (servicio Web)
+   NEXTAUTH_URL=https://aquaremates.com.ar
+
+   Si usás Google login, en Google Cloud Console agregá:
+   https://aquaremates.com.ar/api/auth/callback/google
+
+4) PROBAR
+   - En Railway, el dominio debe pasar de "pendiente" a activo (check verde).
+   - Abrí https://aquaremates.com.ar en el navegador.
+
+5) NOTA DONWEB
+   Algunos paneles no permiten CNAME en @ (raíz). Si Donweb solo permite A:
+   - Preguntá en soporte Donweb o usá el registro que Railway recomiende para tu caso.
+   - Railway a veces ofrece registro ALIAS/ANAME; Donweb puede llamarlo distinto.
+
+La app en código ya usa NEXTAUTH_URL y rutas relativas; no hace falta cambiar código
+solo por el dominio, salvo actualizar variables y OAuth.
+
+================================================================================

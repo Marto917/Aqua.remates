@@ -77,18 +77,12 @@ export default async function HomePage() {
               Navegá el catálogo con precios minoristas o activá el modo mayorista y armá tu pedido como en un
               comercio online.
             </p>
-            <div className="mt-6 flex flex-col items-stretch justify-center gap-3 min-[420px]:flex-row min-[420px]:flex-wrap sm:justify-start">
+            <div className="mt-6 flex justify-center sm:justify-start">
               <Link
                 href="/catalog"
-                className="inline-flex min-h-12 w-full min-[420px]:w-auto items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 active:bg-brand-dark sm:min-h-0 sm:py-2.5 sm:hover:bg-brand-dark"
+                className="inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 active:bg-brand-dark sm:min-h-0 sm:w-auto sm:py-2.5 sm:hover:bg-brand-dark"
               >
                 Ver catálogo
-              </Link>
-              <Link
-                href="/catalog"
-                className="inline-flex min-h-12 w-full min-[420px]:w-auto min-[420px]:flex-1 items-center justify-center rounded-full border-2 border-slate-200 bg-white/90 px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm active:bg-slate-50 sm:min-h-0 sm:min-w-0 sm:flex-none sm:py-2.5 sm:hover:border-brand/40 sm:hover:bg-brand-muted/50"
-              >
-                Soy comercio — mayorista
               </Link>
             </div>
             <div id="buscar" className="mx-auto mt-6 w-full max-w-xl scroll-mt-28 sm:mx-0">
