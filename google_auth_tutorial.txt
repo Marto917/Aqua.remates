@@ -11,23 +11,31 @@
    - APIs y servicios → Credenciales → Crear credenciales → ID de cliente OAuth
      * Tipo de aplicación: Aplicación web
 
-2) URIs DE REDIRECCIÓN (obligatorio)
-   Agregá exactamente estas URLs (una por línea):
+2) URIs DE REDIRECCIÓN (obligatorio — si falta una letra, Google muestra redirect_uri_mismatch)
+   Google Cloud → Credenciales → tu cliente OAuth "Aplicación web"
+   → "URIs de redireccionamiento autorizados"
 
-   Producción:
-     https://TU-DOMINIO/api/auth/callback/google
+   Copiá EXACTAMENTE esta línea para producción (sin espacios, sin barra al final):
 
-   Desarrollo local:
+     https://aquaremates-copy-production.up.railway.app/api/auth/callback/google
+
+   Para desarrollo local, agregá también:
+
      http://localhost:3000/api/auth/callback/google
 
-   (Reemplazá TU-DOMINIO por tu URL de Railway, sin barra final)
+   NO uses solo el dominio (https://...railway.app) sin /api/auth/callback/google
+   NO agregues /login ni /registro
+
+   Para ver qué URI usa el servidor en Railway, abrí:
+     https://aquaremates-copy-production.up.railway.app/api/health
+   y buscá el campo "googleOAuthCallbackUri". Esa misma URL debe estar en Google.
 
 3) VARIABLES EN .env Y RAILWAY
 
    GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
    NEXT_PUBLIC_GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
    GOOGLE_CLIENT_SECRET="GOCSPX-xxxxxxxx"
-   NEXTAUTH_URL="https://TU-DOMINIO"    (debe coincidir con el dominio real del deploy)
+   NEXTAUTH_URL="https://aquaremates-copy-production.up.railway.app"
    NEXTAUTH_SECRET="..."                (ya deberías tenerlo)
 
    Reiniciá / redeployá el servicio después de guardar.
@@ -47,7 +55,11 @@
 
 6) ERRORES FRECUENTES
 
-   - redirect_uri_mismatch → la URI en Google no coincide con NEXTAUTH_URL + /api/auth/callback/google
+   - redirect_uri_mismatch
+     → La URI en Google debe coincidir con la URL donde abrís la tienda + /api/auth/callback/google
+     → Si entrás por https://aquaremates-copy-production.up.railway.app, esa URI completa va en Google
+     → Si entrás por https://aquaremates-production.up.railway.app (sin -copy), usá esa en Google
+     → Abrí /api/auth/providers en el navegador y copiá el callbackUrl de "google" a Google Console
    - Configuration → faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET
    - AccessDenied en /login → intentaste Google con un email de staff
 

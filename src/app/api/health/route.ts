@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAppBaseUrl } from "@/lib/app-url";
+import { isGoogleAuthConfigured } from "@/lib/google-auth";
 
 /**
  * Comprobación rápida de deploy: DB alcanzable y variables críticas presentes.
@@ -8,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
   const hasNextAuthSecret = Boolean(process.env.NEXTAUTH_SECRET);
+  const nextAuthUrl = getAppBaseUrl();
+  const googleOAuthCallbackUri = `${nextAuthUrl}/api/auth/callback/google`;
   let dbOk = false;
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -21,6 +25,9 @@ export async function GET() {
     hasDatabaseUrl,
     hasNextAuthSecret,
     hasNextAuthUrl: Boolean(process.env.NEXTAUTH_URL),
+    nextAuthUrl,
+    googleOAuthCallbackUri,
+    googleAuthConfigured: isGoogleAuthConfigured(),
     dbReachable: dbOk,
   });
 }

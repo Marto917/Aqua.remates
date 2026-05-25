@@ -13,6 +13,16 @@ import {
 } from "@/lib/google-auth";
 import { prisma } from "@/lib/prisma";
 
+/** Normaliza NEXTAUTH_URL (sin barra final) para que coincida con Google OAuth. */
+function ensureNextAuthUrl(): void {
+  const raw = process.env.NEXTAUTH_URL?.trim();
+  if (raw) {
+    process.env.NEXTAUTH_URL = raw.replace(/\/$/, "");
+  }
+}
+
+ensureNextAuthUrl();
+
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(6),
@@ -117,7 +127,11 @@ export const authOptions: NextAuthOptions = {
       if (!email) {
         return false;
       }
-      const resolved = await resolveGoogleSignInUser({ email, name: user.name });
+      const resolved = await resolveGoogleSignInUser({
+        email,
+        name: user.name,
+        image: user.image,
+      });
       if (!resolved.ok) {
         return false;
       }
@@ -133,23 +147,36 @@ export const authOptions: NextAuthOptions = {
       u.role = resolved.role;
       u.emailVerified = resolved.emailVerified;
       u.staffAccessLevel = null;
+      (u as NextAuthUser & { image?: string }).image = resolved.imageUrl ?? undefined;
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = user.role as UserRole;
         token.staffAccessLevel = user.staffAccessLevel ?? null;
         token.emailVerified = Boolean(user.emailVerified);
+        if (account?.provider === "google" && user.image) {
+          token.picture = user.image;
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
         session.user.role = token.role;
         session.user.staffAccessLevel = token.staffAccessLevel ?? null;
         session.user.emailVerified = Boolean(token.emailVerified);
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { imageUrl: true, name: true },
+        });
+        if (dbUser?.name) {
+          session.user.name = dbUser.name;
+        }
+        const fromToken = typeof token.picture === "string" ? token.picture : null;
+        session.user.image = dbUser?.imageUrl?.trim() || fromToken || null;
       }
       return session;
     },

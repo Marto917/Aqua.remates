@@ -28,6 +28,7 @@ function normalizeEmail(email: string) {
 export async function resolveGoogleSignInUser(params: {
   email: string;
   name?: string | null;
+  image?: string | null;
 }): Promise<
   | {
       ok: true;
@@ -36,6 +37,7 @@ export async function resolveGoogleSignInUser(params: {
       email: string;
       role: UserRole;
       emailVerified: boolean;
+      imageUrl: string | null;
     }
   | { ok: false; reason: "no_email" | "staff_account" }
 > {
@@ -48,14 +50,18 @@ export async function resolveGoogleSignInUser(params: {
     where: { email: { equals: email, mode: "insensitive" } },
   });
 
+  const googleImage = params.image?.trim() || null;
+
   if (existing) {
     if (existing.role === UserRole.OWNER || existing.role === UserRole.EMPLOYEE) {
       return { ok: false, reason: "staff_account" };
     }
-    if (!existing.emailVerified) {
+    const updates: { emailVerified: Date; imageUrl?: string } = { emailVerified: new Date() };
+    if (googleImage) updates.imageUrl = googleImage;
+    if (!existing.emailVerified || googleImage) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: { emailVerified: new Date() },
+        data: updates,
       });
     }
     return {
@@ -65,6 +71,7 @@ export async function resolveGoogleSignInUser(params: {
       email: existing.email,
       role: existing.role,
       emailVerified: true,
+      imageUrl: googleImage ?? existing.imageUrl,
     };
   }
 
@@ -78,6 +85,7 @@ export async function resolveGoogleSignInUser(params: {
       passwordHash,
       role: UserRole.CUSTOMER,
       emailVerified: new Date(),
+      imageUrl: googleImage,
     },
   });
 
@@ -88,5 +96,6 @@ export async function resolveGoogleSignInUser(params: {
     email: created.email,
     role: created.role,
     emailVerified: true,
+    imageUrl: created.imageUrl,
   };
 }

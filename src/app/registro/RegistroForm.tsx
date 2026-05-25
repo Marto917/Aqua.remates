@@ -20,7 +20,7 @@ export function RegistroForm({ googleReady }: Props) {
   const callbackUrl =
     rawCallback && rawCallback.startsWith("/") && !rawCallback.startsWith("//")
       ? rawCallback
-      : "/catalog";
+      : "/";
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);

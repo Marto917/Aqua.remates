@@ -23,7 +23,7 @@ export function LoginForm({ googleReady }: Props) {
   const callbackUrl =
     rawCallback && rawCallback.startsWith("/") && !rawCallback.startsWith("//")
       ? rawCallback
-      : "/catalog";
+      : "/";
   const oauthError = searchParams.get("error");
   const [error, setError] = useState<string | null>(
     oauthError ? (ERROR_MESSAGES[oauthError] ?? "No se pudo ingresar con Google.") : null,

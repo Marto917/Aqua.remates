@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IconCart } from "@/components/icons/NavIcons";
 import { useCart } from "@/contexts/cart-context";
 
 export function MobileCartBar() {
@@ -15,9 +16,10 @@ export function MobileCartBar() {
         </div>
         <Link
           href="/carrito"
-          className="shrink-0 rounded-full bg-brand px-5 py-3 text-center text-base font-semibold text-white"
+          className="flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 py-3 text-base font-semibold text-white"
         >
-          Ver carrito {totalItems > 0 ? `(${totalItems})` : ""}
+          <IconCart className="h-5 w-5" />
+          <span>{totalItems > 0 ? totalItems : ""}</span>
         </Link>
       </div>
     </div>

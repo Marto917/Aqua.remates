@@ -8,6 +8,7 @@ declare module "next-auth" {
       role: UserRole;
       staffAccessLevel?: StaffAccessLevel | null;
       emailVerified: boolean;
+      image?: string | null;
     };
   }
 
@@ -16,6 +17,7 @@ declare module "next-auth" {
     role: UserRole;
     staffAccessLevel?: StaffAccessLevel | null;
     emailVerified?: boolean;
+    image?: string | null;
   }
 }
 

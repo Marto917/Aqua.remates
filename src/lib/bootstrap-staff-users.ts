@@ -34,18 +34,39 @@ async function ensureUser(input: SeedUserInput) {
   });
 }
 
+/** Cuenta admin principal: crea o actualiza rol y contraseña. */
+async function ensurePrimaryOwner() {
+  const email = envOr("tokeapp.help@gmail.com", "DEFAULT_OWNER_EMAIL").toLowerCase();
+  const password = envOr("Leaparedes05.", "DEFAULT_OWNER_PASSWORD");
+  const passwordHash = await bcrypt.hash(password, 10);
+  const name = envOr("Administrador", "DEFAULT_OWNER_NAME");
+
+  await prisma.user.upsert({
+    where: { email },
+    update: {
+      name,
+      passwordHash,
+      role: UserRole.OWNER,
+      staffAccessLevel: StaffAccessLevel.MANAGER,
+      emailVerified: new Date(),
+    },
+    create: {
+      name,
+      email,
+      passwordHash,
+      role: UserRole.OWNER,
+      staffAccessLevel: StaffAccessLevel.MANAGER,
+      emailVerified: new Date(),
+    },
+  });
+}
+
 /** Crea cuentas staff por defecto solo si no existen. */
 export async function ensureDefaultStaffUsers() {
   if (attempted) return;
   attempted = true;
   try {
-    await ensureUser({
-      name: envOr("Administrador principal", "DEFAULT_OWNER_NAME"),
-      email: envOr("admin@aqua.local", "DEFAULT_OWNER_EMAIL"),
-      password: envOr("Admin123456!", "DEFAULT_OWNER_PASSWORD"),
-      role: UserRole.OWNER,
-      staffAccessLevel: StaffAccessLevel.MANAGER,
-    });
+    await ensurePrimaryOwner();
     await ensureUser({
       name: envOr("Vendedor", "DEFAULT_SELLER_NAME"),
       email: envOr("vendedor@aqua.local", "DEFAULT_SELLER_EMAIL"),

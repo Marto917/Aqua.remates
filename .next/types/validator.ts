@@ -254,6 +254,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/cuenta/perfil/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/cuenta/perfil">> = Specific
+  const handler = {} as typeof import("../../src/app/cuenta/perfil/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/cuenta/verificar-email/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/cuenta/verificar-email">> = Specific

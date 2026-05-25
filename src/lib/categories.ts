@@ -9,6 +9,7 @@ export const CATEGORY_NAMES = [
   "baño",
   "plastico",
   "ferreteria",
+  "herramientas",
   "cocina",
   "regaleria",
 ] as const;

@@ -228,6 +228,12 @@
       "namedRegex": "^/cuenta/pedidos\\-mayorista(?:/)?$"
     },
     {
+      "page": "/cuenta/perfil",
+      "regex": "^/cuenta/perfil(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cuenta/perfil(?:/)?$"
+    },
+    {
       "page": "/cuenta/verificar-email",
       "regex": "^/cuenta/verificar\\-email(?:/)?$",
       "routeKeys": {},
