@@ -6,26 +6,25 @@ type Props = {
   className?: string;
 };
 
-/** Logo de la tienda (SVG local, siempre disponible). */
-export function SiteLogo({ size = 40, showText = true, className = "" }: Props) {
+/** Logo AQUA: imagen completa (no recortada en círculo). */
+export function SiteLogo({ size = 44, showText = true, className = "" }: Props) {
+  const imgHeight = size;
+  const imgWidth = Math.round(size * 2.4);
+
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span
-        className="relative shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-brand/20"
-        style={{ width: size, height: size }}
-      >
-        <Image
-          src="/aqua_image.svg"
-          alt="AQUA"
-          width={size}
-          height={size}
-          className="h-full w-full object-contain p-0.5"
-          priority
-          unoptimized
-        />
-      </span>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <Image
+        src="/aqua_image.webp"
+        alt="AQUA"
+        width={imgWidth}
+        height={imgHeight}
+        className="h-auto w-auto max-h-11 object-contain"
+        style={{ maxHeight: size, width: "auto" }}
+        priority
+        unoptimized
+      />
       {showText ? (
-        <span className="hidden text-lg font-semibold tracking-tight text-brand-dark sm:inline">AQUA</span>
+        <span className="text-lg font-bold tracking-tight text-brand-dark">AQUA</span>
       ) : null}
     </span>
   );

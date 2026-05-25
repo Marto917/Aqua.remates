@@ -6,9 +6,11 @@ export type ProductPriceDisplay = {
   cashFormatted: string;
   showListAndCash: boolean;
   discountPercent: number;
+  listAmount: number;
+  cashAmount: number;
 };
 
-/** Minorista: precio de lista grande + precio en efectivo con descuento. */
+/** Minorista: siempre mostrar lista si existe; precio efectivo destacado. */
 export function getRetailPriceDisplay(product: {
   listPrice: unknown;
   retailPrice: unknown;
@@ -25,13 +27,16 @@ export function getRetailPriceDisplay(product: {
     "retail",
   );
   const discountPercent = Math.min(100, Math.max(0, product.discountRetailPercent));
-  const showListAndCash = discountPercent > 0 && list > cash;
+  const listAmount = Number.isFinite(list) && list > 0 ? list : cash;
+  const showListAndCash = listAmount > cash + 0.01 || discountPercent > 0;
 
   return {
-    listFormatted: formatArs(list),
+    listFormatted: formatArs(listAmount),
     cashFormatted: formatArs(cash),
     showListAndCash,
     discountPercent,
+    listAmount,
+    cashAmount: cash,
   };
 }
 
@@ -49,4 +54,17 @@ export function getWholesalePriceDisplay(product: {
     "wholesale",
   );
   return { main: formatArs(cash) };
+}
+
+export function retailDiscountBadgePercent(product: {
+  listPrice: unknown;
+  retailPrice: unknown;
+  discountRetailPercent: number;
+}): number | null {
+  const { discountPercent, listAmount, cashAmount, showListAndCash } =
+    getRetailPriceDisplay(product);
+  if (!showListAndCash) return null;
+  if (discountPercent > 0) return discountPercent;
+  if (listAmount <= cashAmount) return null;
+  return Math.round((1 - cashAmount / listAmount) * 100);
 }

@@ -1,5 +1,5 @@
 import type { Session } from "next-auth";
-import { UserRole } from "@prisma/client";
+import { StaffAccessLevel, UserRole } from "@prisma/client";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
 
@@ -25,6 +25,17 @@ export function isOwnerAccess(ctx: StaffContext): boolean {
   return ctx.preview || role === UserRole.OWNER;
 }
 
+/** Encargado (MANAGER) o dueño: gestión de usuarios, finanzas limitadas según ruta. */
+export function canManageUsers(ctx: StaffContext): boolean {
+  if (ctx.preview) return true;
+  const role = ctx.session?.user?.role;
+  if (role === UserRole.OWNER) return true;
+  if (role === UserRole.EMPLOYEE) {
+    return ctx.session?.user?.staffAccessLevel === StaffAccessLevel.MANAGER;
+  }
+  return false;
+}
+
 export async function requireStaff(): Promise<StaffContext> {
   const ctx = await getStaffContext();
   if (!canStaffAccess(ctx)) {
@@ -37,6 +48,14 @@ export async function requireOwner(): Promise<StaffContext> {
   const ctx = await getStaffContext();
   if (!isOwnerAccess(ctx)) {
     throw new Error("Solo el dueño puede realizar esta acción");
+  }
+  return ctx;
+}
+
+export async function requireUserManagement(): Promise<StaffContext> {
+  const ctx = await getStaffContext();
+  if (!canManageUsers(ctx)) {
+    throw new Error("No autorizado para gestionar usuarios");
   }
   return ctx;
 }

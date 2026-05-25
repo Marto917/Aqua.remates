@@ -7,9 +7,9 @@ import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import { useCart } from "@/contexts/cart-context";
 import { useSearchParams } from "next/navigation";
 import type { PriceMode } from "@/lib/catalog-pricing";
-import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
+import { retailDiscountBadgePercent } from "@/lib/product-pricing-display";
 import { getEffectivePriceModeForProduct, quantityByProductId } from "@/lib/wholesale-pricing";
 
 type Variant = {
@@ -36,9 +36,31 @@ type ProductAddToCartProps = {
   variants: Variant[];
   title: string;
   categoryLabel: string;
+  shortDescription: string;
+  reviewAverage: number | null;
+  reviewCount: number;
 };
 
-function ProductAddToCartInner({ product, variants, title, categoryLabel }: ProductAddToCartProps) {
+function StarsDisplay({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
+  const cls = size === "sm" ? "text-base" : "text-xl";
+  return (
+    <span className={`${cls} text-amber-400`} aria-hidden>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i}>{i < Math.round(rating) ? "★" : "☆"}</span>
+      ))}
+    </span>
+  );
+}
+
+function ProductAddToCartInner({
+  product,
+  variants,
+  title,
+  categoryLabel,
+  shortDescription,
+  reviewAverage,
+  reviewCount,
+}: ProductAddToCartProps) {
   const searchParams = useSearchParams();
   const priceMode: PriceMode = searchParams.get("priceMode") === "wholesale" ? "wholesale" : "retail";
 
@@ -49,6 +71,8 @@ function ProductAddToCartInner({ product, variants, title, categoryLabel }: Prod
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
   const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
   const imagePosition = selected?.imagePosition ?? product.imagePosition;
+  const badge =
+    priceMode === "retail" ? retailDiscountBadgePercent(product) : null;
 
   const totalUnitsThisProduct = useMemo(() => {
     const forProduct = lines.filter((l) => l.productId === product.id);
@@ -77,89 +101,111 @@ function ProductAddToCartInner({ product, variants, title, categoryLabel }: Prod
   }
 
   return (
-    <div className="space-y-5">
-      <span className="inline-block rounded-full bg-brand-muted px-3 py-1 text-xs font-medium text-brand-dark">
-        {categoryLabel}
-      </span>
-      <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
-
-      <ProductPriceBlock product={product} mode={displayMode} size="detail" />
-
-      <div className="relative aspect-square w-full max-w-lg overflow-hidden rounded-xl bg-slate-100">
-        <ProductImage
-          src={displayImage}
-          alt={title}
-          position={imagePosition}
-          sizes="(max-width: 768px) 100vw, 512px"
-          priority
-        />
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-medium text-slate-700">Color</p>
-        <div className="flex flex-wrap items-center gap-3">
-          {variants.map((v) => {
-            const bg = swatchColorForLabel(v.colorLabel);
-            const isPicked = v.id === variantId;
-            return (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => setVariantId(v.id)}
-                title={formatDisplayWords(v.colorLabel)}
-                aria-label={`Elegir color ${formatDisplayWords(v.colorLabel)}`}
-                className={`relative h-10 w-10 shrink-0 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
-                  isPicked
-                    ? "border-brand-dark ring-2 ring-brand/50 ring-offset-2"
-                    : "border-slate-200 hover:border-slate-400"
-                }`}
-                style={{ backgroundColor: bg }}
-              />
-            );
-          })}
+    <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+      <div className="relative">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50 lg:sticky lg:top-24">
+          <ProductImage
+            src={displayImage}
+            alt={title}
+            position={imagePosition}
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            priority
+          />
+          {badge != null && badge > 0 ? (
+            <span className="absolute left-3 top-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-lg">
+              -{badge}%
+            </span>
+          ) : null}
         </div>
-        <p className="mt-2 text-sm text-slate-600">
-          Seleccionado:{" "}
-          <span className="font-medium text-slate-900">
-            {formatDisplayWords(selected.colorLabel)}
-          </span>
+        <p className="mt-2 text-xs text-slate-500">
+          Categoría: <span className="font-medium text-slate-700">{categoryLabel}</span>
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
+      <div className="space-y-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-dark">{categoryLabel}</p>
+          <h1 className="mt-1 text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
+            {title}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">{shortDescription}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {reviewAverage != null && reviewCount > 0 ? (
+            <>
+              <StarsDisplay rating={reviewAverage} />
+              <span className="font-semibold text-slate-800">{reviewAverage.toFixed(1)}</span>
+              <a href="#opiniones-producto" className="text-brand-dark underline">
+                Leer las {reviewCount} opiniones
+              </a>
+            </>
+          ) : (
+            <a href="#opiniones-producto" className="text-brand-dark underline">
+              Sé el primero en opinar
+            </a>
+          )}
+        </div>
+
+        <ProductPriceBlock product={product} mode={displayMode} size="detail" />
+
+        <div>
+          <p className="mb-2 text-sm font-semibold text-slate-800">Color</p>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((v) => {
+              const isPicked = v.id === variantId;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVariantId(v.id)}
+                  title={formatDisplayWords(v.colorLabel)}
+                  className={`rounded-lg border px-3 py-2 text-sm transition ${
+                    isPicked
+                      ? "border-brand-dark bg-brand-muted font-semibold text-brand-dark"
+                      : "border-slate-200 text-slate-700 hover:border-slate-400"
+                  }`}
+                >
+                  {formatDisplayWords(v.colorLabel)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <label className="flex w-fit items-center gap-3 text-sm font-medium text-slate-800">
           Cantidad
           <input
             type="number"
             min={1}
             value={qty}
             onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
-            className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-center text-base"
+            className="w-20 rounded-md border border-slate-200 px-2 py-2 text-center"
           />
         </label>
-      </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          addLine({
-            variantId: selected.id,
-            productId: product.id,
-            productName: title,
-            colorLabel: formatDisplayWords(selected.colorLabel),
-            imageUrl: displayImage,
-            retailPrice: retail,
-            wholesalePrice: wholesale,
-            discountRetailPercent: dr,
-            discountWholesalePercent: dw,
-            quantity: qty,
-          });
-          setQty(1);
-        }}
-        className="w-full max-w-md rounded-full bg-brand py-4 text-base font-semibold text-white shadow-md hover:bg-brand-dark"
-      >
-        Agregar al carrito
-      </button>
+        <button
+          type="button"
+          onClick={() => {
+            addLine({
+              variantId: selected.id,
+              productId: product.id,
+              productName: title,
+              colorLabel: formatDisplayWords(selected.colorLabel),
+              imageUrl: displayImage,
+              retailPrice: retail,
+              wholesalePrice: wholesale,
+              discountRetailPercent: dr,
+              discountWholesalePercent: dw,
+              quantity: qty,
+            });
+            setQty(1);
+          }}
+          className="w-full rounded-md bg-brand py-4 text-base font-bold uppercase tracking-wide text-white shadow-md hover:bg-brand-dark"
+        >
+          Agregar al carrito
+        </button>
+      </div>
     </div>
   );
 }

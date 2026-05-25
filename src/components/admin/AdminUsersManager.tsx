@@ -15,6 +15,10 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
   const [users, setUsers] = useState(initialUsers);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
 
   async function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,10 +67,61 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
     }
   }
 
+  function startEdit(u: UserItem) {
+    setEditingId(u.id);
+    setEditName(u.name);
+    setEditEmail(u.email);
+    setEditPassword("");
+    setError(null);
+  }
+
+  async function saveEdit(userId: string) {
+    setSaving(true);
+    setError(null);
+    const body: Record<string, string> = { userId, name: editName.trim(), email: editEmail.trim() };
+    if (editPassword.trim().length >= 6) {
+      body.password = editPassword.trim();
+    }
+    const res = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    setSaving(false);
+    if (!res.ok) {
+      setError(data.error ?? "No se pudo guardar los cambios.");
+      return;
+    }
+    setUsers((list) =>
+      list.map((u) =>
+        u.id === userId ? { ...u, name: editName.trim(), email: editEmail.trim() } : u,
+      ),
+    );
+    setEditingId(null);
+    setEditPassword("");
+  }
+
+  async function deleteUser(userId: string, name: string) {
+    if (!window.confirm(`¿Eliminar la cuenta de ${name}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    setError(null);
+    const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setError(data.error ?? "No se pudo eliminar el usuario.");
+      return;
+    }
+    setUsers((list) => list.filter((u) => u.id !== userId));
+  }
+
   return (
     <div className="space-y-5">
       <form onSubmit={createUser} className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
-        <h2 className="md:col-span-2 text-lg font-semibold">Crear usuario staff/cliente</h2>
+        <h2 className="md:col-span-2 text-lg font-semibold">Crear usuario</h2>
         <input name="name" required placeholder="Nombre" className="rounded-md border px-3 py-2" />
         <input name="email" type="email" required placeholder="Email" className="rounded-md border px-3 py-2" />
         <input
@@ -96,21 +151,43 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
         </button>
       </form>
 
-      <div className="overflow-hidden rounded-xl border bg-white">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border bg-white">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-slate-100">
             <tr>
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Email</th>
               <th className="px-3 py-2 text-left">Rol</th>
               <th className="px-3 py-2 text-left">Permiso staff</th>
+              <th className="px-3 py-2 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-t">
-                <td className="px-3 py-2">{u.name}</td>
-                <td className="px-3 py-2">{u.email}</td>
+              <tr key={u.id} className="border-t align-top">
+                <td className="px-3 py-2">
+                  {editingId === u.id ? (
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full rounded border px-2 py-1"
+                    />
+                  ) : (
+                    u.name
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingId === u.id ? (
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full rounded border px-2 py-1"
+                    />
+                  ) : (
+                    u.email
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <select
                     className="rounded border px-2 py-1"
@@ -134,6 +211,54 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
                     <option value="SELLER">Vendedor</option>
                     <option value="MANAGER">Encargado</option>
                   </select>
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {editingId === u.id ? (
+                    <div className="flex flex-col items-end gap-2">
+                      <input
+                        type="password"
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="Nueva contraseña (opcional)"
+                        minLength={6}
+                        className="w-full max-w-[200px] rounded border px-2 py-1 text-xs"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(u.id)}
+                          disabled={saving}
+                          className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="rounded border px-2 py-1 text-xs"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(u)}
+                        className="rounded border border-brand/40 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteUser(u.id, u.name)}
+                        className="rounded border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                      >
+                        Borrar
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

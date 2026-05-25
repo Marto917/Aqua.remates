@@ -1,30 +1,76 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
-// Import relativo: en algunos entornos el alias @/ falla al empaquetar el middleware (Edge).
 import { isBackofficePreview } from "./src/lib/backoffice-preview";
 import { getStaffLoginPath } from "./src/lib/staff-login-path";
 
-const OWNER_ONLY_PATHS = ["/admin/finanzas", "/admin/aprobaciones", "/admin/riders", "/admin/usuarios"];
+const OWNER_ONLY_PATHS = ["/admin/finanzas", "/admin/aprobaciones", "/admin/riders"];
+const USER_MANAGEMENT_PATHS = ["/admin/usuarios"];
 const ROLES = {
   OWNER: "OWNER",
   EMPLOYEE: "EMPLOYEE",
   CUSTOMER: "CUSTOMER",
 } as const;
 
-function nextWithPathname(req: NextRequest) {
+function isStaffArea(pathname: string): boolean {
+  const staffLogin = getStaffLoginPath();
+  return (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/vendedor") ||
+    pathname === staffLogin ||
+    pathname.startsWith(`${staffLogin}/`)
+  );
+}
+
+function nextWithHeaders(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-pathname", req.nextUrl.pathname);
+  const pathname = req.nextUrl.pathname;
+  requestHeaders.set("x-pathname", pathname);
+  requestHeaders.set("x-layout-area", isStaffArea(pathname) ? "staff" : "store");
   return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
+function staffAccessLevel(token: Record<string, unknown> | null): string {
+  return String(token?.staffAccessLevel ?? "");
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
 
-  const preview = isBackofficePreview();
-  if (preview && (pathname.startsWith("/admin") || pathname.startsWith("/vendedor"))) {
-    return nextWithPathname(req);
+  if (isStaffArea(pathname)) {
+    const preview = isBackofficePreview();
+    if (preview) {
+      return nextWithHeaders(req);
+    }
+
+    const token = await getToken({ req, secret });
+    const staffLoginPath = getStaffLoginPath();
+    if (!token) {
+      const loginUrl = new URL(staffLoginPath, req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const staffRole = String((token as { role?: unknown }).role ?? "");
+
+    if (staffRole !== ROLES.OWNER && staffRole !== ROLES.EMPLOYEE) {
+      return NextResponse.redirect(new URL("/catalog", req.url));
+    }
+
+    if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && staffRole !== ROLES.OWNER) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    if (
+      USER_MANAGEMENT_PATHS.some((path) => pathname.startsWith(path)) &&
+      staffRole !== ROLES.OWNER &&
+      staffAccessLevel(token as Record<string, unknown>) !== "MANAGER"
+    ) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    return nextWithHeaders(req);
   }
 
   if (pathname.startsWith("/checkout")) {
@@ -39,32 +85,9 @@ export async function middleware(req: NextRequest) {
     if (roleStr === "CUSTOMER" && !emailOk) {
       return NextResponse.redirect(new URL("/cuenta/verificar-email", req.url));
     }
-    return nextWithPathname(req);
   }
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/vendedor")) {
-    const token = await getToken({ req, secret });
-    const staffLoginPath = getStaffLoginPath();
-    if (!token) {
-      const loginUrl = new URL(staffLoginPath, req.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    const staffRole = String((token as { role?: unknown }).role ?? "");
-
-    if (OWNER_ONLY_PATHS.some((path) => pathname.startsWith(path)) && staffRole !== ROLES.OWNER) {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    }
-
-    if (staffRole !== ROLES.OWNER && staffRole !== ROLES.EMPLOYEE) {
-      return NextResponse.redirect(new URL("/catalog", req.url));
-    }
-
-    return nextWithPathname(req);
-  }
-
-  return nextWithPathname(req);
+  return nextWithHeaders(req);
 }
 
 export const config = {

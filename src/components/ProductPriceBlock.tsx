@@ -20,7 +20,13 @@ export function ProductPriceBlock({ product, mode, size = "card" }: Props) {
   if (mode === "wholesale") {
     const { main } = getWholesalePriceDisplay(product);
     return (
-      <p className={size === "detail" ? "text-2xl font-bold text-brand-dark" : "text-base font-bold text-brand-dark sm:text-lg"}>
+      <p
+        className={
+          size === "detail"
+            ? "text-3xl font-bold text-brand"
+            : "text-lg font-bold text-brand sm:text-xl"
+        }
+      >
         {main}
       </p>
     );
@@ -29,46 +35,39 @@ export function ProductPriceBlock({ product, mode, size = "card" }: Props) {
   const { listFormatted, cashFormatted, showListAndCash, discountPercent } =
     getRetailPriceDisplay(product);
 
-  if (!showListAndCash) {
+  if (size === "detail") {
     return (
-      <p
-        className={
-          size === "detail"
-            ? "text-3xl font-bold text-brand"
-            : "text-xl font-bold text-brand sm:text-2xl"
-        }
-      >
-        {cashFormatted}
-      </p>
+      <div className="flex flex-wrap items-end gap-6 border-b border-slate-100 pb-5">
+        <div>
+          <p className="text-3xl font-bold tracking-tight text-brand sm:text-4xl">{cashFormatted}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
+            Precio en efectivo
+            {discountPercent > 0 ? ` · ${discountPercent}% off` : ""}
+          </p>
+        </div>
+        {showListAndCash ? (
+          <div className="text-right">
+            <p className="text-lg text-slate-500 line-through sm:text-xl">{listFormatted}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Precio de lista
+            </p>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
   return (
     <div className="space-y-0.5">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 sm:text-xs">
-        Precio de lista
-      </p>
-      <p
-        className={
-          size === "detail"
-            ? "text-xl font-semibold text-slate-700 line-through decoration-slate-400/80 sm:text-2xl"
-            : "text-base font-semibold text-slate-600 sm:text-lg"
-        }
-      >
-        {listFormatted}
-      </p>
-      <p
-        className={
-          size === "detail"
-            ? "mt-1 text-3xl font-bold leading-none text-brand sm:text-4xl"
-            : "text-xl font-bold leading-none text-brand sm:text-2xl"
-        }
-      >
-        {cashFormatted}
-      </p>
-      <p className="text-[11px] text-slate-600 sm:text-xs">
-        En efectivo{discountPercent > 0 ? ` (${discountPercent}% off)` : ""}
-      </p>
+      {showListAndCash ? (
+        <p className="text-xs text-slate-500 line-through">{listFormatted}</p>
+      ) : null}
+      <p className="text-lg font-bold text-brand sm:text-xl">{cashFormatted}</p>
+      {showListAndCash ? (
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+          En efectivo{discountPercent > 0 ? ` · ${discountPercent}%` : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

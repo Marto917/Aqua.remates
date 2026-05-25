@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
+import { SignOutButton } from "@/components/SignOutButton";
 import { IconCart, IconCatalog, IconHome } from "@/components/icons/NavIcons";
 import { SiteLogo } from "@/components/SiteLogo";
 import { UserProfileChip } from "@/components/nav/UserProfileChip";
@@ -29,16 +30,17 @@ export async function StoreNav({ session }: Props) {
   }
 
   const isCustomer = session?.user?.role === UserRole.CUSTOMER;
+  const isLoggedIn = Boolean(session?.user);
 
   return (
     <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90">
       <nav className="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/"
-          className="flex items-center gap-2 font-semibold text-brand-dark"
+          className="flex shrink-0 items-center font-semibold text-brand-dark"
           aria-label="Inicio AQUA"
         >
-          <SiteLogo size={40} />
+          <SiteLogo size={44} />
         </Link>
 
         <div className="flex justify-center px-1">
@@ -68,7 +70,7 @@ export async function StoreNav({ session }: Props) {
             <IconCart />
           </Link>
 
-          {!session?.user ? (
+          {!isLoggedIn ? (
             <>
               <Link
                 href="/login"
@@ -91,16 +93,22 @@ export async function StoreNav({ session }: Props) {
               </Link>
             </>
           ) : isCustomer ? (
-            <div className="ml-1 hidden sm:block">
-              <UserProfileChip name={profileName} imageUrl={profileImage} />
-            </div>
+            <>
+              <div className="ml-1 hidden sm:block">
+                <UserProfileChip name={profileName} imageUrl={profileImage} />
+              </div>
+              <div className="ml-1 hidden lg:block">
+                <SignOutButton className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50" />
+              </div>
+            </>
           ) : null}
         </div>
       </nav>
 
       {session?.user && isCustomer ? (
-        <div className="border-t border-slate-100 px-3 pb-2 sm:hidden">
+        <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 pb-2 sm:hidden">
           <UserProfileChip name={profileName} imageUrl={profileImage} />
+          <SignOutButton className="shrink-0 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600" />
         </div>
       ) : null}
     </header>

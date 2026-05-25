@@ -1,10 +1,14 @@
 /**
- * Mientras no haya login definitivo: con BACKOFFICE_PREVIEW en .env
- * se permite entrar a /admin y /vendedor y las APIs de backoffice sin sesión.
- * Acepta true / 1 / yes (mayúsculas o no). También NEXT_PUBLIC_BACKOFFICE_PREVIEW por si solo está en el cliente.
- * En producción real: no definir esta variable (o ponerla en false).
+ * Preview sin login: solo en desarrollo y con ALLOW explícito.
+ * En producción no usar BACKOFFICE_PREVIEW (riesgo de acceso al panel sin sesión).
  */
 export function isBackofficePreview(): boolean {
+  if (process.env.NODE_ENV === "production") {
+    const allow = process.env.ALLOW_BACKOFFICE_PREVIEW?.trim().toLowerCase();
+    if (allow !== "true" && allow !== "1" && allow !== "yes") {
+      return false;
+    }
+  }
   const raw =
     process.env.BACKOFFICE_PREVIEW ?? process.env.NEXT_PUBLIC_BACKOFFICE_PREVIEW;
   const v = raw?.trim().toLowerCase();

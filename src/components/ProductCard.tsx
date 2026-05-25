@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import type { PriceMode } from "@/lib/catalog-pricing";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
+import { retailDiscountBadgePercent } from "@/lib/product-pricing-display";
 import { MIN_UNITS_FOR_WHOLESALE_PRICE } from "@/lib/pricing-constants";
 
 type ProductCardProps = {
@@ -43,56 +44,66 @@ export function ProductCard({ product, mode }: ProductCardProps) {
   );
 
   const displayName = useMemo(() => formatDisplayWords(product.name), [product.name]);
-  const displayCategory = useMemo(() => formatDisplayWords(product.category.name), [product.category.name]);
+  const shortDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
   const imagePosition = selectedVariant?.imagePosition ?? product.imagePosition;
+  const badge =
+    mode === "retail" ? retailDiscountBadgePercent(product) : null;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md">
+    <article className="group flex flex-col bg-white transition hover:shadow-md">
       <Link href={`/product/${product.slug}`} className="block">
-        <div className="relative aspect-[4/3] w-full bg-slate-100">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50">
           <ProductImage
             src={selectedVariant?.imageUrl || product.imageUrl}
             alt={displayName}
             position={imagePosition}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            sizes="(max-width: 640px) 50vw, 25vw"
           />
+          {badge != null && badge > 0 ? (
+            <span className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-brand text-center text-xs font-bold leading-tight text-white shadow-md">
+              -{badge}%
+            </span>
+          ) : null}
         </div>
-        <div className="space-y-2 p-3 sm:p-4">
-          <span className="inline-flex rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-medium text-brand-dark">
-            {displayCategory}
-          </span>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
+
+        {colors.length > 0 ? (
+          <div className="flex flex-wrap justify-center gap-1.5 px-2 py-2.5">
+            {colors.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                title={v.colorLabel}
+                aria-label={`Ver ${displayName} en color ${formatDisplayWords(v.colorLabel)}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedVariantId(v.id);
+                }}
+                className={`h-4 w-4 rounded-full border shadow-sm transition ${
+                  selectedVariant?.id === v.id
+                    ? "border-brand-dark ring-1 ring-brand ring-offset-1"
+                    : "border-slate-200"
+                }`}
+                style={{ backgroundColor: swatchColorForLabel(v.colorLabel) }}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        <div className="space-y-1 px-2 pb-3 text-center sm:px-3">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-slate-900 sm:text-base">
             {displayName}
           </h3>
-          <ProductPriceBlock product={product} mode={mode} size="card" />
+          <p className="line-clamp-1 text-xs text-slate-500">{shortDesc}</p>
+          <div className="pt-1">
+            <ProductPriceBlock product={product} mode={mode} size="card" />
+          </div>
           {mode === "wholesale" ? (
-            <p className="text-[11px] leading-tight text-slate-500">
-              Precio mayorista con {MIN_UNITS_FOR_WHOLESALE_PRICE}+ unidades del mismo producto.
+            <p className="text-[10px] text-slate-500">
+              Mayorista · {MIN_UNITS_FOR_WHOLESALE_PRICE}+ unidades
             </p>
           ) : null}
         </div>
       </Link>
-      {colors.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5 px-3 pb-3 sm:px-4 sm:pb-4">
-          {colors.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              title={v.colorLabel}
-              aria-label={`Ver ${displayName} en color ${formatDisplayWords(v.colorLabel)}`}
-              onClick={() => setSelectedVariantId(v.id)}
-              className={`h-5 w-5 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.12)] transition ${
-                selectedVariant?.id === v.id
-                  ? "border-brand-dark ring-2 ring-brand/50 ring-offset-1"
-                  : "border-slate-200 hover:border-slate-400"
-              }`}
-              style={{ backgroundColor: swatchColorForLabel(v.colorLabel) }}
-            >
-              <span className="sr-only">{v.colorLabel}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
     </article>
   );
 }
