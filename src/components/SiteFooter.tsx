@@ -1,13 +1,12 @@
 import Link from "next/link";
 import packageJson from "../../package.json";
 
-/** Editá acá URL y teléfonos cuando los tengas */
 const SOCIAL = {
-  instagram: "https://www.instagram.com/",
-  tiktok: "https://www.tiktok.com/",
+  instagram: "https://www.instagram.com/aqua.remates/",
+  tiktok: "#",
 } as const;
 
-const WHATSAPP = "";
+const WHATSAPP = "1161153502";
 
 function SocialIconInstagram({ className }: { className?: string }) {
   return (
@@ -29,7 +28,6 @@ const navLinks = [
   { href: "/", label: "Inicio" },
   { href: "/catalog?priceMode=retail", label: "Catálogo" },
   { href: "/carrito", label: "Carrito" },
-  { href: "/mayorista/contacto", label: "Mayorista" },
   { href: "/login", label: "Ingresar" },
   { href: "/registro", label: "Registrarte" },
 ] as const;
@@ -64,11 +62,14 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
+        <div className="mx-auto mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-white/30 bg-white/10 px-4 text-xs font-bold uppercase tracking-[0.16em] text-white/80">
+          Próximamente: mayorista
+        </div>
 
         <div className="mx-auto mt-8 w-full max-w-sm rounded-xl border border-white/25 bg-white/5 px-5 py-4 text-center backdrop-blur-sm sm:max-w-md sm:px-6">
           <p className="text-xs font-medium uppercase tracking-wider text-white/70">Contacto</p>
           <p className="mt-3 text-sm leading-relaxed text-white/90">
-            <span className="block">WhatsApp {wa}</span>
+            <span className="block">Tel / WhatsApp {wa}</span>
           </p>
         </div>
 

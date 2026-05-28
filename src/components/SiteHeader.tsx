@@ -10,7 +10,13 @@ export function SiteHeader() {
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/catalog">Catalogo</Link>
           <Link href="/checkout?type=retail">Checkout Minorista</Link>
-          <Link href="/mayorista/contacto">Mayorista</Link>
+          <button
+            type="button"
+            disabled
+            className="cursor-not-allowed rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-500"
+          >
+            Próximamente: mayorista
+          </button>
           <Link href="/login?callbackUrl=/admin">Backoffice</Link>
         </nav>
       </div>

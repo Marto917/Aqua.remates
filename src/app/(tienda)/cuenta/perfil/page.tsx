@@ -109,9 +109,13 @@ export default async function PerfilPage({ searchParams }: PageProps) {
         <Link href="/cuenta/mis-compras" className="font-medium text-brand-dark underline">
           Mis compras
         </Link>
-        <Link href="/cuenta/pedidos-mayorista" className="font-medium text-brand-dark underline">
-          Pedidos mayorista
-        </Link>
+        <button
+          type="button"
+          disabled
+          className="cursor-not-allowed rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-500"
+        >
+          Próximamente: mayorista
+        </button>
       </div>
 
       <SignOutButton

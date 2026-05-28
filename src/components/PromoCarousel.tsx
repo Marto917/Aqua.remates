@@ -28,8 +28,8 @@ const defaultSlides: Slide[] = [
   },
   {
     id: "default-3",
-    title: "Compra mayorista",
-    subtitle: "Activá el modo mayorista y armá tu pedido con mejores precios.",
+    title: "Nuevos ingresos toda la semana",
+    subtitle: "Sumamos productos y ofertas para tu compra diaria.",
     gradient: "from-emerald-700 via-teal-600 to-teal-700",
   },
 ];

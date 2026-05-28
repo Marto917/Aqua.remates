@@ -17,6 +17,7 @@ type Props = {
 };
 
 export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
+  const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +29,12 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
     setError(null);
     if (preview) URL.revokeObjectURL(preview);
     if (f) {
+      if (f.size > MAX_UPLOAD_BYTES) {
+        setFile(null);
+        setPreview(null);
+        setError("La imagen supera 12 MB. Elegí una foto más liviana.");
+        return;
+      }
       setPreview(URL.createObjectURL(f));
     } else {
       setPreview(null);
@@ -49,14 +56,26 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
         method: "POST",
         body: fd,
       });
-      const data = (await res.json()) as { error?: string; ok?: boolean };
+      const raw = await res.text();
+      let data: { error?: string; ok?: boolean } = {};
+      try {
+        data = raw ? (JSON.parse(raw) as { error?: string; ok?: boolean }) : {};
+      } catch {
+        data = {};
+      }
       if (!res.ok) {
+        if (res.status === 413) {
+          setError("La imagen es demasiado pesada. Probá con una captura más liviana.");
+          return;
+        }
         setError(data.error ?? "No se pudo subir el comprobante.");
         return;
       }
       setDone(true);
-    } catch {
-      setError("Error de conexión. Intentá de nuevo.");
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message ? e.message : "Error de conexión. Intentá de nuevo.";
+      setError(msg);
     } finally {
       setSubmitting(false);
     }

@@ -86,9 +86,13 @@ export default async function MisComprasPage() {
         </ul>
       )}
 
-      <Link href="/cuenta/pedidos-mayorista" className="inline-block text-sm font-medium text-brand-dark underline">
-        Ver pedidos mayorista
-      </Link>
+      <button
+        type="button"
+        disabled
+        className="inline-block cursor-not-allowed rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-500"
+      >
+        Próximamente: mayorista
+      </button>
     </div>
   );
 }

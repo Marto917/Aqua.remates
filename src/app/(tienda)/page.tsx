@@ -74,8 +74,7 @@ export default async function HomePage() {
               Todo para tu casa, <span className="text-brand-dark">en un solo lugar</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-slate-600 sm:mx-0 sm:text-lg">
-              Navegá el catálogo con precios minoristas o activá el modo mayorista y armá tu pedido como en un
-              comercio online.
+              Navegá el catálogo, elegí tus productos y comprá fácil desde tu celular o computadora.
             </p>
             <div className="mt-6 flex justify-center sm:justify-start">
               <Link
@@ -162,7 +161,7 @@ export default async function HomePage() {
             <span className="text-brand-dark" aria-hidden>
               ✓
             </span>
-            Atención a mayoristas
+            Atención personalizada
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100/80">
             <span className="text-brand-dark" aria-hidden>
@@ -228,14 +227,15 @@ export default async function HomePage() {
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand/15 transition group-hover:bg-brand/25" aria-hidden />
           <h3 className="relative text-lg font-bold text-slate-900">¿Sos comercio?</h3>
           <p className="relative mt-2 text-balance text-sm leading-relaxed text-slate-600">
-            Modo mayorista, carrito y solicitud. Un vendedor te contacta para cerrar el pedido.
+            Estamos preparando una experiencia dedicada para compras comerciales.
           </p>
-          <Link
-            href="/catalog"
-            className="relative mt-5 inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-brand-dark underline-offset-4 sm:inline sm:w-auto sm:justify-start sm:hover:underline"
+          <button
+            type="button"
+            disabled
+            className="relative mt-5 inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-500 sm:w-auto"
           >
-            Ir al catálogo mayorista →
-          </Link>
+            Próximamente: mayorista
+          </button>
         </div>
         <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-6 text-center shadow-sm transition hover:shadow-md sm:text-left">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-cyan-100/80 transition group-hover:bg-cyan-200/60" aria-hidden />
