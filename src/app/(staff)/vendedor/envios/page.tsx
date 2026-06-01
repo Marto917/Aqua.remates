@@ -2,7 +2,12 @@ import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
 import { dispatchDeliveryFormAction } from "./actions";
 import { formatArs } from "@/lib/currency";
-import { canDispatchDelivery, deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
+import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
+import {
+  canDispatchAfterPack,
+  fulfillmentStatusLabel,
+  isOrderPacked,
+} from "@/lib/fulfillment";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
@@ -66,8 +71,8 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Gestión de envíos</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pedidos minoristas confirmados. Al emitir un envío a domicilio se genera un código de 4 dígitos que el
-          cliente entrega al repartidor. Los mayoristas se gestionan aparte con el vendedor.
+          Pedidos minoristas confirmados. Primero <strong>armá</strong> el pedido (lista de productos), después
+          imprimí el ticket o emití el envío a domicilio. El cliente recibe un mail en cada paso.
         </p>
       </header>
 
@@ -112,7 +117,8 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Cliente</th>
                 <th className="px-4 py-3">Entrega</th>
                 <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3">Estado</th>
+                <th className="px-4 py-3">Estado pago</th>
+                <th className="px-4 py-3">Preparación</th>
                 <th className="px-4 py-3">Envío</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -120,7 +126,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
             <tbody>
               {retailOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                     No hay pedidos minoristas en esta vista.
                   </td>
                 </tr>
@@ -147,6 +153,22 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                     <td className="whitespace-nowrap px-4 py-3 font-medium">{formatArs(Number(o.totalAmount))}</td>
                     <td className="px-4 py-3 text-xs">{retailOrderStatusLabel[o.status]}</td>
                     <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          isOrderPacked(o.packedAt)
+                            ? "bg-emerald-100 text-emerald-900"
+                            : "bg-amber-100 text-amber-900"
+                        }`}
+                      >
+                        {fulfillmentStatusLabel({
+                          packedAt: o.packedAt,
+                          shippingMethod: o.shippingMethod,
+                          deliveryStatus: o.deliveryStatus,
+                        })}
+                      </span>
+                      <p className="mt-1 text-xs text-slate-500">{o.items.length} ítem{o.items.length === 1 ? "" : "s"}</p>
+                    </td>
+                    <td className="px-4 py-3">
                       {isHomeDelivery(o.shippingMethod) ? (
                         <div className="space-y-1">
                           <span className="text-xs text-slate-600">
@@ -157,7 +179,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                               Código: {o.deliveryCode}
                             </p>
                           ) : null}
-                          {canDispatchDelivery(o.shippingMethod, o.deliveryStatus) ? (
+                          {canDispatchAfterPack(o.shippingMethod, o.packedAt, o.deliveryStatus) ? (
                             <form action={dispatchDeliveryFormAction}>
                               <input type="hidden" name="orderId" value={o.id} />
                               <button
@@ -167,6 +189,8 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                                 Emitir envío
                               </button>
                             </form>
+                          ) : isHomeDelivery(o.shippingMethod) && !isOrderPacked(o.packedAt) ? (
+                            <span className="text-xs text-amber-700">Armá antes de emitir</span>
                           ) : null}
                         </div>
                       ) : (
@@ -175,16 +199,22 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-col items-end gap-1">
-                        {isHomeDelivery(o.shippingMethod) ? (
-                          <Link
-                            href={`/vendedor/envios/minorista/${o.id}/ticket`}
-                            className="font-medium text-brand-dark underline"
-                          >
-                            Ticket / imprimir
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-slate-500">Preparar retiro</span>
-                        )}
+                        <Link
+                          href={`/vendedor/envios/minorista/${o.id}/armar`}
+                          className={`font-medium underline ${
+                            isOrderPacked(o.packedAt)
+                              ? "text-slate-600"
+                              : "text-amber-800"
+                          }`}
+                        >
+                          {isOrderPacked(o.packedAt) ? "Ver armado" : "Armar pedido"}
+                        </Link>
+                        <Link
+                          href={`/vendedor/envios/minorista/${o.id}/ticket`}
+                          className="font-medium text-brand-dark underline"
+                        >
+                          Ticket / imprimir
+                        </Link>
                         <Link href={`/admin/pedidos/${o.id}`} className="text-xs text-slate-500 underline">
                           Ver pedido
                         </Link>

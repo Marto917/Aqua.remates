@@ -10,3 +10,11 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "defaultShippingCity" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "defaultShippingProvince" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "defaultShippingPostalCode" TEXT;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "defaultShippingNotes" TEXT;
+
+-- Hero promocional (home)
+ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "heroPromoDesktopImageUrl" TEXT;
+ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "heroPromoMobileImageUrl" TEXT;
+ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "heroPromoLinkUrl" TEXT;
+
+-- Armado de pedidos (envíos)
+ALTER TABLE "RetailOrder" ADD COLUMN IF NOT EXISTS "packedAt" TIMESTAMP(3);

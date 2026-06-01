@@ -4,6 +4,7 @@ import { UserRole } from "@prisma/client";
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
 import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
+import { fulfillmentStatusLabel } from "@/lib/fulfillment";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
@@ -66,9 +67,21 @@ export default async function MisComprasPage() {
               <p className="mt-2 text-sm text-slate-700">
                 Total <strong>{formatArs(Number(order.totalAmount))}</strong>
               </p>
+              {(order.status === "CONFIRMED" ||
+                order.status === "PAYMENT_APPROVED" ||
+                order.status === "TRANSFER_REPORTED") &&
+              (order.packedAt || order.deliveryStatus) ? (
+                <p className="mt-2 text-xs font-medium text-slate-700">
+                  {fulfillmentStatusLabel({
+                    packedAt: order.packedAt,
+                    shippingMethod: order.shippingMethod,
+                    deliveryStatus: order.deliveryStatus,
+                  })}
+                </p>
+              ) : null}
               {isHomeDelivery(order.shippingMethod) && order.deliveryStatus ? (
-                <p className="mt-2 text-xs text-slate-600">
-                  Envío: {deliveryDispatchStatusLabel(order.deliveryStatus)}
+                <p className="mt-1 text-xs text-slate-600">
+                  Repartidor: {deliveryDispatchStatusLabel(order.deliveryStatus)}
                 </p>
               ) : null}
               {isHomeDelivery(order.shippingMethod) &&

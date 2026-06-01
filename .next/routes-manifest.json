@@ -92,6 +92,14 @@
       "namedRegex": "^/api/shipping/orders/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/staff/orders/[orderId]/pack",
+      "regex": "^/api/staff/orders/([^/]+?)/pack(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/api/staff/orders/(?<nxtPorderId>[^/]+?)/pack(?:/)?$"
+    },
+    {
       "page": "/product/[slug]",
       "regex": "^/product/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -106,6 +114,14 @@
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/vendedor/envios/mayorista/(?<nxtPid>[^/]+?)/ticket(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios/minorista/[id]/armar",
+      "regex": "^/vendedor/envios/minorista/([^/]+?)/armar(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/vendedor/envios/minorista/(?<nxtPid>[^/]+?)/armar(?:/)?$"
     },
     {
       "page": "/vendedor/envios/minorista/[id]/ticket",

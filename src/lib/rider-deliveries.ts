@@ -1,3 +1,4 @@
+import { sendOrderDeliveredEmail } from "@/lib/order-fulfillment-emails";
 import { prisma } from "@/lib/prisma";
 import { deliveryCodesMatch } from "@/lib/delivery-code";
 import { canConfirmDelivery } from "@/lib/delivery-dispatch";
@@ -64,7 +65,7 @@ export async function confirmRiderDelivery(params: {
 
   const order = await prisma.retailOrder.findUnique({
     where: { id: params.orderId },
-    select: { deliveryStatus: true, deliveryCode: true, shippingMethod: true },
+    include: { items: true },
   });
   if (!order) {
     return { ok: false, error: "Pedido no encontrado.", status: 404 };
@@ -86,5 +87,8 @@ export async function confirmRiderDelivery(params: {
       deliveryDeliveredAt: new Date(),
     },
   });
+
+  await sendOrderDeliveredEmail(order);
+
   return { ok: true };
 }

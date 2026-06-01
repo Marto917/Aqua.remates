@@ -68,6 +68,14 @@ export function ShippingTicketPrint({ ticket, qrPayloadJson }: Props) {
         >
           Imprimir ticket
         </button>
+        {ticket.orderType === "retail" ? (
+          <a
+            href={`/vendedor/envios/minorista/${ticket.orderId}/armar`}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800"
+          >
+            Armar pedido
+          </a>
+        ) : null}
         <a
           href="/vendedor/envios"
           className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800"
