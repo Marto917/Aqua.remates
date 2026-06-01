@@ -389,5 +389,9 @@ model StoreSettings {
   transferDiscountPercent Int      @default(15)
   mercadoPagoMarkupPercent Int     @default(10)
   discountBadgeLabel      String   @default("descuento transferencia")
+  /// Hero inicio — columna derecha (desktop) y banner (mobile)
+  heroPromoDesktopImageUrl String?
+  heroPromoMobileImageUrl  String?
+  heroPromoLinkUrl         String?
   updatedAt               DateTime @updatedAt
 }

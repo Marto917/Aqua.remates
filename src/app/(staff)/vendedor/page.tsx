@@ -105,6 +105,21 @@ export default async function VendedorHomePage() {
           </p>
         </Link>
         <Link
+          href="/admin/promociones"
+          className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"
+        >
+          <p className="mb-2 text-2xl" aria-hidden>
+            🖼️
+          </p>
+          <p className="font-semibold text-slate-900">Promociones e imágenes</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Imagen del inicio (desktop y celular), carrusel y bloques promocionales
+          </p>
+          <p className="mt-3 inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-900 group-hover:bg-violet-200">
+            Gestionar imágenes →
+          </p>
+        </Link>
+        <Link
           href="/admin/productos"
           className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:shadow-md"
         >

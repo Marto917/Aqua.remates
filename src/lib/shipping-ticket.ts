@@ -26,7 +26,6 @@ export type ShippingTicketData = {
   createdAtLabel: string;
   totalLabel: string;
   itemCount: number;
-  qrDataUrl: string;
   lookupApiPath: string;
 };
 
@@ -48,10 +47,7 @@ type RetailOrderForTicket = {
   items: unknown[];
 };
 
-export function buildRetailTicketData(
-  order: RetailOrderForTicket,
-  qrDataUrl: string,
-): ShippingTicketData {
+export function buildRetailTicketData(order: RetailOrderForTicket): ShippingTicketData {
   const fullAddress = formatFullAddress(order);
   return {
     orderType: "retail",
@@ -74,7 +70,6 @@ export function buildRetailTicketData(
     }),
     totalLabel: formatArs(Number(order.totalAmount)),
     itemCount: order.items.length,
-    qrDataUrl,
     lookupApiPath: `/api/shipping/orders/${order.id}?type=retail`,
   };
 }
@@ -112,7 +107,6 @@ type WholesaleRequestForTicket = {
 export function buildWholesaleTicketData(
   request: WholesaleRequestForTicket,
   totalAmount: number,
-  qrDataUrl: string,
 ): ShippingTicketData {
   const fullAddress = formatFullAddress(request);
   return {
@@ -136,7 +130,6 @@ export function buildWholesaleTicketData(
     }),
     totalLabel: formatArs(totalAmount),
     itemCount: request.items.length,
-    qrDataUrl,
     lookupApiPath: `/api/shipping/orders/${request.id}?type=wholesale`,
   };
 }

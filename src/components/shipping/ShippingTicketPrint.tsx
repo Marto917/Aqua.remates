@@ -1,12 +1,46 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { ShippingTicketData } from "@/lib/shipping-ticket";
 import { isHomeDelivery } from "@/lib/shipping";
 
 type Props = {
   ticket: ShippingTicketData;
+  qrPayloadJson: string;
 };
 
-export function ShippingTicketPrint({ ticket }: Props) {
+export function ShippingTicketPrint({ ticket, qrPayloadJson }: Props) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const showAddress = isHomeDelivery(ticket.shippingMethod);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const QRCode = (await import("qrcode")).default;
+        const dataUrl = await QRCode.toDataURL(qrPayloadJson, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 220,
+          color: { dark: "#0f172a", light: "#ffffff" },
+        });
+        if (!cancelled) {
+          setQrDataUrl(dataUrl);
+          setQrError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setQrError("No se pudo generar el código QR.");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrPayloadJson]);
 
   return (
     <div className="shipping-ticket-root mx-auto max-w-lg bg-white text-slate-900">
@@ -105,8 +139,14 @@ export function ShippingTicketPrint({ ticket }: Props) {
             <p>Escanear para consulta logística</p>
             <p className="mt-1 font-mono text-[10px] break-all">{ticket.lookupApiPath}</p>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ticket.qrDataUrl} alt="QR del pedido" width={120} height={120} className="shrink-0" />
+          {qrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qrDataUrl} alt="QR del pedido" width={120} height={120} className="shrink-0" />
+          ) : (
+            <div className="flex h-[120px] w-[120px] shrink-0 items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 p-2 text-center text-[10px] text-slate-500">
+              {qrError ?? "Generando QR…"}
+            </div>
+          )}
         </footer>
       </article>
     </div>

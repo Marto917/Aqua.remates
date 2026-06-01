@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
+import { HomeHeroPromoDesktop, HomeHeroPromoMobile } from "@/components/home/HomeHeroPromo";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
+import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
@@ -17,9 +19,10 @@ export default async function HomePage() {
   let categories: { name: string; slug: string }[] = [];
   let carouselBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
   let promoBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
+  let heroPromo = { desktopImageUrl: null as string | null, mobileImageUrl: null as string | null, linkUrl: null as string | null };
 
   try {
-    [categories, homeProducts, carouselBanners, promoBanners] = await Promise.all([
+    [categories, homeProducts, carouselBanners, promoBanners, heroPromo] = await Promise.all([
       prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
       prisma.product.findMany({
         where: { isActive: true },
@@ -42,6 +45,7 @@ export default async function HomePage() {
         take: 4,
         select: { id: true, title: true, imageUrl: true, linkUrl: true },
       }),
+      getHeroPromoSettings(),
     ]);
   } catch (error) {
     console.error("No se pudieron cargar datos del home:", error);
@@ -90,25 +94,10 @@ export default async function HomePage() {
               </p>
               <HomeHeroSearch />
             </div>
+            <HomeHeroPromoMobile hero={heroPromo} />
           </div>
 
-          <div className="relative mx-auto hidden w-full max-w-[260px] lg:mx-0 lg:block" aria-hidden>
-            <div className="absolute inset-0 rotate-3 rounded-3xl bg-gradient-to-br from-brand/20 to-teal-100/60" />
-            <div className="relative flex aspect-[4/5] flex-col justify-between rounded-3xl border border-white/60 bg-white/90 p-5 shadow-xl shadow-teal-900/10 backdrop-blur">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Comprá fácil</p>
-                <p className="mt-1 text-sm font-semibold text-slate-800">Carrito y checkout claros</p>
-              </div>
-              <div className="space-y-2">
-                <div className="h-2.5 w-3/4 rounded-full bg-brand/30" />
-                <div className="h-2.5 w-full rounded-full bg-slate-100" />
-                <div className="h-2.5 w-5/6 rounded-full bg-slate-100" />
-              </div>
-              <div className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark p-3 text-center text-sm font-semibold text-white">
-                AQUA — calidad y variedad
-              </div>
-            </div>
-          </div>
+          <HomeHeroPromoDesktop hero={heroPromo} />
         </div>
       </section>
 

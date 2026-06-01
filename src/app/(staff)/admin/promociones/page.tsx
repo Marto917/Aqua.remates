@@ -1,6 +1,8 @@
 import { UserRole } from "@prisma/client";
 import Link from "next/link";
 import { AdminBannersManager } from "@/components/admin/AdminBannersManager";
+import { AdminHeroPromoManager } from "@/components/admin/AdminHeroPromoManager";
+import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { placementFromSortOrder } from "@/lib/banner-placement";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
@@ -21,9 +23,12 @@ export default async function AdminPromocionesPage() {
     );
   }
 
-  const banners = await prisma.banner.findMany({
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-  });
+  const [banners, heroPromo] = await Promise.all([
+    prisma.banner.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    }),
+    getHeroPromoSettings(),
+  ]);
 
   const initialBanners = banners.map((b) => ({
     id: b.id,
@@ -48,6 +53,7 @@ export default async function AdminPromocionesPage() {
           ← Volver al panel
         </Link>
       </div>
+      <AdminHeroPromoManager initial={heroPromo} />
       <AdminBannersManager initialBanners={initialBanners} />
     </section>
   );

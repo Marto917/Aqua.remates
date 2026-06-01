@@ -10,5 +10,11 @@
     "files": [
       "static/chunks/1646.9123ee47220ed70b.js"
     ]
+  },
+  "components\\shipping\\ShippingTicketPrint.tsx -> qrcode": {
+    "id": 2769,
+    "files": [
+      "static/chunks/2769.5ea87fab731b4c4d.js"
+    ]
   }
 }

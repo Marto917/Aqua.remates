@@ -73,6 +73,9 @@ export async function StaffNav({ area }: StaffNavProps) {
           <Link href="/admin/categorias" className={linkClass}>
             Categorías
           </Link>
+          <Link href="/admin/promociones" className={linkClass}>
+            Promociones
+          </Link>
           <Link href="/admin/configuracion" className={linkClass}>
             Configuración
           </Link>

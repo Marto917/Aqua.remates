@@ -48,10 +48,10 @@ export async function dispatchDeliveryAction(orderId: string): Promise<DispatchR
   return { ok: true, code };
 }
 
-export async function dispatchDeliveryFormAction(formData: FormData) {
+export async function dispatchDeliveryFormAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get("orderId"));
   const result = await dispatchDeliveryAction(orderId);
   if (!result.ok) {
-    throw new Error(result.error);
+    console.error("dispatchDeliveryFormAction:", result.error);
   }
 }
