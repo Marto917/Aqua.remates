@@ -6,13 +6,63 @@ import { sendOrderDispatchedEmail, sendOrderPackedEmail } from "@/lib/order-fulf
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
 import { generateDeliveryCode } from "@/lib/delivery-code";
+import { findRiderByNumber } from "@/lib/rider-number";
 import { isHomeDelivery, RETAIL_FULFILLMENT_STATUSES } from "@/lib/shipping";
+
+function parseRiderNumber(raw: FormDataEntryValue | null): number | null {
+  const n = Number(String(raw ?? "").trim());
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.floor(n);
+}
 
 export type DispatchResult =
   | { ok: true; code: string }
   | { ok: false; error: string };
 
-export async function dispatchDeliveryAction(orderId: string): Promise<DispatchResult> {
+export type AssignRiderResult = { ok: true } | { ok: false; error: string };
+
+export async function assignRiderToOrderAction(
+  orderId: string,
+  riderNumber: number,
+): Promise<AssignRiderResult> {
+  await requireStaff();
+
+  const rider = await findRiderByNumber(riderNumber);
+  if (!rider) return { ok: false, error: "Repartidor no encontrado." };
+  if (!rider.isActive) return { ok: false, error: "El repartidor está inactivo." };
+
+  const order = await prisma.retailOrder.findUnique({
+    where: { id: orderId },
+    select: { shippingMethod: true, deliveryStatus: true },
+  });
+  if (!order) return { ok: false, error: "Pedido no encontrado." };
+  if (order.shippingMethod !== "DELIVERY") {
+    return { ok: false, error: "Solo se asignan repartidores a envíos a domicilio." };
+  }
+  if (order.deliveryStatus === "DELIVERED") {
+    return { ok: false, error: "El pedido ya fue entregado." };
+  }
+
+  await prisma.retailOrder.update({
+    where: { id: orderId },
+    data: {
+      assignedRiderId: rider.id,
+      riderAssignedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/vendedor/envios");
+  revalidatePath("/vendedor/envios/repartidores");
+  revalidatePath(`/vendedor/envios/repartidores/${riderNumber}`);
+  revalidatePath(`/vendedor/envios/minorista/${orderId}/ticket`);
+
+  return { ok: true };
+}
+
+export async function dispatchDeliveryAction(
+  orderId: string,
+  riderNumber?: number,
+): Promise<DispatchResult> {
   await requireStaff();
 
   const order = await prisma.retailOrder.findUnique({
@@ -33,13 +83,28 @@ export async function dispatchDeliveryAction(orderId: string): Promise<DispatchR
     };
   }
 
+  let assignedRiderId = order.assignedRiderId;
+  if (riderNumber != null) {
+    const resolved = await findRiderByNumber(riderNumber);
+    if (!resolved?.isActive) {
+      return { ok: false, error: "Repartidor inválido o inactivo." };
+    }
+    assignedRiderId = resolved.id;
+  }
+  if (!assignedRiderId) {
+    return { ok: false, error: "Asigná un repartidor antes de emitir el envío." };
+  }
+
   const code = order.deliveryCode ?? generateDeliveryCode();
+  const now = new Date();
   await prisma.retailOrder.update({
     where: { id: orderId },
     data: {
+      assignedRiderId,
+      riderAssignedAt: order.riderAssignedAt ?? now,
       deliveryCode: code,
       deliveryStatus: "DISPATCHED",
-      deliveryDispatchedAt: new Date(),
+      deliveryDispatchedAt: now,
     },
   });
 
@@ -48,11 +113,21 @@ export async function dispatchDeliveryAction(orderId: string): Promise<DispatchR
   }
 
   revalidatePath("/vendedor/envios");
+  revalidatePath("/vendedor/envios/repartidores");
   revalidatePath(`/vendedor/envios/minorista/${orderId}/ticket`);
   revalidatePath(`/vendedor/envios/minorista/${orderId}/armar`);
+  revalidatePath(`/vendedor/envios/minorista/${orderId}/ticket`);
   revalidatePath("/cuenta/mis-compras");
 
   return { ok: true, code };
+}
+
+export async function assignRiderFormAction(formData: FormData): Promise<void> {
+  const orderId = String(formData.get("orderId"));
+  const riderNumber = parseRiderNumber(formData.get("riderNumber"));
+  if (!orderId || riderNumber == null) return;
+  const result = await assignRiderToOrderAction(orderId, riderNumber);
+  if (!result.ok) console.error("assignRiderFormAction:", result.error);
 }
 
 export type PackResult = { ok: true } | { ok: false; error: string };
@@ -87,7 +162,8 @@ export async function markOrderPackedAction(orderId: string): Promise<PackResult
 
 export async function dispatchDeliveryFormAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get("orderId"));
-  const result = await dispatchDeliveryAction(orderId);
+  const riderNumber = parseRiderNumber(formData.get("riderNumber"));
+  const result = await dispatchDeliveryAction(orderId, riderNumber ?? undefined);
   if (!result.ok) {
     console.error("dispatchDeliveryFormAction:", result.error);
   }

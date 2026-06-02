@@ -146,14 +146,17 @@ model ProductReview {
 
 /// Repartidor (app de mapas). Tabla aislada; la app externa solo usa la API /api/riders/*.
 model Rider {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  phone        String?
-  passwordHash String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String        @id @default(cuid())
+  /// Número visible para asignar viajes (ej. 1, 2, 3).
+  riderNumber     Int           @unique
+  name            String
+  email           String        @unique
+  phone           String?
+  passwordHash    String
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  assignedOrders  RetailOrder[] @relation("OrderAssignedRider")
 }
 
 model Category {
@@ -264,6 +267,9 @@ model RetailOrder {
   deliveryDeliveredAt     DateTime?
   /// Cuando el vendedor terminó de armar el pedido en depósito.
   packedAt                DateTime?
+  assignedRiderId         String?
+  assignedRider           Rider?                @relation("OrderAssignedRider", fields: [assignedRiderId], references: [id])
+  riderAssignedAt         DateTime?
   totalAmount             Decimal               @db.Decimal(10, 2)
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
   transferAlias           String?

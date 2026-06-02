@@ -14,6 +14,7 @@ export default async function AdminRidersPage() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      riderNumber: true,
       name: true,
       email: true,
       phone: true,

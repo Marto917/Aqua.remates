@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     token,
     rider: {
       id: rider.id,
+      riderNumber: rider.riderNumber,
       name: rider.name,
       email: rider.email,
       phone: rider.phone,

@@ -33,6 +33,6 @@ export async function GET(req: Request) {
     return auth.error;
   }
 
-  const deliveries = await listRiderDeliveries();
+  const deliveries = await listRiderDeliveries(auth.rider.id);
   return NextResponse.json({ deliveries });
 }

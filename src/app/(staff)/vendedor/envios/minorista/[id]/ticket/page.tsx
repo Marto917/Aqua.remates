@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShippingTicketPrint } from "@/components/shipping/ShippingTicketPrint";
-import { buildShippingQrPayload } from "@/lib/shipping";
+import { TicketRiderRequired } from "@/components/shipping/TicketRiderRequired";
+import { buildShippingQrPayload, canPrintRetailDeliveryTicket } from "@/lib/shipping";
 import { buildRetailTicketData, retailOrderToQrPayload } from "@/lib/shipping-ticket";
 import { prisma } from "@/lib/prisma";
+import { requireStaff } from "@/lib/staff-auth";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,17 @@ async function loadRetailTicket(id: string) {
       items: {
         orderBy: { productName: "asc" },
       },
+      customer: {
+        select: {
+          defaultShippingAddress: true,
+          defaultShippingCity: true,
+          defaultShippingProvince: true,
+          defaultShippingPostalCode: true,
+        },
+      },
+      assignedRider: {
+        select: { id: true, riderNumber: true, name: true },
+      },
     },
   });
 
@@ -24,20 +37,35 @@ async function loadRetailTicket(id: string) {
     notFound();
   }
 
+  const qrPayload = retailOrderToQrPayload(order);
+  if (!qrPayload) {
+    return { needsRider: true as const, order };
+  }
+
   return {
+    needsRider: false as const,
     ticket: buildRetailTicketData(order),
-    qrPayloadJson: buildShippingQrPayload(retailOrderToQrPayload(order)),
+    qrPayloadJson: buildShippingQrPayload(qrPayload),
   };
 }
 
 export default async function RetailShippingTicketPage({ params }: PageProps) {
+  await requireStaff();
   const { id } = await params;
 
   let ticketData: Awaited<ReturnType<typeof loadRetailTicket>> | null = null;
   let loadError: string | null = null;
+  let activeRiders: { riderNumber: number; name: string }[] = [];
 
   try {
-    ticketData = await loadRetailTicket(id);
+    [ticketData, activeRiders] = await Promise.all([
+      loadRetailTicket(id),
+      prisma.rider.findMany({
+        where: { isActive: true },
+        orderBy: { riderNumber: "asc" },
+        select: { riderNumber: true, name: true },
+      }),
+    ]);
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e) {
       throw e;
@@ -60,6 +88,18 @@ export default async function RetailShippingTicketPage({ params }: PageProps) {
 
   if (!ticketData) {
     notFound();
+  }
+
+  if (ticketData.needsRider) {
+    return (
+      <div className="py-4">
+        <TicketRiderRequired
+          orderId={ticketData.order.id}
+          buyerName={ticketData.order.buyerName}
+          riders={activeRiders}
+        />
+      </div>
+    );
   }
 
   return (

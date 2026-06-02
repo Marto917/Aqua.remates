@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
-import { formatCustomerComments, formatFullAddress } from "@/lib/shipping";
+import {
+  formatCustomerComments,
+  resolveRiderDeliveryAddress,
+} from "@/lib/shipping";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 
 const querySchema = z.object({
@@ -58,11 +61,23 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         deliveryDispatchedAt: true,
         deliveryDeliveredAt: true,
         createdAt: true,
+        customer: {
+          select: {
+            defaultShippingAddress: true,
+            defaultShippingCity: true,
+            defaultShippingProvince: true,
+            defaultShippingPostalCode: true,
+          },
+        },
+        assignedRider: {
+          select: { id: true, riderNumber: true, name: true },
+        },
       },
     });
     if (!order) {
       return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
     }
+    const deliveryAddress = resolveRiderDeliveryAddress(order, order.customer);
     return NextResponse.json({
       v: 1,
       type: "retail",
@@ -74,8 +89,13 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
       shippingMethodLabel: retailShippingMethodLabel[order.shippingMethod],
       status: order.status,
       statusLabel: retailOrderStatusLabel[order.status],
-      fullAddress: formatFullAddress(order),
+      address: deliveryAddress,
+      fullAddress: deliveryAddress,
+      direccion: deliveryAddress,
       postalCode: order.shippingPostalCode,
+      riderNumber: order.assignedRider?.riderNumber ?? null,
+      riderId: order.assignedRider?.id ?? null,
+      riderName: order.assignedRider?.name ?? null,
       customerComments: formatCustomerComments({
         shippingNotes: order.shippingNotes,
         notes: order.notes,
@@ -112,6 +132,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
   }
 
+  const deliveryAddress = resolveRiderDeliveryAddress(request);
   return NextResponse.json({
     v: 1,
     type: "wholesale",
@@ -123,7 +144,9 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     shippingMethod: request.shippingMethod,
     shippingMethodLabel: retailShippingMethodLabel[request.shippingMethod],
     status: request.status,
-    fullAddress: formatFullAddress(request),
+    address: deliveryAddress,
+    fullAddress: deliveryAddress,
+    direccion: deliveryAddress,
     postalCode: request.shippingPostalCode,
     customerComments: formatCustomerComments({
       shippingNotes: request.shippingNotes,

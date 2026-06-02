@@ -2,10 +2,10 @@
   "version": 1,
   "functions": {
     "/api/admin/banners": {},
-    "/api/admin/hero-promo": {},
     "/api/admin/export-catalog": {},
-    "/api/images/default-product": {},
+    "/api/admin/hero-promo": {},
     "/api/admin/products": {},
+    "/api/images/default-product": {},
     "/api/retail-orders/[orderId]/transfer-proof": {},
     "/api/staff/orders/[orderId]/pack": {},
     "/api/search-suggestions": {}

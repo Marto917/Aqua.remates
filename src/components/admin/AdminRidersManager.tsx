@@ -4,12 +4,17 @@ import { FormEvent, useState } from "react";
 
 type RiderItem = {
   id: string;
+  riderNumber: number;
   name: string;
   email: string;
   phone: string | null;
   isActive: boolean;
   createdAt: string;
 };
+
+function formatRiderNum(n: number) {
+  return `#${String(n).padStart(3, "0")}`;
+}
 
 export function AdminRidersManager({ initialRiders }: { initialRiders: RiderItem[] }) {
   const [riders, setRiders] = useState(initialRiders);
@@ -72,8 +77,8 @@ export function AdminRidersManager({ initialRiders }: { initialRiders: RiderItem
       <form onSubmit={createRider} className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
         <h2 className="md:col-span-2 text-lg font-semibold">Alta de repartidor (app mapas)</h2>
         <p className="md:col-span-2 text-sm text-slate-600">
-          Estas cuentas son independientes de clientes y staff. El rider ingresa con email y contraseña en la app
-          de mapas vía la API <code className="rounded bg-slate-100 px-1">/api/riders/auth/login</code>.
+          Al crear la cuenta se asigna automáticamente un <strong>número de repartidor</strong> (#001, #002…).
+          El vendedor usa ese número en envíos para asignar viajes y llevar el registro de pagos.
         </p>
         <input name="name" required placeholder="Nombre y apellido" className="rounded-md border px-3 py-2" />
         <input name="email" type="email" required placeholder="Email" className="rounded-md border px-3 py-2" />
@@ -100,6 +105,7 @@ export function AdminRidersManager({ initialRiders }: { initialRiders: RiderItem
         <table className="w-full text-sm">
           <thead className="bg-slate-100">
             <tr>
+              <th className="px-3 py-2 text-left">Nº</th>
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Email</th>
               <th className="px-3 py-2 text-left">Teléfono</th>
@@ -110,13 +116,16 @@ export function AdminRidersManager({ initialRiders }: { initialRiders: RiderItem
           <tbody>
             {riders.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
                   Todavía no hay riders. Creá la primera cuenta arriba.
                 </td>
               </tr>
             ) : (
               riders.map((r) => (
                 <tr key={r.id} className="border-t">
+                  <td className="px-3 py-2 font-mono font-semibold text-violet-900">
+                    {formatRiderNum(r.riderNumber)}
+                  </td>
                   <td className="px-3 py-2 font-medium">{r.name}</td>
                   <td className="px-3 py-2">{r.email}</td>
                   <td className="px-3 py-2">{r.phone ?? "—"}</td>

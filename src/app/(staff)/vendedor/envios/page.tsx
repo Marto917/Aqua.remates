@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
-import { dispatchDeliveryFormAction } from "./actions";
+import { RiderAssignControls } from "@/components/shipping/RiderAssignControls";
 import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import {
@@ -12,6 +12,7 @@ import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-l
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
 import {
+  canPrintRetailDeliveryTicket,
   formatFullAddress,
   isHomeDelivery,
   RETAIL_FULFILLMENT_STATUSES,
@@ -38,7 +39,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
   const shippingWhere =
     activeFilter.method != null ? { shippingMethod: activeFilter.method } : {};
 
-  const [retailOrders, wholesaleOrders] = await Promise.all([
+  const [retailOrders, wholesaleOrders, activeRiders] = await Promise.all([
     prisma.retailOrder.findMany({
       where: {
         status: { in: RETAIL_FULFILLMENT_STATUSES },
@@ -46,7 +47,10 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       },
       orderBy: { createdAt: "desc" },
       take: 80,
-      include: { items: true },
+      include: {
+        items: true,
+        assignedRider: { select: { riderNumber: true, name: true } },
+      },
     }),
     prisma.wholesaleRequest.findMany({
       where: {
@@ -57,7 +61,17 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       take: 40,
       include: { items: true },
     }),
+    prisma.rider.findMany({
+      where: { isActive: true },
+      orderBy: { riderNumber: "asc" },
+      select: { riderNumber: true, name: true },
+    }),
   ]);
+
+  const riderOptions = activeRiders.map((r) => ({
+    riderNumber: r.riderNumber,
+    name: r.name,
+  }));
 
   const domicilioCount = await prisma.retailOrder.count({
     where: {
@@ -71,8 +85,12 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Gestión de envíos</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pedidos minoristas confirmados. Primero <strong>armá</strong> el pedido (lista de productos), después
-          imprimí el ticket o emití el envío a domicilio. El cliente recibe un mail en cada paso.
+          Pedidos minoristas confirmados. Armá el pedido, asigná un <strong>número de repartidor</strong> y emití
+          el envío. El registro de viajes está en{" "}
+          <Link href="/vendedor/envios/repartidores" className="font-medium text-brand-dark underline">
+            Viajes por repartidor
+          </Link>
+          .
         </p>
       </header>
 
@@ -119,6 +137,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Total</th>
                 <th className="px-4 py-3">Estado pago</th>
                 <th className="px-4 py-3">Preparación</th>
+                <th className="px-4 py-3">Repartidor</th>
                 <th className="px-4 py-3">Envío</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -126,7 +145,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
             <tbody>
               {retailOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                     No hay pedidos minoristas en esta vista.
                   </td>
                 </tr>
@@ -168,7 +187,24 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                       </span>
                       <p className="mt-1 text-xs text-slate-500">{o.items.length} ítem{o.items.length === 1 ? "" : "s"}</p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 align-top">
+                      {isHomeDelivery(o.shippingMethod) ? (
+                        <RiderAssignControls
+                          orderId={o.id}
+                          riders={riderOptions}
+                          assignedRider={o.assignedRider}
+                          canDispatch={canDispatchAfterPack(
+                            o.shippingMethod,
+                            o.packedAt,
+                            o.deliveryStatus,
+                          )}
+                          deliveryStatus={o.deliveryStatus}
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top">
                       {isHomeDelivery(o.shippingMethod) ? (
                         <div className="space-y-1">
                           <span className="text-xs text-slate-600">
@@ -179,17 +215,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                               Código: {o.deliveryCode}
                             </p>
                           ) : null}
-                          {canDispatchAfterPack(o.shippingMethod, o.packedAt, o.deliveryStatus) ? (
-                            <form action={dispatchDeliveryFormAction}>
-                              <input type="hidden" name="orderId" value={o.id} />
-                              <button
-                                type="submit"
-                                className="rounded-md bg-sky-600 px-2 py-1 text-xs font-medium text-white hover:bg-sky-700"
-                              >
-                                Emitir envío
-                              </button>
-                            </form>
-                          ) : isHomeDelivery(o.shippingMethod) && !isOrderPacked(o.packedAt) ? (
+                          {isHomeDelivery(o.shippingMethod) && !isOrderPacked(o.packedAt) ? (
                             <span className="text-xs text-amber-700">Armá antes de emitir</span>
                           ) : null}
                         </div>
@@ -209,12 +235,25 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                         >
                           {isOrderPacked(o.packedAt) ? "Ver armado" : "Armar pedido"}
                         </Link>
-                        <Link
-                          href={`/vendedor/envios/minorista/${o.id}/ticket`}
-                          className="font-medium text-brand-dark underline"
-                        >
-                          Ticket / imprimir
-                        </Link>
+                        {canPrintRetailDeliveryTicket(o) ? (
+                          <Link
+                            href={`/vendedor/envios/minorista/${o.id}/ticket`}
+                            className="font-medium text-brand-dark underline"
+                          >
+                            Ticket / imprimir
+                          </Link>
+                        ) : isHomeDelivery(o.shippingMethod) ? (
+                          <span className="text-xs text-amber-800">
+                            Asigná repartidor para el ticket
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/vendedor/envios/minorista/${o.id}/ticket`}
+                            className="font-medium text-brand-dark underline"
+                          >
+                            Ticket / imprimir
+                          </Link>
+                        )}
                         <Link href={`/admin/pedidos/${o.id}`} className="text-xs text-slate-500 underline">
                           Ver pedido
                         </Link>

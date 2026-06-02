@@ -36,11 +36,14 @@ LOGIN
     "token": "<JWT>",
     "rider": {
       "id": "cuid...",
+      "riderNumber": 1,
       "name": "Nombre",
       "email": "rider@ejemplo.com",
       "phone": "+54..."
     }
   }
+
+  riderNumber es el número visible (#001) que el vendedor usa para asignar viajes en Aqua.
 
 PERFIL
   GET {AQUA_API_BASE_URL}/api/riders/me
@@ -74,8 +77,9 @@ LISTAR ENTREGAS PENDIENTES
     ]
   }
 
-  Solo pedidos minoristas ya emitidos (DISPATCHED).
+  Solo pedidos minoristas DISPATCHED asignados a ESE rider (assignedRiderId).
   El código de 4 dígitos NO viene en esta respuesta: lo dicta el cliente al recibir.
+  Si la lista está vacía, el vendedor aún no asignó viajes a este repartidor en /vendedor/envios.
 
 CONFIRMAR ENTREGA
   POST {AQUA_API_BASE_URL}/api/riders/deliveries/confirm
@@ -90,7 +94,8 @@ CONFIRMAR ENTREGA
 4. ESCANEO DE QR EN EL TICKET DE ENVÍO
 --------------------------------------------------------------------------------
 
-El QR contiene un JSON mínimo (snapshot al imprimir):
+El QR contiene un JSON (snapshot al imprimir). Usar address, fullAddress o direccion
+(tienen el mismo texto). Validar shippingMethod === "DELIVERY" antes de exigir dirección.
 
   {
     "v": 1,
@@ -98,14 +103,32 @@ El QR contiene un JSON mínimo (snapshot al imprimir):
     "orderId": "clxabc123...",
     "buyerName": "María García",
     "phone": "+5491123456789",
+    "email": "maria@ejemplo.com",
+    "shippingMethod": "DELIVERY",
     "address": "Av. Corrientes 1234, CABA, CABA · CP 1043",
-    "postalCode": "1043"
+    "fullAddress": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+    "direccion": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+    "postalCode": "1043",
+    "riderNumber": 2,
+    "riderId": "cuid..."
   }
 
-Tras escanear, consultar datos frescos en Aqua:
+  En envíos a domicilio, riderNumber y riderId son OBLIGATORIOS en el QR (el vendedor asigna
+  repartidor ANTES de imprimir el ticket). Si el rider logueado no coincide con riderNumber
+  del QR, NO debe poder abrir el viaje.
 
+  Si shippingMethod es PICKUP, riderNumber puede ser null (no es entrega de rider).
+
+Tras escanear el QR, validar con la API de riders (NO uses solo el JSON del QR):
+
+  GET {AQUA_API_BASE_URL}/api/riders/orders/{orderId}?riderNumber={del QR}
+  Header: Authorization: Bearer <token del login>
+
+  Respuesta 200: datos del pedido + riderNumber/riderName confirmados.
+  Respuesta 403: "Este viaje está asignado al repartidor #00X" — mostrar error y no permitir tomar.
+
+  Alternativa pública (sin validar rider):
   GET {AQUA_API_BASE_URL}/api/shipping/orders/{orderId}?type=retail
-  (opcional: header X-Shipping-Key o Bearer si Aqua tiene SHIPPING_LOOKUP_KEY)
 
   Respuesta 200 (ejemplo completo para la pantalla de entrega):
 
@@ -120,11 +143,16 @@ Tras escanear, consultar datos frescos en Aqua:
     "shippingMethodLabel": "Envío a domicilio",
     "status": "CONFIRMED",
     "statusLabel": "Confirmado / listo",
+    "address": "Av. Corrientes 1234, CABA, CABA · CP 1043",
     "fullAddress": "Av. Corrientes 1234, CABA, CABA · CP 1043",
+    "direccion": "Av. Corrientes 1234, CABA, CABA · CP 1043",
     "postalCode": "1043",
     "customerComments": "Tocar timbre 3B · Dejar en portería",
     "deliveryStatus": "DISPATCHED",
     "deliveryStatusLabel": "En camino",
+    "riderNumber": 2,
+    "riderId": "cuid...",
+    "riderName": "Juan Pérez",
     "createdAt": "2026-05-20T18:30:00.000Z"
   }
 
@@ -139,7 +167,7 @@ Tras escanear, consultar datos frescos en Aqua:
 
 1. Login → guardar token JWT
 2. GET /api/riders/deliveries → lista / mapa de entregas
-3. (Opcional) Escanear QR del ticket → GET /api/shipping/orders/{id}?type=retail
+3. Escanear QR → comparar qr.riderNumber con sesión → GET /api/riders/orders/{id}?riderNumber=N
 4. Al llegar: pedir código de 4 dígitos al cliente
 5. POST /api/riders/deliveries/confirm con { orderId, code }
 

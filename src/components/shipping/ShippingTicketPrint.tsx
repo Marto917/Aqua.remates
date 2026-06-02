@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ShippingTicketData } from "@/lib/shipping-ticket";
+import { formatRiderNumber } from "@/lib/rider-number";
 import { isHomeDelivery } from "@/lib/shipping";
 
 type Props = {
@@ -115,6 +116,19 @@ export function ShippingTicketPrint({ ticket, qrPayloadJson }: Props) {
             <p className="text-xs font-semibold uppercase text-slate-500">Modalidad</p>
             <p className="font-medium">{ticket.shippingMethodLabel}</p>
           </div>
+
+          {ticket.assignedRiderNumber != null ? (
+            <div className="rounded-md border border-violet-400 bg-violet-50 p-3">
+              <p className="text-xs font-semibold uppercase text-violet-800">Repartidor asignado</p>
+              <p className="mt-1 text-lg font-bold text-violet-950">
+                {formatRiderNumber(ticket.assignedRiderNumber)}
+                {ticket.assignedRiderName ? ` · ${ticket.assignedRiderName}` : ""}
+              </p>
+              <p className="mt-1 text-xs text-violet-700">
+                El QR incluye este número; otro repartidor no puede tomar el viaje.
+              </p>
+            </div>
+          ) : null}
 
           {showAddress ? (
             <div className="rounded-md border border-slate-300 bg-slate-50 p-3">

@@ -18,3 +18,14 @@ ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "heroPromoLinkUrl" TEXT;
 
 -- Armado de pedidos (envíos)
 ALTER TABLE "RetailOrder" ADD COLUMN IF NOT EXISTS "packedAt" TIMESTAMP(3);
+
+-- Número de repartidor y asignación de viajes
+ALTER TABLE "Rider" ADD COLUMN IF NOT EXISTS "riderNumber" INTEGER;
+WITH numbered AS (
+  SELECT id, ROW_NUMBER() OVER (ORDER BY "createdAt" ASC) AS rn FROM "Rider"
+)
+UPDATE "Rider" r SET "riderNumber" = numbered.rn FROM numbered WHERE r.id = numbered.id AND r."riderNumber" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "Rider_riderNumber_key" ON "Rider"("riderNumber");
+
+ALTER TABLE "RetailOrder" ADD COLUMN IF NOT EXISTS "assignedRiderId" TEXT;
+ALTER TABLE "RetailOrder" ADD COLUMN IF NOT EXISTS "riderAssignedAt" TIMESTAMP(3);

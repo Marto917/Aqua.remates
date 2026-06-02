@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSafeSession } from "@/lib/get-session";
+import { allocateNextRiderNumber } from "@/lib/rider-number";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 
@@ -34,6 +35,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      riderNumber: true,
       name: true,
       email: true,
       phone: true,
@@ -63,14 +65,23 @@ export async function POST(req: Request) {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const riderNumber = await allocateNextRiderNumber();
   const rider = await prisma.rider.create({
     data: {
+      riderNumber,
       name: parsed.data.name,
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       passwordHash,
     },
-    select: { id: true, name: true, email: true, phone: true, isActive: true },
+    select: {
+      id: true,
+      riderNumber: true,
+      name: true,
+      email: true,
+      phone: true,
+      isActive: true,
+    },
   });
 
   return NextResponse.json({ ok: true, rider });

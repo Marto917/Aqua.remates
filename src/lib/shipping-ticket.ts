@@ -7,7 +7,8 @@ import {
 } from "@/lib/order-labels";
 import {
   formatCustomerComments,
-  formatFullAddress,
+  resolveRiderDeliveryAddress,
+  type CustomerDefaultShipping,
   type ShippingQrPayload,
 } from "@/lib/shipping";
 
@@ -27,6 +28,14 @@ export type ShippingTicketData = {
   totalLabel: string;
   itemCount: number;
   lookupApiPath: string;
+  assignedRiderNumber: number | null;
+  assignedRiderName: string | null;
+};
+
+export type AssignedRiderSnapshot = {
+  id: string;
+  riderNumber: number;
+  name: string;
 };
 
 type RetailOrderForTicket = {
@@ -45,10 +54,17 @@ type RetailOrderForTicket = {
   createdAt: Date;
   totalAmount: { toString(): string };
   items: unknown[];
+  customer?: CustomerDefaultShipping | null;
+  assignedRiderId?: string | null;
+  assignedRider?: AssignedRiderSnapshot | null;
 };
 
+function retailDeliveryAddress(order: RetailOrderForTicket): string {
+  return resolveRiderDeliveryAddress(order, order.customer ?? null);
+}
+
 export function buildRetailTicketData(order: RetailOrderForTicket): ShippingTicketData {
-  const fullAddress = formatFullAddress(order);
+  const fullAddress = retailDeliveryAddress(order);
   return {
     orderType: "retail",
     orderId: order.id,
@@ -71,18 +87,31 @@ export function buildRetailTicketData(order: RetailOrderForTicket): ShippingTick
     totalLabel: formatArs(Number(order.totalAmount)),
     itemCount: order.items.length,
     lookupApiPath: `/api/shipping/orders/${order.id}?type=retail`,
+    assignedRiderNumber: order.assignedRider?.riderNumber ?? null,
+    assignedRiderName: order.assignedRider?.name ?? null,
   };
 }
 
-export function retailOrderToQrPayload(order: RetailOrderForTicket): ShippingQrPayload {
+export function retailOrderToQrPayload(order: RetailOrderForTicket): ShippingQrPayload | null {
+  if (order.shippingMethod === "DELIVERY" && !order.assignedRider) {
+    return null;
+  }
+
+  const address = retailDeliveryAddress(order);
   return {
     v: 1,
     type: "retail",
     orderId: order.id,
     buyerName: order.buyerName,
     phone: order.buyerPhone,
-    address: formatFullAddress(order),
+    email: order.buyerEmail,
+    shippingMethod: order.shippingMethod,
+    address,
+    fullAddress: address,
+    direccion: address,
     postalCode: order.shippingPostalCode,
+    riderNumber: order.assignedRider?.riderNumber ?? null,
+    riderId: order.assignedRider?.id ?? null,
   };
 }
 
@@ -108,7 +137,7 @@ export function buildWholesaleTicketData(
   request: WholesaleRequestForTicket,
   totalAmount: number,
 ): ShippingTicketData {
-  const fullAddress = formatFullAddress(request);
+  const fullAddress = resolveRiderDeliveryAddress(request);
   return {
     orderType: "wholesale",
     orderId: request.id,
@@ -131,17 +160,26 @@ export function buildWholesaleTicketData(
     totalLabel: formatArs(totalAmount),
     itemCount: request.items.length,
     lookupApiPath: `/api/shipping/orders/${request.id}?type=wholesale`,
+    assignedRiderNumber: null,
+    assignedRiderName: null,
   };
 }
 
 export function wholesaleRequestToQrPayload(request: WholesaleRequestForTicket): ShippingQrPayload {
+  const address = resolveRiderDeliveryAddress(request);
   return {
     v: 1,
     type: "wholesale",
     orderId: request.id,
     buyerName: request.contactName,
     phone: request.phone,
-    address: formatFullAddress(request),
+    email: request.email,
+    shippingMethod: request.shippingMethod,
+    address,
+    fullAddress: address,
+    direccion: address,
     postalCode: request.shippingPostalCode,
+    riderNumber: null,
+    riderId: null,
   };
 }

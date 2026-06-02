@@ -51,7 +51,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
   }
 
-  const result = await confirmRiderDelivery(parsed.data);
+  const result = await confirmRiderDelivery({
+    ...parsed.data,
+    riderId: auth.rider.id,
+  });
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }

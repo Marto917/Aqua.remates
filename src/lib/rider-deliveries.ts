@@ -2,7 +2,7 @@ import { sendOrderDeliveredEmail } from "@/lib/order-fulfillment-emails";
 import { prisma } from "@/lib/prisma";
 import { deliveryCodesMatch } from "@/lib/delivery-code";
 import { canConfirmDelivery } from "@/lib/delivery-dispatch";
-import { formatFullAddress, RETAIL_FULFILLMENT_STATUSES } from "@/lib/shipping";
+import { resolveRiderDeliveryAddress, RETAIL_FULFILLMENT_STATUSES } from "@/lib/shipping";
 
 export type RiderDeliveryItem = {
   orderId: string;
@@ -16,12 +16,13 @@ export type RiderDeliveryItem = {
   dispatchedAt: string;
 };
 
-export async function listRiderDeliveries(): Promise<RiderDeliveryItem[]> {
+export async function listRiderDeliveries(riderId: string): Promise<RiderDeliveryItem[]> {
   const orders = await prisma.retailOrder.findMany({
     where: {
       shippingMethod: "DELIVERY",
       deliveryStatus: "DISPATCHED",
       status: { in: RETAIL_FULFILLMENT_STATUSES },
+      assignedRiderId: riderId,
     },
     orderBy: { deliveryDispatchedAt: "asc" },
     select: {
@@ -29,25 +30,41 @@ export async function listRiderDeliveries(): Promise<RiderDeliveryItem[]> {
       buyerName: true,
       buyerPhone: true,
       buyerEmail: true,
+      shippingMethod: true,
       shippingAddress: true,
       shippingCity: true,
       shippingProvince: true,
       shippingPostalCode: true,
+      shippingNotes: true,
+      notes: true,
       deliveryDispatchedAt: true,
+      customer: {
+        select: {
+          defaultShippingAddress: true,
+          defaultShippingCity: true,
+          defaultShippingProvince: true,
+          defaultShippingPostalCode: true,
+        },
+      },
     },
   });
 
-  return orders.map((order) => ({
+  return orders.map((order) => {
+    const address = resolveRiderDeliveryAddress(order, order.customer);
+    return {
     orderId: order.id,
     buyerName: order.buyerName,
     phone: order.buyerPhone,
     email: order.buyerEmail,
-    address: formatFullAddress(order),
+    address,
+    fullAddress: address,
+    direccion: address,
     postalCode: order.shippingPostalCode,
     deliveryStatus: "DISPATCHED" as const,
     deliveryStatusLabel: "En camino",
     dispatchedAt: order.deliveryDispatchedAt?.toISOString() ?? new Date().toISOString(),
-  }));
+  };
+  });
 }
 
 export type ConfirmDeliveryResult =
@@ -57,6 +74,7 @@ export type ConfirmDeliveryResult =
 export async function confirmRiderDelivery(params: {
   orderId: string;
   code: string;
+  riderId: string;
 }): Promise<ConfirmDeliveryResult> {
   const code = params.code.trim();
   if (!/^\d{4}$/.test(code)) {
@@ -69,6 +87,16 @@ export async function confirmRiderDelivery(params: {
   });
   if (!order) {
     return { ok: false, error: "Pedido no encontrado.", status: 404 };
+  }
+  if (order.assignedRiderId == null) {
+    return {
+      ok: false,
+      error: "Este viaje no tiene repartidor asignado. Pedile al vendedor que genere el ticket.",
+      status: 409,
+    };
+  }
+  if (order.assignedRiderId !== params.riderId) {
+    return { ok: false, error: "Este viaje está asignado a otro repartidor.", status: 403 };
   }
   if (order.shippingMethod !== "DELIVERY") {
     return { ok: false, error: "Este pedido no es un envío a domicilio.", status: 409 };

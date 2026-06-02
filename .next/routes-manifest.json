@@ -84,6 +84,14 @@
       "namedRegex": "^/api/retail\\-orders/(?<nxtPorderId>[^/]+?)/transfer\\-proof(?:/)?$"
     },
     {
+      "page": "/api/riders/orders/[orderId]",
+      "regex": "^/api/riders/orders/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/api/riders/orders/(?<nxtPorderId>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/shipping/orders/[id]",
       "regex": "^/api/shipping/orders/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -130,6 +138,14 @@
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/vendedor/envios/minorista/(?<nxtPid>[^/]+?)/ticket(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios/repartidores/[riderNumber]",
+      "regex": "^/vendedor/envios/repartidores/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPriderNumber": "nxtPriderNumber"
+      },
+      "namedRegex": "^/vendedor/envios/repartidores/(?<nxtPriderNumber>[^/]+?)(?:/)?$"
     }
   ],
   "staticRoutes": [
@@ -330,6 +346,12 @@
       "regex": "^/vendedor/envios(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/vendedor/envios(?:/)?$"
+    },
+    {
+      "page": "/vendedor/envios/repartidores",
+      "regex": "^/vendedor/envios/repartidores(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vendedor/envios/repartidores(?:/)?$"
     },
     {
       "page": "/vendedor/mayoristas",
