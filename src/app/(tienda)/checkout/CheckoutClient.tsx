@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreSettings } from "@/contexts/store-settings-context";
+import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
 import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
@@ -158,6 +159,19 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (shippingMethod === "DELIVERY") {
+      const addressLine = shippingAddress.trim();
+      if (!shippingAddressHasStreetNumber(addressLine)) {
+        setError(SHIPPING_ADDRESS_HINT);
+        return;
+      }
+      if (!shippingCity.trim() || !shippingProvince.trim() || !shippingPostalCode.trim()) {
+        setError("Completá ciudad, provincia y código postal para el envío.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/retail-checkout", {
@@ -309,9 +323,13 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                     required
                     value={shippingAddress}
                     onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Calle y número"
+                    placeholder="Calle y número (ej: Av. Corrientes 1234)"
+                    minLength={6}
+                    pattern=".*\d.*"
+                    title={SHIPPING_ADDRESS_HINT}
                     className="w-full rounded-md border px-3 py-2"
                   />
+                  <p className="text-xs text-slate-500">{SHIPPING_ADDRESS_HINT}</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <input
                       required

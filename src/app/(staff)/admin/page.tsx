@@ -39,7 +39,10 @@ export default async function AdminHomePage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-white p-4 shadow-sm">
+        <Link
+          href="/admin/pedidos?estado=PENDING_TRANSFER"
+          className="group rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
             Transferencias pendientes
           </p>
@@ -49,8 +52,12 @@ export default async function AdminHomePage() {
               💸
             </span>
           </div>
-        </div>
-        <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-white p-4 shadow-sm">
+          <p className="mt-2 text-xs font-medium text-cyan-800 group-hover:underline">Ver pedidos →</p>
+        </Link>
+        <Link
+          href="/admin/mayoristas?estado=NUEVO"
+          className="group rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md"
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Mayoristas nuevos</p>
           <div className="mt-1 flex items-end justify-between">
             <p className="text-2xl font-semibold text-amber-700">{nuevosMayoristas}</p>
@@ -58,8 +65,12 @@ export default async function AdminHomePage() {
               🏪
             </span>
           </div>
-        </div>
-        <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-sm">
+          <p className="mt-2 text-xs font-medium text-amber-800 group-hover:underline">Ver mayoristas →</p>
+        </Link>
+        <Link
+          href="/admin/aprobaciones"
+          className="group rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
             Aprobaciones pendientes
           </p>
@@ -69,7 +80,8 @@ export default async function AdminHomePage() {
               ✅
             </span>
           </div>
-        </div>
+          <p className="mt-2 text-xs font-medium text-violet-800 group-hover:underline">Revisar →</p>
+        </Link>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">

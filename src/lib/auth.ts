@@ -104,6 +104,11 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastActiveAt: new Date() },
+        });
+
         const emailVerified = Boolean(user.emailVerified);
 
         return {
@@ -177,6 +182,12 @@ export const authOptions: NextAuthOptions = {
         }
         const fromToken = typeof token.picture === "string" ? token.picture : null;
         session.user.image = dbUser?.imageUrl?.trim() || fromToken || null;
+        void prisma.user
+          .update({
+            where: { id: token.id as string },
+            data: { lastActiveAt: new Date() },
+          })
+          .catch(() => undefined);
       }
       return session;
     },

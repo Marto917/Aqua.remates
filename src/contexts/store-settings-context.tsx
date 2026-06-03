@@ -11,6 +11,9 @@ const DEFAULTS: StoreSettingsData = {
   transferDiscountPercent: 15,
   mercadoPagoMarkupPercent: 10,
   discountBadgeLabel: "descuento transferencia",
+  themeBrandPrimary: null,
+  themeBrandDark: null,
+  themeBrandMuted: null,
 };
 
 const StoreSettingsContext = createContext<StoreSettingsData>(DEFAULTS);

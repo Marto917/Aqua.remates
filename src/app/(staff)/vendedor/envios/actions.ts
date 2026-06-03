@@ -160,6 +160,48 @@ export async function markOrderPackedAction(orderId: string): Promise<PackResult
   return { ok: true };
 }
 
+export async function markPickupDeliveredAction(orderId: string): Promise<PackResult> {
+  await requireStaff();
+
+  const order = await prisma.retailOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      shippingMethod: true,
+      packedAt: true,
+      deliveryStatus: true,
+      status: true,
+    },
+  });
+
+  if (!order) return { ok: false, error: "Pedido no encontrado." };
+  if (order.shippingMethod !== "PICKUP") {
+    return { ok: false, error: "Solo aplica a retiro en sucursal." };
+  }
+  if (!RETAIL_FULFILLMENT_STATUSES.includes(order.status)) {
+    return { ok: false, error: "El pedido no está en la bandeja de envíos." };
+  }
+  if (!order.packedAt) {
+    return { ok: false, error: "Primero armá el pedido." };
+  }
+  if (order.deliveryStatus === "DELIVERED") {
+    return { ok: false, error: "Ya fue marcado como entregado." };
+  }
+
+  await prisma.retailOrder.update({
+    where: { id: orderId },
+    data: {
+      deliveryStatus: "DELIVERED",
+      deliveryDeliveredAt: new Date(),
+    },
+  });
+
+  revalidatePath("/vendedor/envios");
+  revalidatePath(`/vendedor/envios/minorista/${orderId}/armar`);
+  revalidatePath("/cuenta/mis-compras");
+
+  return { ok: true };
+}
+
 export async function dispatchDeliveryFormAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get("orderId"));
   const riderNumber = parseRiderNumber(formData.get("riderNumber"));

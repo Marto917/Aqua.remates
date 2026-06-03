@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import Image from "next/image";
 import { resolveProductImageUrl } from "@/lib/product-images";
+
+const MAX_CAROUSEL = 3;
 
 type BannerItem = {
   id: string;
@@ -22,11 +24,22 @@ export function AdminBannersManager({ initialBanners }: Props) {
   const [banners, setBanners] = useState(initialBanners);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [placement, setPlacement] = useState<"carousel" | "promo">("carousel");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const carousel = banners.filter((b) => b.placement === "carousel");
+  const carouselFull = carousel.length >= MAX_CAROUSEL;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const placementValue = String(formData.get("placement") ?? "carousel");
+    if (placementValue === "carousel" && carouselFull) {
+      setError(`El carrusel admite como máximo ${MAX_CAROUSEL} imágenes.`);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -39,6 +52,8 @@ export function AdminBannersManager({ initialBanners }: Props) {
       }
       setBanners((prev) => [data.banner!, ...prev]);
       form.reset();
+      setFilePreview(null);
+      if (fileRef.current) fileRef.current.value = "";
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {
@@ -61,21 +76,33 @@ export function AdminBannersManager({ initialBanners }: Props) {
     }
   }
 
-  const carousel = banners.filter((b) => b.placement === "carousel");
-  const promos = banners.filter((b) => b.placement === "promo");
+  const carouselItems = banners.filter((b) => b.placement === "carousel");
+  const promoItems = banners.filter((b) => b.placement === "promo");
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border bg-white p-5">
-        <h2 className="text-lg font-semibold text-slate-900">Subir imagen promocional</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Carrusel del home</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Elegí dónde se verá: <strong>Carrusel del home</strong> o{" "}
-          <strong>Bloque de promos debajo del carrusel</strong>.
+          Máximo <strong>{MAX_CAROUSEL} imágenes</strong> en el slider principal. Subí JPG/PNG/WebP.
         </p>
+        <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-600">
+          El carrusel aparece arriba del catálogo en la página de inicio (banner ancho).
+        </div>
+        {carouselFull ? (
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Ya tenés {MAX_CAROUSEL} imágenes en el carrusel. Eliminá una para agregar otra.
+          </p>
+        ) : null}
         {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
         <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={onSubmit}>
-          <select name="placement" required className="rounded-md border px-3 py-2">
-            <option value="carousel">Carrusel principal del home</option>
+          <input type="hidden" name="placement" value={placement} />
+          <select
+            value={placement}
+            onChange={(e) => setPlacement(e.target.value as "carousel" | "promo")}
+            className="rounded-md border px-3 py-2 sm:col-span-2"
+          >
+            <option value="carousel">Carrusel principal (máx. {MAX_CAROUSEL})</option>
             <option value="promo">Bloque promos (debajo del carrusel)</option>
           </select>
           <input
@@ -99,32 +126,42 @@ export function AdminBannersManager({ initialBanners }: Props) {
             <input type="checkbox" name="isActive" defaultChecked /> Activo
           </label>
           <input
+            ref={fileRef}
             name="imageFile"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             required
             className="rounded-md border px-3 py-2 sm:col-span-2"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setFilePreview(file ? URL.createObjectURL(file) : null);
+            }}
           />
+          {filePreview ? (
+            <div className="relative h-32 w-full overflow-hidden rounded-xl border sm:col-span-2">
+              <Image src={filePreview} alt="Vista previa" fill className="object-cover" unoptimized />
+            </div>
+          ) : null}
           <button
-            disabled={saving}
+            disabled={saving || (placement === "carousel" && carouselFull)}
             className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 sm:col-span-2"
             type="submit"
           >
-            {saving ? "Guardando..." : "Guardar imagen"}
+            {saving ? "Guardando..." : "Subir imagen"}
           </button>
         </form>
       </div>
 
       <BannerList
         title="Carrusel principal"
-        subtitle="Se muestra en el home como slider grande."
-        items={carousel}
+        subtitle={`${carouselItems.length}/${MAX_CAROUSEL} imágenes activas en el slider.`}
+        items={carouselItems}
         onRemove={removeBanner}
       />
       <BannerList
         title="Promos secundarias"
-        subtitle="Se muestra en el home como mosaico promocional."
-        items={promos}
+        subtitle="Mosaico debajo del carrusel en el inicio."
+        items={promoItems}
         onRemove={removeBanner}
       />
     </div>

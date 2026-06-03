@@ -6,10 +6,10 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: "#14b8a8",
-          dark: "#0f766e",
-          light: "#ccfbf1",
-          muted: "#f0fdfa",
+          DEFAULT: "var(--color-brand, #14b8a8)",
+          dark: "var(--color-brand-dark, #0f766e)",
+          light: "var(--color-brand-light, #ccfbf1)",
+          muted: "var(--color-brand-muted, #f0fdfa)",
         },
       },
     },

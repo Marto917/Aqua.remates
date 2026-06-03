@@ -12,6 +12,27 @@ const schema = z.object({
   transferDiscountPercent: z.coerce.number().int().min(0).max(90),
   mercadoPagoMarkupPercent: z.coerce.number().int().min(0).max(100),
   discountBadgeLabel: z.string().trim().min(1).max(80),
+  themeBrandPrimary: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  themeBrandDark: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  themeBrandMuted: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .nullable()
+    .or(z.literal("")),
 });
 
 export async function GET() {
@@ -37,8 +58,18 @@ export async function POST(req: Request) {
     update: {
       ...parsed.data,
       bankExtraNotes: parsed.data.bankExtraNotes || null,
+      themeBrandPrimary: parsed.data.themeBrandPrimary || null,
+      themeBrandDark: parsed.data.themeBrandDark || null,
+      themeBrandMuted: parsed.data.themeBrandMuted || null,
     },
-    create: { id: "default", ...parsed.data, bankExtraNotes: parsed.data.bankExtraNotes || null },
+    create: {
+      id: "default",
+      ...parsed.data,
+      bankExtraNotes: parsed.data.bankExtraNotes || null,
+      themeBrandPrimary: parsed.data.themeBrandPrimary || null,
+      themeBrandDark: parsed.data.themeBrandDark || null,
+      themeBrandMuted: parsed.data.themeBrandMuted || null,
+    },
   });
 
   return NextResponse.json({ ok: true });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StaffBackLink } from "@/components/staff/StaffBackLink";
 import { formatRiderNumber } from "@/lib/rider-number";
 import { getRiderTripSummaries } from "@/lib/rider-trips";
 import { requireStaff } from "@/lib/staff-auth";
@@ -10,10 +11,8 @@ export default async function RepartidoresViajesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <Link href="/vendedor/envios" className="text-sm font-medium text-brand-dark underline">
-          ← Gestión de envíos
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Viajes por repartidor</h1>
+        <StaffBackLink href="/vendedor/envios" label="Gestión de envíos" />
+        <h1 className="mt-3 text-2xl font-semibold text-slate-900">Viajes por repartidor</h1>
         <p className="mt-1 text-sm text-slate-600">
           Cada repartidor tiene un número fijo (#001, #002…). Usalo al asignar envíos a domicilio para llevar
           el registro y calcular pagos.

@@ -2,12 +2,14 @@
   "version": 1,
   "functions": {
     "/api/admin/banners": {},
-    "/api/admin/export-catalog": {},
     "/api/admin/hero-promo": {},
+    "/api/admin/export-catalog": {},
+    "/api/cron/data-retention": {},
     "/api/admin/products": {},
     "/api/images/default-product": {},
     "/api/retail-orders/[orderId]/transfer-proof": {},
     "/api/staff/orders/[orderId]/pack": {},
-    "/api/search-suggestions": {}
+    "/api/search-suggestions": {},
+    "/api/staff/profile": {}
   }
 }

@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { CatalogVisibility, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
@@ -18,6 +18,10 @@ function parseScale(value: FormDataEntryValue | null): number | undefined {
 const updateAvailabilitySchema = z.object({
   isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
+const updateVisibilitySchema = z.object({
+  catalogVisibility: z.nativeEnum(CatalogVisibility),
+});
+
 const updateCategorySchema = z.object({
   categoryName: z.string().trim().min(2).max(40),
 });
@@ -183,6 +187,20 @@ export async function POST(
     });
 
     return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+  }
+
+  if (intent === "update_visibility") {
+    const parsed = updateVisibilitySchema.safeParse({
+      catalogVisibility: formData.get("catalogVisibility"),
+    });
+    if (!parsed.success) {
+      return NextResponse.redirect(new URL("/admin/productos?error=Visibilidad+inválida", req.url));
+    }
+    await prisma.product.update({
+      where: { id },
+      data: { catalogVisibility: parsed.data.catalogVisibility },
+    });
+    return NextResponse.redirect(new URL("/admin/productos", req.url));
   }
 
   if (intent === "update_category") {

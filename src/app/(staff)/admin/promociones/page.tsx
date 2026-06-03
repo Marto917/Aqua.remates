@@ -1,5 +1,5 @@
 import { UserRole } from "@prisma/client";
-import Link from "next/link";
+import { StaffBackLink } from "@/components/staff/StaffBackLink";
 import { AdminBannersManager } from "@/components/admin/AdminBannersManager";
 import { AdminHeroPromoManager } from "@/components/admin/AdminHeroPromoManager";
 import { getHeroPromoSettings } from "@/lib/hero-promo";
@@ -49,9 +49,7 @@ export default async function AdminPromocionesPage() {
             Gestión visual del home: carrusel principal y bloque de promos.
           </p>
         </div>
-        <Link href="/admin" className="text-sm font-medium text-brand-dark underline">
-          ← Volver al panel
-        </Link>
+        <StaffBackLink href="/admin" label="Panel" />
       </div>
       <AdminHeroPromoManager initial={heroPromo} />
       <AdminBannersManager initialBanners={initialBanners} />

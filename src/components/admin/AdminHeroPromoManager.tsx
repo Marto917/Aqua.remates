@@ -9,33 +9,88 @@ type Props = {
   initial: HeroPromoSettings;
 };
 
-type HeroPromoSpec = (typeof HERO_PROMO_SPECS)[keyof typeof HERO_PROMO_SPECS];
+function PlacementMock({ variant }: { variant: "desktop" | "mobile" }) {
+  if (variant === "desktop") {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-brand/30 bg-brand-muted/30 p-3">
+        <p className="mb-2 text-center text-[10px] font-semibold uppercase text-brand-dark">Vista PC — inicio</p>
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-white p-2 shadow-sm">
+          <div className="col-span-2 space-y-1">
+            <div className="h-3 w-3/4 rounded bg-slate-200" />
+            <div className="h-6 rounded bg-slate-100" />
+            <div className="h-8 rounded bg-brand/20" />
+          </div>
+          <div className="flex items-center justify-center rounded-lg border-2 border-brand bg-brand/10 text-[9px] font-bold text-brand-dark">
+            TU IMAGEN
+          </div>
+        </div>
+        <p className="mt-2 text-[10px] text-slate-600">{HERO_PROMO_SPECS.desktop.recommended}</p>
+      </div>
+    );
+  }
 
-function SpecCard({ title, spec }: { title: string; spec: HeroPromoSpec }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-      <p className="font-semibold text-slate-900">{title}</p>
-      <dl className="mt-3 space-y-2 text-xs sm:text-sm">
-        <div>
-          <dt className="font-medium text-slate-500">Dónde se ve</dt>
-          <dd className="mt-0.5">{spec.where}</dd>
+    <div className="rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 p-3">
+      <p className="mb-2 text-center text-[10px] font-semibold uppercase text-sky-800">Vista celular — inicio</p>
+      <div className="mx-auto max-w-[140px] space-y-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="h-4 rounded bg-slate-100" />
+        <div className="flex h-10 items-center justify-center rounded-lg border-2 border-sky-400 bg-sky-100 text-[8px] font-bold text-sky-900">
+          BANNER
         </div>
-        <div>
-          <dt className="font-medium text-slate-500">Tamaño recomendado</dt>
-          <dd className="mt-0.5">
-            Mínimo {spec.minWidth}×{spec.minHeight} px (proporción {spec.aspect}). Ideal:{" "}
-            <strong>{spec.recommended}</strong>
-          </dd>
+        <div className="h-3 rounded bg-slate-100" />
+      </div>
+      <p className="mt-2 text-[10px] text-slate-600">{HERO_PROMO_SPECS.mobile.recommended}</p>
+    </div>
+  );
+}
+
+function ImageUploadField({
+  label,
+  currentUrl,
+  name,
+  clearChecked,
+  onClearChange,
+  previewUrl,
+  onPreview,
+}: {
+  label: string;
+  currentUrl: string | null;
+  name: string;
+  clearChecked: boolean;
+  onClearChange: (v: boolean) => void;
+  previewUrl: string | null;
+  onPreview: (url: string | null) => void;
+}) {
+  const shown = previewUrl || (currentUrl ? resolveProductImageUrl(currentUrl) : null);
+
+  return (
+    <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+      <p className="text-sm font-semibold text-slate-800">{label}</p>
+      {shown ? (
+        <div
+          className={`relative overflow-hidden rounded-xl border bg-slate-100 ${
+            name === "desktopImage" ? "mx-auto aspect-[4/5] max-w-[180px]" : "aspect-[16/9] w-full"
+          }`}
+        >
+          <Image src={shown} alt="" fill className="object-cover" unoptimized />
         </div>
-        <div>
-          <dt className="font-medium text-slate-500">Dispositivo</dt>
-          <dd className="mt-0.5">{spec.label}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-slate-500">Formato</dt>
-          <dd className="mt-0.5">{spec.formats}</dd>
-        </div>
-      </dl>
+      ) : (
+        <p className="text-xs text-slate-500">Sin imagen (se usa el diseño por defecto).</p>
+      )}
+      <input
+        name={name}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="w-full text-xs"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          onPreview(file ? URL.createObjectURL(file) : null);
+        }}
+      />
+      <label className="flex items-center gap-2 text-xs text-slate-600">
+        <input type="checkbox" checked={clearChecked} onChange={(e) => onClearChange(e.target.checked)} />
+        Quitar imagen actual
+      </label>
     </div>
   );
 }
@@ -47,6 +102,8 @@ export function AdminHeroPromoManager({ initial }: Props) {
   const [ok, setOk] = useState(false);
   const [clearDesktop, setClearDesktop] = useState(false);
   const [clearMobile, setClearMobile] = useState(false);
+  const [desktopPreview, setDesktopPreview] = useState<string | null>(null);
+  const [mobilePreview, setMobilePreview] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -72,6 +129,8 @@ export function AdminHeroPromoManager({ initial }: Props) {
       setSettings(data.settings);
       setClearDesktop(false);
       setClearMobile(false);
+      setDesktopPreview(null);
+      setMobilePreview(null);
       form.reset();
       setOk(true);
     } catch {
@@ -82,102 +141,53 @@ export function AdminHeroPromoManager({ initial }: Props) {
   }
 
   return (
-    <div className="space-y-5 rounded-2xl border border-brand/20 bg-white p-5 shadow-sm">
+    <div className="space-y-4 rounded-2xl border border-brand/20 bg-white p-5 shadow-sm">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">Imagen promocional del inicio</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Imagen grande del inicio</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Reemplaza el recuadro decorativo del hero en la página principal. Subí una versión para
-          computadora y otra para celular.
+          2 fotos: una para computadora (derecha del buscador) y otra para celular (debajo del buscador).
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SpecCard title="Imagen desktop" spec={HERO_PROMO_SPECS.desktop} />
-        <SpecCard title="Imagen mobile" spec={HERO_PROMO_SPECS.mobile} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PlacementMock variant="desktop" />
+        <PlacementMock variant="mobile" />
       </div>
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-      {ok ? (
-        <p className="text-sm text-emerald-700">Imágenes guardadas. Actualizá la tienda para verlas.</p>
-      ) : null}
+      {ok ? <p className="text-sm text-emerald-700">Guardado. Refrescá la tienda para verlo.</p> : null}
 
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} className="space-y-4">
         <label className="block text-sm">
-          <span className="font-medium text-slate-700">Link al hacer clic (opcional)</span>
+          <span className="font-medium text-slate-700">Link al tocar la imagen (opcional)</span>
           <input
             name="linkUrl"
             type="text"
             defaultValue={settings.linkUrl ?? ""}
-            placeholder="/catalog o https://..."
+            placeholder="/catalog"
             className="mt-1 w-full rounded-md border px-3 py-2"
           />
-          <span className="mt-1 block text-xs text-slate-500">
-            Si lo dejás vacío, la imagen no será un enlace.
-          </span>
         </label>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-slate-800">Desktop</p>
-            {settings.desktopImageUrl ? (
-              <div className="relative mx-auto aspect-[4/5] w-full max-w-[200px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-                <Image
-                  src={resolveProductImageUrl(settings.desktopImageUrl)}
-                  alt="Vista previa desktop"
-                  fill
-                  className="object-cover"
-                  unoptimized={settings.desktopImageUrl.startsWith("http")}
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">Sin imagen — se muestra el diseño por defecto.</p>
-            )}
-            <input
-              name="desktopImage"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="w-full text-sm"
-            />
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                checked={clearDesktop}
-                onChange={(e) => setClearDesktop(e.target.checked)}
-              />
-              Quitar imagen desktop
-            </label>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-slate-800">Mobile</p>
-            {settings.mobileImageUrl ? (
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-                <Image
-                  src={resolveProductImageUrl(settings.mobileImageUrl)}
-                  alt="Vista previa mobile"
-                  fill
-                  className="object-cover"
-                  unoptimized={settings.mobileImageUrl.startsWith("http")}
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">Sin imagen — no se muestra banner en celular.</p>
-            )}
-            <input
-              name="mobileImage"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="w-full text-sm"
-            />
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                checked={clearMobile}
-                onChange={(e) => setClearMobile(e.target.checked)}
-              />
-              Quitar imagen mobile
-            </label>
-          </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <ImageUploadField
+            label="Imagen PC"
+            currentUrl={settings.desktopImageUrl}
+            name="desktopImage"
+            clearChecked={clearDesktop}
+            onClearChange={setClearDesktop}
+            previewUrl={desktopPreview}
+            onPreview={setDesktopPreview}
+          />
+          <ImageUploadField
+            label="Imagen celular"
+            currentUrl={settings.mobileImageUrl}
+            name="mobileImage"
+            clearChecked={clearMobile}
+            onClearChange={setClearMobile}
+            previewUrl={mobilePreview}
+            onPreview={setMobilePreview}
+          />
         </div>
 
         <button

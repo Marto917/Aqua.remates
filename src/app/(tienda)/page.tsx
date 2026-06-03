@@ -4,6 +4,7 @@ import { type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { HomeHeroPromoDesktop, HomeHeroPromoMobile } from "@/components/home/HomeHeroPromo";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
+import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
 import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
@@ -25,7 +26,7 @@ export default async function HomePage() {
     [categories, homeProducts, carouselBanners, promoBanners, heroPromo] = await Promise.all([
       prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
       prisma.product.findMany({
-        where: { isActive: true },
+        where: { isActive: true, ...catalogVisibilityWhere("retail") },
         orderBy: { updatedAt: "desc" },
         take: 4,
         include: {
@@ -36,7 +37,7 @@ export default async function HomePage() {
       prisma.banner.findMany({
         where: { isActive: true, sortOrder: { lt: 1000 } },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        take: 5,
+        take: 3,
         select: { id: true, title: true, imageUrl: true, linkUrl: true },
       }),
       prisma.banner.findMany({

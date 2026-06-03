@@ -1,16 +1,20 @@
+import { catalogVisibilityWhere, type CatalogAudience } from "@/lib/catalog-visibility";
 import { prisma } from "@/lib/prisma";
 
 export type CatalogFilters = {
   q?: string;
   category?: string;
+  audience?: CatalogAudience;
 };
 
 export async function getCatalogData(filters: CatalogFilters) {
   const q = filters.q?.trim();
+  const audience = filters.audience ?? "retail";
 
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
+      ...catalogVisibilityWhere(audience),
       ...(q
         ? {
             OR: [

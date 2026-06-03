@@ -45,6 +45,12 @@ export async function resolveRetailCartLines(
     if (!variant || !variant.product.isActive) {
       return { ok: false, error: "Hay productos no disponibles en el carrito." };
     }
+    if (
+      variant.product.catalogVisibility === "HIDDEN" ||
+      variant.product.catalogVisibility === "WHOLESALE_ONLY"
+    ) {
+      return { ok: false, error: "Hay productos no disponibles para compra minorista." };
+    }
     if (variant.productId !== input.productId) {
       return { ok: false, error: "Datos del carrito inconsistentes." };
     }

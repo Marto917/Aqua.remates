@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
+import { PickupDeliverButton } from "@/components/shipping/PickupDeliverButton";
 import { RiderAssignControls } from "@/components/shipping/RiderAssignControls";
 import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
@@ -218,6 +219,18 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                           {isHomeDelivery(o.shippingMethod) && !isOrderPacked(o.packedAt) ? (
                             <span className="text-xs text-amber-700">Armá antes de emitir</span>
                           ) : null}
+                        </div>
+                      ) : o.shippingMethod === "PICKUP" ? (
+                        <div className="space-y-1 text-xs">
+                          {isOrderPacked(o.packedAt) ? (
+                            o.deliveryStatus === "DELIVERED" ? (
+                              <span className="font-medium text-emerald-700">Entregado en sucursal</span>
+                            ) : (
+                              <PickupDeliverButton orderId={o.id} />
+                            )
+                          ) : (
+                            <span className="text-amber-700">Armá el pedido primero</span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-slate-400">—</span>

@@ -1,7 +1,10 @@
 import type { Prisma } from "@prisma/client";
 import { AdminProductCreateForm } from "@/components/admin/AdminProductCreateForm";
+import { ProductVisibilitySelect } from "@/components/admin/ProductVisibilitySelect";
 import { IconCamera, IconPencil, IconToggle } from "@/components/icons/StaffIcons";
 import { formatArs } from "@/lib/currency";
+import { formatVariantColorsForStaff } from "@/lib/color-display";
+import { getProductCompletenessIssues } from "@/lib/product-completeness";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -85,20 +88,42 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               <th className="px-3 py-2 text-left">Transferencia</th>
               <th className="px-3 py-2 text-left">Mayorista</th>
               <th className="px-3 py-2 text-left">Colores</th>
+              <th className="px-3 py-2 text-left">Visibilidad</th>
               <th className="px-3 py-2 text-left">Disponibilidad</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {products.map((product) => {
+              const issues = getProductCompletenessIssues(product);
+              return (
               <tr key={product.id} className="border-t">
-                <td className="px-3 py-2">{product.name}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    {issues.length > 0 ? (
+                      <span
+                        className="mt-0.5 shrink-0 text-amber-600"
+                        title={`Datos incompletos: ${issues.join(", ")}`}
+                        aria-label={`Incompleto: ${issues.join(", ")}`}
+                      >
+                        ⚠️
+                      </span>
+                    ) : null}
+                    <span>{product.name}</span>
+                  </div>
+                </td>
                 <td className="px-3 py-2">{product.category.name}</td>
                 <td className="px-3 py-2">{formatArs(Number(product.listPrice))}</td>
                 <td className="px-3 py-2">{formatArs(Number(product.retailPrice))}</td>
                 <td className="px-3 py-2">{formatArs(Number(product.wholesalePrice))}</td>
                 <td className="px-3 py-2 text-xs text-slate-600">
-                  {product.variants.map((v) => v.colorLabel).join(", ") || "—"}
+                  {formatVariantColorsForStaff(product.variants.map((v) => v.colorLabel))}
+                </td>
+                <td className="px-3 py-2">
+                  <ProductVisibilitySelect
+                    productId={product.id}
+                    value={product.catalogVisibility}
+                  />
                 </td>
                 <td className="px-3 py-2">
                   <form method="post" action={`/api/admin/products/${product.id}`}>
@@ -136,7 +161,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

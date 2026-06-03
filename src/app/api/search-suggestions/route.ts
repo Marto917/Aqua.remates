@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
+      ...catalogVisibilityWhere("retail"),
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },
@@ -49,6 +51,7 @@ export async function GET(req: Request) {
   const total = await prisma.product.count({
     where: {
       isActive: true,
+      ...catalogVisibilityWhere("retail"),
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },

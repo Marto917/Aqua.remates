@@ -6,7 +6,7 @@ export default async function VendedorLayout({ children }: { children: React.Rea
   return (
     <>
       <StaffNav area="vendedor" />
-      <div className="mt-4">{children}</div>
+      <div className="mx-auto max-w-6xl flex-1 px-4 pb-8 pt-4">{children}</div>
     </>
   );
 }

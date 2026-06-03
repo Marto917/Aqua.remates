@@ -75,6 +75,12 @@ enum ApprovalStatus {
 }
 
 /// Consultas web desde /mayorista/contacto (sin cuenta de cliente).
+enum CatalogVisibility {
+  PUBLIC_BOTH
+  WHOLESALE_ONLY
+  HIDDEN
+}
+
 enum WholesaleLeadStatus {
   NUEVO
   CONTACTADO
@@ -116,6 +122,7 @@ model User {
   defaultShippingProvince  String?
   defaultShippingPostalCode String?
   defaultShippingNotes     String?
+  lastActiveAt             DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -194,6 +201,7 @@ model Product {
   discountBadgeLabel       String?
   isActive                 Boolean           @default(true)
   isBestSeller             Boolean           @default(false)
+  catalogVisibility        CatalogVisibility @default(PUBLIC_BOTH)
   categoryId               String
   category                 Category          @relation(fields: [categoryId], references: [id])
   variants                 ProductVariant[]
@@ -401,5 +409,8 @@ model StoreSettings {
   heroPromoDesktopImageUrl String?
   heroPromoMobileImageUrl  String?
   heroPromoLinkUrl         String?
+  themeBrandPrimary        String?
+  themeBrandDark           String?
+  themeBrandMuted          String?
   updatedAt               DateTime @updatedAt
 }

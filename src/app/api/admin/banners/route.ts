@@ -42,6 +42,18 @@ export async function POST(req: Request) {
   }
   const placement: BannerPlacement = placementResult.data;
 
+  if (placement === "carousel") {
+    const carouselCount = await prisma.banner.count({
+      where: { sortOrder: { lt: 1000 } },
+    });
+    if (carouselCount >= 3) {
+      return NextResponse.json(
+        { error: "El carrusel admite como máximo 3 imágenes." },
+        { status: 400 },
+      );
+    }
+  }
+
   const title = String(formData.get("title") ?? "").trim() || null;
   const linkUrl = String(formData.get("linkUrl") ?? "").trim() || null;
   const isActive = String(formData.get("isActive") ?? "on") === "on";

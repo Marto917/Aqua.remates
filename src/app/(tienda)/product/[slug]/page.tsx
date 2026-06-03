@@ -5,13 +5,19 @@ import { ProductReviews } from "@/components/ProductReviews";
 import { formatDisplayWords } from "@/lib/display-text";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { isProductVisibleToAudience } from "@/lib/catalog-visibility";
 import { canCustomerReview, reviewEligibilityMessage } from "@/lib/review-eligibility";
 import { UserRole } from "@prisma/client";
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ priceMode?: string }>;
+};
 
-export default async function ProductDetailPage({ params }: PageProps) {
+export default async function ProductDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const audience = sp.priceMode === "wholesale" ? "wholesale" : "retail";
   const session = await getSafeSession();
 
   const product = await prisma.product.findUnique({
@@ -29,7 +35,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
     },
   });
 
-  if (!product || !product.isActive || product.variants.length === 0) {
+  if (
+    !product ||
+    !product.isActive ||
+    product.variants.length === 0 ||
+    !isProductVisibleToAudience(product.catalogVisibility, audience)
+  ) {
     notFound();
   }
 

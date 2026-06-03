@@ -5,6 +5,7 @@ import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercado
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
+import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
 import { getStoreSettings } from "@/lib/store-settings";
 
@@ -43,6 +44,13 @@ const checkoutSchema = z
       }
       if (!data.shippingPostalCode?.trim()) {
         ctx.addIssue({ code: "custom", message: "Indicá el código postal.", path: ["shippingPostalCode"] });
+      }
+      if (data.shippingAddress?.trim() && !shippingAddressHasStreetNumber(data.shippingAddress)) {
+        ctx.addIssue({
+          code: "custom",
+          message: SHIPPING_ADDRESS_HINT,
+          path: ["shippingAddress"],
+        });
       }
     }
     if (data.paymentMethod === "MERCADO_PAGO" && !isMercadoPagoConfigured()) {

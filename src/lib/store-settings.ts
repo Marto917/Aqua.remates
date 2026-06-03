@@ -8,6 +8,9 @@ export type StoreSettingsData = {
   transferDiscountPercent: number;
   mercadoPagoMarkupPercent: number;
   discountBadgeLabel: string;
+  themeBrandPrimary: string | null;
+  themeBrandDark: string | null;
+  themeBrandMuted: string | null;
 };
 
 const DEFAULTS: StoreSettingsData = {
@@ -18,6 +21,9 @@ const DEFAULTS: StoreSettingsData = {
   transferDiscountPercent: 15,
   mercadoPagoMarkupPercent: 10,
   discountBadgeLabel: "descuento transferencia",
+  themeBrandPrimary: null,
+  themeBrandDark: null,
+  themeBrandMuted: null,
 };
 
 export async function getStoreSettings(): Promise<StoreSettingsData> {
@@ -34,6 +40,9 @@ export async function getStoreSettings(): Promise<StoreSettingsData> {
       transferDiscountPercent: row.transferDiscountPercent,
       mercadoPagoMarkupPercent: row.mercadoPagoMarkupPercent,
       discountBadgeLabel: row.discountBadgeLabel,
+      themeBrandPrimary: row.themeBrandPrimary,
+      themeBrandDark: row.themeBrandDark,
+      themeBrandMuted: row.themeBrandMuted,
     };
   } catch {
     return DEFAULTS;

@@ -82,6 +82,9 @@ export async function StaffNav({ area }: StaffNavProps) {
           <Link href="/admin/configuracion" className={linkClass}>
             Configuración
           </Link>
+          <Link href="/admin/perfil" className={linkClass}>
+            Mi perfil
+          </Link>
           {showUsers ? (
             <Link href="/admin/usuarios" className={linkClass}>
               Usuarios

@@ -216,6 +216,12 @@
       "namedRegex": "^/admin/pedidos(?:/)?$"
     },
     {
+      "page": "/admin/perfil",
+      "regex": "^/admin/perfil(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/perfil(?:/)?$"
+    },
+    {
       "page": "/admin/productos",
       "regex": "^/admin/productos(?:/)?$",
       "routeKeys": {},
