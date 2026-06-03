@@ -22,6 +22,7 @@ export function TicketRiderRequired({ orderId, buyerName, riders }: Props) {
         assignedRider={null}
         canDispatch={false}
         deliveryStatus={null}
+        isPacked
       />
       <p className="text-xs text-amber-800">
         Después de asignar, recargá esta página o volvé a «Ticket / imprimir» desde envíos.

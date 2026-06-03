@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
 import { PickupDeliverButton } from "@/components/shipping/PickupDeliverButton";
 import { RiderAssignControls } from "@/components/shipping/RiderAssignControls";
+import { ShippingActionsMenu, type ShippingMenuItem } from "@/components/shipping/ShippingActionsMenu";
 import { formatArs } from "@/lib/currency";
-import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import {
   canDispatchAfterPack,
   fulfillmentStatusLabel,
@@ -30,6 +30,52 @@ const FILTERS: { key: FilterKey; label: string; method?: RetailShippingMethod }[
 ];
 
 type PageProps = { searchParams: Promise<{ filtro?: string }> };
+
+function buildOrderActions(order: {
+  id: string;
+  shippingMethod: RetailShippingMethod;
+  packedAt: Date | null;
+  assignedRiderId: string | null;
+}): ShippingMenuItem[] {
+  const packed = isOrderPacked(order.packedAt);
+  const home = isHomeDelivery(order.shippingMethod);
+  const ticketOk = canPrintRetailDeliveryTicket(order);
+
+  const items: ShippingMenuItem[] = [
+    {
+      label: packed ? "Ver armado" : "Armar pedido",
+      href: `/vendedor/envios/minorista/${order.id}/armar`,
+      tone: packed ? "default" : "warning",
+    },
+  ];
+
+  if (ticketOk) {
+    items.push({
+      label: "Ticket / imprimir",
+      href: `/vendedor/envios/minorista/${order.id}/ticket`,
+      tone: "primary",
+    });
+  } else if (home) {
+    items.push({
+      label: "Ticket / imprimir",
+      disabled: true,
+      hint: "Asigná repartidor primero",
+    });
+  } else {
+    items.push({
+      label: "Ticket / imprimir",
+      href: `/vendedor/envios/minorista/${order.id}/ticket`,
+      tone: "primary",
+    });
+  }
+
+  items.push({
+    label: "Ver pedido completo",
+    href: `/admin/pedidos/${order.id}`,
+  });
+
+  return items;
+}
 
 export default async function VendedorEnviosPage({ searchParams }: PageProps) {
   await requireStaff();
@@ -86,26 +132,24 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Gestión de envíos</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pedidos minoristas confirmados. Armá el pedido, asigná un <strong>número de repartidor</strong> y emití
-          el envío. El registro de viajes está en{" "}
+          Armá pedidos, asigná repartidor y emití envíos.{" "}
           <Link href="/vendedor/envios/repartidores" className="font-medium text-brand-dark underline">
-            Viajes por repartidor
+            Ver viajes por repartidor
           </Link>
-          .
         </p>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
-          <p className="text-xs font-medium uppercase text-sky-800">Envíos a domicilio (minorista)</p>
+          <p className="text-xs font-medium uppercase text-sky-800">Domicilio</p>
           <p className="mt-1 text-2xl font-semibold text-sky-900">{domicilioCount}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase text-slate-500">En bandeja minorista</p>
+          <p className="text-xs font-medium uppercase text-slate-500">En bandeja</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">{retailOrders.length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase text-slate-500">Mayorista confirmados</p>
+          <p className="text-xs font-medium uppercase text-slate-500">Mayorista</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">{wholesaleOrders.length}</p>
         </div>
       </div>
@@ -136,144 +180,98 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Cliente</th>
                 <th className="px-4 py-3">Entrega</th>
                 <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3">Estado pago</th>
-                <th className="px-4 py-3">Preparación</th>
+                <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Repartidor</th>
-                <th className="px-4 py-3">Envío</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {retailOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     No hay pedidos minoristas en esta vista.
                   </td>
                 </tr>
               ) : (
-                retailOrders.map((o) => (
-                  <tr key={o.id} className="border-b border-slate-100 hover:bg-slate-50/80">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                      {o.createdAt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-slate-900">{o.buyerName}</div>
-                      <p className="text-xs text-slate-500">{o.buyerPhone ?? o.buyerEmail}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${shippingMethodBadgeClass(o.shippingMethod)}`}
-                      >
-                        {retailShippingMethodLabel[o.shippingMethod]}
-                      </span>
-                      {isHomeDelivery(o.shippingMethod) && o.shippingAddress ? (
-                        <p className="mt-1 max-w-xs text-xs text-slate-500">{formatFullAddress(o)}</p>
-                      ) : null}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium">{formatArs(Number(o.totalAmount))}</td>
-                    <td className="px-4 py-3 text-xs">{retailOrderStatusLabel[o.status]}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          isOrderPacked(o.packedAt)
-                            ? "bg-emerald-100 text-emerald-900"
-                            : "bg-amber-100 text-amber-900"
-                        }`}
-                      >
-                        {fulfillmentStatusLabel({
-                          packedAt: o.packedAt,
-                          shippingMethod: o.shippingMethod,
-                          deliveryStatus: o.deliveryStatus,
-                        })}
-                      </span>
-                      <p className="mt-1 text-xs text-slate-500">{o.items.length} ítem{o.items.length === 1 ? "" : "s"}</p>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      {isHomeDelivery(o.shippingMethod) ? (
-                        <RiderAssignControls
-                          orderId={o.id}
-                          riders={riderOptions}
-                          assignedRider={o.assignedRider}
-                          canDispatch={canDispatchAfterPack(
-                            o.shippingMethod,
-                            o.packedAt,
-                            o.deliveryStatus,
-                          )}
-                          deliveryStatus={o.deliveryStatus}
-                        />
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      {isHomeDelivery(o.shippingMethod) ? (
-                        <div className="space-y-1">
-                          <span className="text-xs text-slate-600">
-                            {deliveryDispatchStatusLabel(o.deliveryStatus)}
+                retailOrders.map((o) => {
+                  const packed = isOrderPacked(o.packedAt);
+                  return (
+                    <tr key={o.id} className="border-b border-slate-100 align-top hover:bg-slate-50/80">
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                        {o.createdAt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-slate-900">{o.buyerName}</div>
+                        <p className="text-xs text-slate-500">{o.buyerPhone ?? o.buyerEmail}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${shippingMethodBadgeClass(o.shippingMethod)}`}
+                        >
+                          {retailShippingMethodLabel[o.shippingMethod]}
+                        </span>
+                        {isHomeDelivery(o.shippingMethod) && o.shippingAddress ? (
+                          <p className="mt-1 max-w-[14rem] text-xs leading-snug text-slate-500">
+                            {formatFullAddress(o)}
+                          </p>
+                        ) : null}
+                        {o.shippingMethod === "PICKUP" && packed && o.deliveryStatus !== "DELIVERED" ? (
+                          <div className="mt-2">
+                            <PickupDeliverButton orderId={o.id} />
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 font-medium">
+                        {formatArs(Number(o.totalAmount))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="space-y-1.5">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                              packed ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"
+                            }`}
+                          >
+                            {fulfillmentStatusLabel({
+                              packedAt: o.packedAt,
+                              shippingMethod: o.shippingMethod,
+                              deliveryStatus: o.deliveryStatus,
+                            })}
                           </span>
-                          {o.deliveryStatus === "DISPATCHED" && o.deliveryCode ? (
-                            <p className="font-mono text-sm font-semibold text-sky-900">
-                              Código: {o.deliveryCode}
+                          <p className="text-[11px] text-slate-500">{retailOrderStatusLabel[o.status]}</p>
+                          {isHomeDelivery(o.shippingMethod) && o.deliveryStatus === "DISPATCHED" && o.deliveryCode ? (
+                            <p className="inline-flex rounded-md bg-sky-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-sky-900">
+                              Código {o.deliveryCode}
                             </p>
                           ) : null}
-                          {isHomeDelivery(o.shippingMethod) && !isOrderPacked(o.packedAt) ? (
-                            <span className="text-xs text-amber-700">Armá antes de emitir</span>
+                          {o.shippingMethod === "PICKUP" && o.deliveryStatus === "DELIVERED" ? (
+                            <p className="text-[11px] font-medium text-emerald-700">Entregado en sucursal</p>
                           ) : null}
                         </div>
-                      ) : o.shippingMethod === "PICKUP" ? (
-                        <div className="space-y-1 text-xs">
-                          {isOrderPacked(o.packedAt) ? (
-                            o.deliveryStatus === "DELIVERED" ? (
-                              <span className="font-medium text-emerald-700">Entregado en sucursal</span>
-                            ) : (
-                              <PickupDeliverButton orderId={o.id} />
-                            )
-                          ) : (
-                            <span className="text-amber-700">Armá el pedido primero</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex flex-col items-end gap-1">
-                        <Link
-                          href={`/vendedor/envios/minorista/${o.id}/armar`}
-                          className={`font-medium underline ${
-                            isOrderPacked(o.packedAt)
-                              ? "text-slate-600"
-                              : "text-amber-800"
-                          }`}
-                        >
-                          {isOrderPacked(o.packedAt) ? "Ver armado" : "Armar pedido"}
-                        </Link>
-                        {canPrintRetailDeliveryTicket(o) ? (
-                          <Link
-                            href={`/vendedor/envios/minorista/${o.id}/ticket`}
-                            className="font-medium text-brand-dark underline"
-                          >
-                            Ticket / imprimir
-                          </Link>
-                        ) : isHomeDelivery(o.shippingMethod) ? (
-                          <span className="text-xs text-amber-800">
-                            Asigná repartidor para el ticket
-                          </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {isHomeDelivery(o.shippingMethod) ? (
+                          <RiderAssignControls
+                            orderId={o.id}
+                            riders={riderOptions}
+                            assignedRider={o.assignedRider}
+                            canDispatch={canDispatchAfterPack(
+                              o.shippingMethod,
+                              o.packedAt,
+                              o.deliveryStatus,
+                            )}
+                            deliveryStatus={o.deliveryStatus}
+                            isPacked={packed}
+                          />
                         ) : (
-                          <Link
-                            href={`/vendedor/envios/minorista/${o.id}/ticket`}
-                            className="font-medium text-brand-dark underline"
-                          >
-                            Ticket / imprimir
-                          </Link>
+                          <span className="text-xs text-slate-400">No aplica</span>
                         )}
-                        <Link href={`/admin/pedidos/${o.id}`} className="text-xs text-slate-500 underline">
-                          Ver pedido
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <ShippingActionsMenu items={buildOrderActions(o)} />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -290,7 +288,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Empresa</th>
                 <th className="px-4 py-3">Entrega</th>
                 <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -321,12 +319,15 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-medium">{formatArs(total)}</td>
                       <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/admin/mayoristas/solicitud/${r.id}`}
-                          className="text-xs text-slate-500 underline"
-                        >
-                          Ver solicitud
-                        </Link>
+                        <ShippingActionsMenu
+                          items={[
+                            {
+                              label: "Ver solicitud",
+                              href: `/admin/mayoristas/solicitud/${r.id}`,
+                              tone: "primary",
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   );

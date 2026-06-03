@@ -1,38 +1,35 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
+import { canStaffAccess, getStaffContext } from "@/lib/staff-auth";
 import { prisma } from "@/lib/prisma";
 import { ensureStoreSettings } from "@/lib/store-settings";
+
+function normalizeOptionalText(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeHexColor(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!/^#[0-9A-Fa-f]{6}$/.test(trimmed)) return null;
+  return trimmed;
+}
 
 const schema = z.object({
   bankHolder: z.string().trim().min(1),
   bankAlias: z.string().trim().min(1),
   bankCbu: z.string().trim().min(8),
-  bankExtraNotes: z.string().trim().optional(),
+  bankExtraNotes: z.preprocess(normalizeOptionalText, z.string().nullable()),
   transferDiscountPercent: z.coerce.number().int().min(0).max(90),
   mercadoPagoMarkupPercent: z.coerce.number().int().min(0).max(100),
   discountBadgeLabel: z.string().trim().min(1).max(80),
-  themeBrandPrimary: z
-    .string()
-    .trim()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional()
-    .nullable()
-    .or(z.literal("")),
-  themeBrandDark: z
-    .string()
-    .trim()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional()
-    .nullable()
-    .or(z.literal("")),
-  themeBrandMuted: z
-    .string()
-    .trim()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+  themeBrandPrimary: z.preprocess(normalizeHexColor, z.string().nullable()),
+  themeBrandDark: z.preprocess(normalizeHexColor, z.string().nullable()),
+  themeBrandMuted: z.preprocess(normalizeHexColor, z.string().nullable()),
 });
 
 export async function GET() {
@@ -43,33 +40,21 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const ctx = await getStaffContext();
-  if (!canManageUsers(ctx)) {
+  if (!canStaffAccess(ctx)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
+    const msg = parsed.error.issues[0]?.message ?? "Datos inválidos.";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
   await prisma.storeSettings.upsert({
     where: { id: "default" },
-    update: {
-      ...parsed.data,
-      bankExtraNotes: parsed.data.bankExtraNotes || null,
-      themeBrandPrimary: parsed.data.themeBrandPrimary || null,
-      themeBrandDark: parsed.data.themeBrandDark || null,
-      themeBrandMuted: parsed.data.themeBrandMuted || null,
-    },
-    create: {
-      id: "default",
-      ...parsed.data,
-      bankExtraNotes: parsed.data.bankExtraNotes || null,
-      themeBrandPrimary: parsed.data.themeBrandPrimary || null,
-      themeBrandDark: parsed.data.themeBrandDark || null,
-      themeBrandMuted: parsed.data.themeBrandMuted || null,
-    },
+    update: parsed.data,
+    create: { id: "default", ...parsed.data },
   });
 
   return NextResponse.json({ ok: true });
