@@ -1,4 +1,4 @@
-1`q e client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { markPickupDeliveredAction } from "@/app/(staff)/vendedor/envios/actions";

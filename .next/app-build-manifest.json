@@ -204,19 +204,19 @@
       "static/chunks/main-app-93dad6cbfcf021cb.js",
       "static/chunks/app/api/admin/banners/route-959090b5a898abd7.js"
     ],
-    "/api/admin/hero-promo/route": [
-      "static/chunks/webpack-82de447feb4733b7.js",
-      "static/chunks/4bd1b696-f6bedae49f0827a5.js",
-      "static/chunks/1255-438baeb392765430.js",
-      "static/chunks/main-app-93dad6cbfcf021cb.js",
-      "static/chunks/app/api/admin/hero-promo/route-959090b5a898abd7.js"
-    ],
     "/api/admin/export-catalog/route": [
       "static/chunks/webpack-82de447feb4733b7.js",
       "static/chunks/4bd1b696-f6bedae49f0827a5.js",
       "static/chunks/1255-438baeb392765430.js",
       "static/chunks/main-app-93dad6cbfcf021cb.js",
       "static/chunks/app/api/admin/export-catalog/route-959090b5a898abd7.js"
+    ],
+    "/api/admin/hero-promo/route": [
+      "static/chunks/webpack-82de447feb4733b7.js",
+      "static/chunks/4bd1b696-f6bedae49f0827a5.js",
+      "static/chunks/1255-438baeb392765430.js",
+      "static/chunks/main-app-93dad6cbfcf021cb.js",
+      "static/chunks/app/api/admin/hero-promo/route-959090b5a898abd7.js"
     ],
     "/api/admin/products/route": [
       "static/chunks/webpack-82de447feb4733b7.js",
@@ -534,14 +534,6 @@
       "static/chunks/1356-8ac2296275443024.js",
       "static/chunks/app/(staff)/admin/pedidos/[id]/page-cf67b225084391d2.js"
     ],
-    "/(staff)/admin/perfil/page": [
-      "static/chunks/webpack-82de447feb4733b7.js",
-      "static/chunks/4bd1b696-f6bedae49f0827a5.js",
-      "static/chunks/1255-438baeb392765430.js",
-      "static/chunks/main-app-93dad6cbfcf021cb.js",
-      "static/chunks/1356-8ac2296275443024.js",
-      "static/chunks/app/(staff)/admin/perfil/page-624280b5a6d138f4.js"
-    ],
     "/(staff)/admin/pedidos/page": [
       "static/chunks/webpack-82de447feb4733b7.js",
       "static/chunks/4bd1b696-f6bedae49f0827a5.js",
@@ -549,6 +541,14 @@
       "static/chunks/main-app-93dad6cbfcf021cb.js",
       "static/chunks/2619-3c9e02e22d10480a.js",
       "static/chunks/app/(staff)/admin/pedidos/page-e34e454b157a5c5f.js"
+    ],
+    "/(staff)/admin/perfil/page": [
+      "static/chunks/webpack-82de447feb4733b7.js",
+      "static/chunks/4bd1b696-f6bedae49f0827a5.js",
+      "static/chunks/1255-438baeb392765430.js",
+      "static/chunks/main-app-93dad6cbfcf021cb.js",
+      "static/chunks/1356-8ac2296275443024.js",
+      "static/chunks/app/(staff)/admin/perfil/page-624280b5a6d138f4.js"
     ],
     "/(staff)/admin/productos/[id]/page": [
       "static/chunks/webpack-82de447feb4733b7.js",

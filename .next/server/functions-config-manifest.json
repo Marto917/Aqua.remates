@@ -5,11 +5,11 @@
     "/api/admin/hero-promo": {},
     "/api/admin/export-catalog": {},
     "/api/cron/data-retention": {},
-    "/api/admin/products": {},
     "/api/images/default-product": {},
     "/api/retail-orders/[orderId]/transfer-proof": {},
-    "/api/staff/orders/[orderId]/pack": {},
+    "/api/admin/products": {},
     "/api/search-suggestions": {},
+    "/api/staff/orders/[orderId]/pack": {},
     "/api/staff/profile": {}
   }
 }
