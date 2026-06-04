@@ -10,10 +10,36 @@ IMPORTANTE: Los riders solo manejan compras MINORISTAS (retail) con envío a
 domicilio. Los pedidos mayoristas NO usan esta app: los gestiona el empleado.
 
 --------------------------------------------------------------------------------
+0. NO USAR LA API "rodmaps" SEPARADA (error típico de credenciales)
+--------------------------------------------------------------------------------
+
+La tienda Aqua (aquaremates.com.ar) y el servicio "rodmaps-production" en Railway
+son DOS backends distintos con bases de datos distintas:
+
+  - rodmaps → tabla rodmaps_users (martin@rodmaps.com, seed propio)
+  - Aqua    → tabla "Rider" en el mismo Postgres de la tienda
+
+Si la app Expo tiene EXPO_PUBLIC_API_URL=https://rodmaps-production.up.railway.app
+el login NUNCA va a coincidir con los riders creados en Admin → Riders de Aqua.
+
+CORRECTO para producción:
+  EXPO_PUBLIC_API_URL=https://www.aquaremates.com.ar
+  (sin /api al final si el cliente ya concatena rutas; si no, base = dominio raíz)
+
+Login debe ir a:
+  POST https://www.aquaremates.com.ar/api/riders/auth/login
+
+Las cuentas se crean solo en el panel Aqua: /admin/riders (rol Dueño).
+No existen en rodmaps_users.
+
+Comprobar que Aqua responde:
+  GET https://www.aquaremates.com.ar/api/health
+
+--------------------------------------------------------------------------------
 1. VARIABLES DE ENTORNO EN LA APP DE MAPAS (solo estas)
 --------------------------------------------------------------------------------
 
-AQUA_API_BASE_URL=https://tu-dominio-aqua.up.railway.app
+AQUA_API_BASE_URL=https://www.aquaremates.com.ar
    (en local: http://localhost:3000)
 
 NO uses DATABASE_URL de Aqua.

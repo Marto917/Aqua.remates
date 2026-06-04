@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
 import { canManageUsers, getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { getStaffLoginPath } from "@/lib/staff-login-path";
+import { staffProfileLine } from "@/lib/staff-display";
 
 type StaffNavProps = {
   area: "admin" | "vendedor";
@@ -15,6 +15,7 @@ const linkClass =
 export async function StaffNav({ area }: StaffNavProps) {
   const ctx = await getStaffContext();
   const role = ctx.session?.user?.role;
+  const displayName = ctx.session?.user?.name;
   const showOwner = isOwnerAccess(ctx);
   const showUsers = canManageUsers(ctx);
   const homeHref = area === "admin" ? "/admin" : "/vendedor";
@@ -35,13 +36,7 @@ export async function StaffNav({ area }: StaffNavProps) {
             ) : (
               <span className="text-xs text-slate-500">
                 Sesión:{" "}
-                <strong className="text-slate-800">
-                  {role === UserRole.OWNER
-                    ? "Dueño"
-                    : role === UserRole.EMPLOYEE
-                      ? "Empleado"
-                      : role ?? "—"}
-                </strong>
+                <strong className="text-slate-800">{staffProfileLine(displayName, role)}</strong>
               </span>
             )}
             {ctx.session?.user ? (

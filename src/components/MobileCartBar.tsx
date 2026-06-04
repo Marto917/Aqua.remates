@@ -4,9 +4,11 @@ import { useState } from "react";
 import { CartPreviewDrawer } from "@/components/CartPreviewDrawer";
 import { IconCart } from "@/components/icons/NavIcons";
 import { useCart } from "@/contexts/cart-context";
+import { useCustomerCartGate } from "@/hooks/use-customer-cart-gate";
 
 export function MobileCartBar() {
   const { totalItems, subtotalTransfer } = useCart();
+  const { requireLogin } = useCustomerCartGate();
   const [open, setOpen] = useState(false);
 
   return (
@@ -19,7 +21,9 @@ export function MobileCartBar() {
           </div>
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              if (requireLogin()) setOpen(true);
+            }}
             className="flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 py-3 text-base font-semibold text-white"
           >
             <IconCart className="h-5 w-5" />

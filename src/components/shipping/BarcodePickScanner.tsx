@@ -25,51 +25,75 @@ export function BarcodePickScanner({ onScan, disabled }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!cameraOn || !streamRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.srcObject = streamRef.current;
+    video.setAttribute("playsinline", "true");
+    video.muted = true;
+
+    void video.play().catch(() => {
+      setError("No se pudo reproducir la cámara. Probá recargar o usar el código manual.");
+    });
+
+    if (!detectorReady) return;
+
+    type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => {
+      detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
+    };
+    const Detector = (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+    if (!Detector) return;
+
+    const detector = new Detector({
+      formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"],
+    });
+    let lastCode = "";
+    let lastAt = 0;
+
+    const tick = async () => {
+      if (!videoRef.current || !streamRef.current) return;
+      if (video.readyState < 2) {
+        rafRef.current = requestAnimationFrame(() => void tick());
+        return;
+      }
+      try {
+        const codes = await detector.detect(videoRef.current);
+        const code = codes[0]?.rawValue?.trim();
+        if (code && (code !== lastCode || Date.now() - lastAt > 1200)) {
+          lastCode = code;
+          lastAt = Date.now();
+          onScan(code);
+        }
+      } catch {
+        /* frame skip */
+      }
+      rafRef.current = requestAnimationFrame(() => void tick());
+    };
+    rafRef.current = requestAnimationFrame(() => void tick());
+
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [cameraOn, detectorReady, onScan]);
+
   async function startCamera() {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
         audio: false,
       });
       streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
-      }
       setCameraOn(true);
-
-      if (detectorReady) {
-        type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => {
-          detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
-        };
-        const Detector = (window as Window & { BarcodeDetector?: BarcodeDetectorCtor })
-          .BarcodeDetector;
-        if (!Detector) return;
-        const detector = new Detector({
-          formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"],
-        });
-        let lastCode = "";
-        let lastAt = 0;
-
-        const tick = async () => {
-          if (!videoRef.current || !streamRef.current) return;
-          try {
-            const codes = await detector.detect(videoRef.current);
-            const code = codes[0]?.rawValue?.trim();
-            if (code && (code !== lastCode || Date.now() - lastAt > 1200)) {
-              lastCode = code;
-              lastAt = Date.now();
-              onScan(code);
-            }
-          } catch {
-            /* frame skip */
-          }
-          rafRef.current = requestAnimationFrame(() => void tick());
-        };
-        rafRef.current = requestAnimationFrame(() => void tick());
-      }
     } catch {
       setError("No se pudo abrir la cámara. Usá el campo manual abajo.");
       setCameraOn(false);
@@ -99,7 +123,7 @@ export function BarcodePickScanner({ onScan, disabled }: Props) {
     <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
       <p className="text-sm font-semibold text-sky-900">Escanear código de barra</p>
       <p className="mt-1 text-xs text-sky-800">
-        En celular activá la cámara y escaneá cada unidad. Si son 2 iguales, escaneá 2 veces.
+        Activá la cámara y escaneá cada unidad. Si son 2 iguales, escaneá 2 veces.
       </p>
 
       {error ? <p className="mt-2 text-xs text-rose-700">{error}</p> : null}
@@ -125,20 +149,18 @@ export function BarcodePickScanner({ onScan, disabled }: Props) {
         )}
       </div>
 
-      {cameraOn ? (
-        <video
-          ref={videoRef}
-          className="mt-3 aspect-video w-full max-w-sm rounded-lg border border-sky-200 bg-black object-cover"
-          muted
-          playsInline
-        />
-      ) : null}
-
-      {!detectorReady && cameraOn ? (
-        <p className="mt-2 text-xs text-amber-800">
-          Tu navegador no lee códigos automáticamente. Ingresá el código manualmente.
-        </p>
-      ) : null}
+      <div
+        className={`relative mt-3 overflow-hidden rounded-lg border border-sky-200 bg-black ${
+          cameraOn ? "aspect-video max-w-sm" : "hidden"
+        }`}
+      >
+        <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
+        {cameraOn && !detectorReady ? (
+          <p className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-center text-[10px] text-white">
+            Usá ingreso manual si no detecta códigos
+          </p>
+        ) : null}
+      </div>
 
       <form onSubmit={submitManual} className="mt-3 flex flex-wrap gap-2">
         <input

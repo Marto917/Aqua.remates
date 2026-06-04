@@ -28,7 +28,7 @@ export default async function HomePage() {
       prisma.product.findMany({
         where: { isActive: true, ...catalogVisibilityWhere("retail") },
         orderBy: { updatedAt: "desc" },
-        take: 4,
+        take: 12,
         include: {
           category: true,
           variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
@@ -102,12 +102,23 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {carouselBanners.length > 0 ? (
+        <PromoCarousel
+          slides={carouselBanners.map((b) => ({
+            id: b.id,
+            title: b.title ?? "Promoción",
+            imageUrl: b.imageUrl,
+            linkUrl: b.linkUrl,
+          }))}
+        />
+      ) : null}
+
       <section className="space-y-4">
         <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
           <div className="mx-auto max-w-md sm:mx-0 sm:max-w-none">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Novedades</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Últimos lanzamientos</h2>
             <p className="mt-1.5 text-balance text-sm text-slate-500">
-              Los productos actualizados más recientes — tu último ingreso aparece acá
+              Los artículos más recientes del catálogo
             </p>
           </div>
           <Link
@@ -120,7 +131,7 @@ export default async function HomePage() {
             </span>
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {homeProducts.length > 0 ? (
             homeProducts.map((product) => <ProductCard key={product.id} product={product} />)
           ) : (
@@ -161,15 +172,6 @@ export default async function HomePage() {
           </span>
         </div>
       </section>
-
-      <PromoCarousel
-        slides={carouselBanners.map((b) => ({
-          id: b.id,
-          title: b.title ?? "Promoción",
-          imageUrl: b.imageUrl,
-          linkUrl: b.linkUrl,
-        }))}
-      />
 
       {promoBanners.length > 0 ? (
         <section className="space-y-3">

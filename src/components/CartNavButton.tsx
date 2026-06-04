@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CartPreviewDrawer } from "@/components/CartPreviewDrawer";
 import { IconCart } from "@/components/icons/NavIcons";
 import { useCart } from "@/contexts/cart-context";
+import { useCustomerCartGate } from "@/hooks/use-customer-cart-gate";
 
 function isDesktopViewport() {
   if (typeof window === "undefined") return false;
@@ -15,9 +16,11 @@ function isDesktopViewport() {
 export function CartNavButton() {
   const router = useRouter();
   const { totalItems } = useCart();
+  const { requireLogin } = useCustomerCartGate();
   const [open, setOpen] = useState(false);
 
   function handleClick() {
+    if (!requireLogin()) return;
     if (isDesktopViewport()) {
       router.push("/carrito");
       return;

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
+import { useCustomerCartGate } from "@/hooks/use-customer-cart-gate";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 
 export function CartPreviewDrawer({ open, onClose }: Props) {
   const { lines, subtotalTransfer, setQuantity, removeLine, totalItems } = useCart();
+  const { requireLogin } = useCustomerCartGate();
 
   useEffect(() => {
     if (!open) return;
@@ -103,7 +105,14 @@ export function CartPreviewDrawer({ open, onClose }: Props) {
           </div>
           <Link
             href="/carrito"
-            onClick={onClose}
+            onClick={(e) => {
+              if (!requireLogin()) {
+                e.preventDefault();
+                onClose();
+                return;
+              }
+              onClose();
+            }}
             className="mt-3 block w-full rounded-full bg-brand py-3 text-center text-sm font-semibold text-white"
           >
             Ver carrito completo
@@ -111,7 +120,12 @@ export function CartPreviewDrawer({ open, onClose }: Props) {
           {lines.length > 0 ? (
             <Link
               href="/checkout"
-              onClick={onClose}
+              onClick={(e) => {
+                if (!requireLogin()) {
+                  e.preventDefault();
+                  onClose();
+                }
+              }}
               className="mt-2 block w-full rounded-full border border-brand py-3 text-center text-sm font-semibold text-brand-dark"
             >
               Ir a pagar

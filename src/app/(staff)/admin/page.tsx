@@ -3,6 +3,7 @@ import { UserRole } from "@prisma/client";
 import { getSafeSession } from "@/lib/get-session";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { prisma } from "@/lib/prisma";
+import { staffProfileLine } from "@/lib/staff-display";
 
 export default async function AdminHomePage() {
   const session = await getSafeSession();
@@ -34,7 +35,8 @@ export default async function AdminHomePage() {
           </p>
         ) : null}
         <p className="mt-2 text-sm text-slate-600">
-          Perfil actual: <strong>{session?.user.role ?? "sin sesion"}</strong>
+          Perfil actual:{" "}
+          <strong>{staffProfileLine(session?.user?.name, session?.user?.role)}</strong>
         </p>
       </div>
 
