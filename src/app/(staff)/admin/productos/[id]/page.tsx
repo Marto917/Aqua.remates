@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminProductEditDetails } from "@/components/admin/AdminProductEditDetails";
+import { AdminProductPromoForm } from "@/components/admin/AdminProductPromoForm";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { prisma } from "@/lib/prisma";
@@ -19,7 +20,13 @@ export default async function AdminProductoImagenesPage({
 
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { variants: { orderBy: { sortOrder: "asc" } }, category: true },
+    include: {
+      variants: {
+        orderBy: { sortOrder: "asc" },
+        include: { images: { orderBy: { sortOrder: "asc" } } },
+      },
+      category: true,
+    },
   });
 
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
@@ -68,6 +75,14 @@ export default async function AdminProductoImagenesPage({
         categoryName={product.category.name}
       />
 
+      <AdminProductPromoForm
+        productId={product.id}
+        showPromoBadge={product.showPromoBadge}
+        promoBadgePercent={product.promoBadgePercent}
+        promoPrice={product.promoPrice != null ? Number(product.promoPrice) : null}
+        retailPrice={Number(product.retailPrice)}
+      />
+
       <form
         id="imagenes"
         method="post"
@@ -101,16 +116,43 @@ export default async function AdminProductoImagenesPage({
             <p className="text-sm text-slate-600">Este producto no tiene variantes.</p>
           ) : (
             product.variants.map((variant) => (
-              <ImageUploadPreview
-                key={variant.id}
-                name={`variantImage_${variant.id}`}
-                positionName={`variantImagePosition_${variant.id}`}
-                scaleName={`variantImageScale_${variant.id}`}
-                label={`Color: ${variant.colorLabel}`}
-                currentUrl={variant.imageUrl || product.imageUrl}
-                currentPosition={variant.imagePosition ?? product.imagePosition}
-                currentScale={variant.imageScale ?? product.imageScale}
-              />
+              <div key={variant.id} className="space-y-3 rounded-lg border border-slate-100 p-4">
+                <ImageUploadPreview
+                  name={`variantImage_${variant.id}`}
+                  positionName={`variantImagePosition_${variant.id}`}
+                  scaleName={`variantImageScale_${variant.id}`}
+                  label={`Color: ${variant.colorLabel} (foto principal)`}
+                  currentUrl={variant.imageUrl || product.imageUrl}
+                  currentPosition={variant.imagePosition ?? product.imagePosition}
+                  currentScale={variant.imageScale ?? product.imageScale}
+                />
+                {variant.images.length > 0 ? (
+                  <ul className="space-y-1 text-sm text-slate-600">
+                    {variant.images.map((img) => (
+                      <li key={img.id} className="flex items-center gap-2">
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" name="removeGalleryImage" value={img.id} />
+                          Quitar foto extra
+                        </label>
+                        <span className="truncate text-xs text-slate-400">{img.imageUrl}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {[0, 1, 2].map((idx) => (
+                    <label key={idx} className="text-xs text-slate-600">
+                      Foto galería {idx + 1}
+                      <input
+                        type="file"
+                        name={`variantGallery_${variant.id}_${idx}`}
+                        accept="image/jpeg,image/png,image/webp"
+                        className="mt-1 block w-full text-xs"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
             ))
           )}
         </div>

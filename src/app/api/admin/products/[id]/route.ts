@@ -142,6 +142,38 @@ export async function POST(
       }
     }
 
+    const galleryEntries = Array.from(formData.entries()).filter(([key]) =>
+      key.startsWith("variantGallery_"),
+    );
+
+    for (const [key, value] of galleryEntries) {
+      if (!(value instanceof File) || value.size === 0) continue;
+      const parts = key.replace("variantGallery_", "").split("_");
+      const variantId = parts[0];
+      const sortOrder = Number(parts[1] ?? "0");
+      try {
+        const buffer = Buffer.from(await value.arrayBuffer());
+        const imageUrl = await saveCompressedProductImage(buffer);
+        await prisma.productVariantImage.create({
+          data: { variantId, imageUrl, sortOrder },
+        });
+      } catch (error) {
+        const url = new URL(`/admin/productos/${id}`, req.url);
+        url.searchParams.set(
+          "error",
+          error instanceof Error ? error.message : "No se pudo guardar una foto de galería.",
+        );
+        return NextResponse.redirect(url);
+      }
+    }
+
+    const removeGalleryIds = formData.getAll("removeGalleryImage").map(String);
+    if (removeGalleryIds.length > 0) {
+      await prisma.productVariantImage.deleteMany({
+        where: { id: { in: removeGalleryIds } },
+      });
+    }
+
     return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
   }
 
@@ -183,6 +215,26 @@ export async function POST(
         wholesalePrice: parsed.data.wholesalePrice ?? parsed.data.transferPrice,
         discountRetailPercent: 0,
         discountBadgeLabel: null,
+      },
+    });
+
+    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+  }
+
+  if (intent === "update_promo") {
+    const showPromoBadge = formData.get("showPromoBadge") === "on";
+    const badgeRaw = String(formData.get("promoBadgePercent") ?? "").trim();
+    const priceRaw = String(formData.get("promoPrice") ?? "").trim();
+    const promoBadgePercent = badgeRaw ? Number(badgeRaw) : null;
+    const promoPrice = priceRaw ? Number(priceRaw) : null;
+
+    await prisma.product.update({
+      where: { id },
+      data: {
+        showPromoBadge,
+        promoBadgePercent:
+          promoBadgePercent != null && Number.isFinite(promoBadgePercent) ? promoBadgePercent : null,
+        promoPrice: promoPrice != null && Number.isFinite(promoPrice) ? promoPrice : null,
       },
     });
 

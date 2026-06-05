@@ -9,6 +9,7 @@ import {
   authFieldClass,
   authPrimaryButtonClass,
 } from "@/components/auth/auth-styles";
+import { getOrCreateDeviceId } from "@/lib/get-device-id";
 
 type Props = {
   googleReady: boolean;
@@ -24,9 +25,12 @@ export function RegistroForm({ googleReady }: Props) {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const googleHint = !googleReady
-    ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Railway para activar el login con Google."
+    ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para activar el registro con Google."
     : undefined;
 
   return (
@@ -48,6 +52,11 @@ export function RegistroForm({ googleReady }: Props) {
         className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
+          if (password !== passwordConfirm) {
+            setPasswordMismatch(true);
+            return;
+          }
+          setPasswordMismatch(false);
           setLoading(true);
           setMensaje(null);
           setDevLink(null);
@@ -58,7 +67,9 @@ export function RegistroForm({ googleReady }: Props) {
             body: JSON.stringify({
               name: fd.get("name"),
               email: fd.get("email"),
-              password: fd.get("password"),
+              password,
+              passwordConfirm,
+              deviceId: getOrCreateDeviceId(),
             }),
           });
           const data = await res.json().catch(() => ({}));
@@ -89,9 +100,30 @@ export function RegistroForm({ googleReady }: Props) {
           required
           type="password"
           minLength={6}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (passwordMismatch) setPasswordMismatch(false);
+          }}
           placeholder="Contraseña (mín. 6 caracteres)"
           className={authFieldClass}
         />
+        <input
+          name="passwordConfirm"
+          required
+          type="password"
+          minLength={6}
+          value={passwordConfirm}
+          onChange={(e) => {
+            setPasswordConfirm(e.target.value);
+            if (passwordMismatch) setPasswordMismatch(false);
+          }}
+          placeholder="Repetir contraseña"
+          className={authFieldClass}
+        />
+        {passwordMismatch ? (
+          <p className="text-sm text-rose-600">Las contraseñas no coinciden.</p>
+        ) : null}
         <button type="submit" disabled={loading} className={authPrimaryButtonClass}>
           {loading ? "Registrando…" : "Crear cuenta con email"}
         </button>
@@ -102,7 +134,7 @@ export function RegistroForm({ googleReady }: Props) {
       ) : null}
       {devLink ? (
         <p className="mt-2 break-all text-xs text-slate-500">
-          Link dev:{" "}
+          Link de verificación (solo entorno local):{" "}
           <a className="text-brand underline" href={devLink}>
             {devLink}
           </a>

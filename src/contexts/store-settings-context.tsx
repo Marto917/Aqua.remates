@@ -14,6 +14,7 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandPrimary: null,
   themeBrandDark: null,
   themeBrandMuted: null,
+  footerImageUrl: null,
 };
 
 const StoreSettingsContext = createContext<StoreSettingsData>(DEFAULTS);

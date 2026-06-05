@@ -27,6 +27,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       variants: {
         where: { isActive: true },
         orderBy: { sortOrder: "asc" },
+        include: { images: { orderBy: { sortOrder: "asc" } } },
       },
       reviews: {
         orderBy: { createdAt: "desc" },
@@ -48,11 +49,26 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   const desc = formatDisplayWords(product.description);
   const categoryLabel = formatDisplayWords(product.category.name);
 
+  const buyerRows = await prisma.retailOrderItem.findMany({
+    where: {
+      productId: product.id,
+      order: { status: { in: ["CONFIRMED", "PAYMENT_APPROVED"] } },
+    },
+    select: { order: { select: { customerId: true } } },
+  });
+  const verifiedBuyerIds = new Set(
+    buyerRows.map((row) => row.order.customerId).filter(Boolean) as string[],
+  );
+
   const initialReviews = product.reviews.map((r) => ({
     id: r.id,
     authorName: r.authorName,
     rating: r.rating,
     comment: r.comment,
+    pros: r.pros,
+    cons: r.cons,
+    recommends: r.recommends,
+    isVerifiedBuyer: Boolean(r.userId && verifiedBuyerIds.has(r.userId)),
     createdAt: r.createdAt.toISOString(),
   }));
 
@@ -91,12 +107,21 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           retailPrice: product.retailPrice,
           discountRetailPercent: product.discountRetailPercent,
           imageScale: product.imageScale,
+          promoPrice: product.promoPrice,
+          showPromoBadge: product.showPromoBadge,
+          promoBadgePercent: product.promoBadgePercent,
         }}
         variants={product.variants.map((v) => ({
           id: v.id,
           colorLabel: v.colorLabel,
           imageUrl: v.imageUrl,
           imagePosition: v.imagePosition,
+          imageScale: v.imageScale,
+          gallery: v.images.map((img) => ({
+            imageUrl: img.imageUrl,
+            imagePosition: img.imagePosition,
+            imageScale: img.imageScale,
+          })),
         }))}
         categoryLabel={categoryLabel}
         title={title}

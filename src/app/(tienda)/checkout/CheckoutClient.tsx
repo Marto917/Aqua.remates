@@ -5,9 +5,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreSettings } from "@/contexts/store-settings-context";
-import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
+import {
+  buildShippingAddressLine,
+  isValidStreetNumber,
+  shippingAddressHasStreetNumber,
+} from "@/lib/address-validation";
 import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
+import { AddressFields } from "@/components/checkout/AddressFields";
 import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
@@ -33,7 +38,8 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     mercadoPagoEnabled ? "MERCADO_PAGO" : "BANK_TRANSFER",
   );
   const [shippingMethod, setShippingMethod] = useState<ShippingChoice>("PICKUP");
-  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingStreet, setShippingStreet] = useState("");
+  const [shippingStreetNumber, setShippingStreetNumber] = useState("");
   const [shippingCity, setShippingCity] = useState("");
   const [shippingProvince, setShippingProvince] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
@@ -113,7 +119,15 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
           Boolean(p.shippingPostalCode?.trim());
         setHasSavedAddress(saved);
         if (saved) {
-          setShippingAddress(p.shippingAddress ?? "");
+          const full = (p.shippingAddress ?? "").trim();
+          const match = full.match(/^(.+?)\s+(\d+[a-zA-Z]?)$/);
+          if (match) {
+            setShippingStreet(match[1]);
+            setShippingStreetNumber(match[2]);
+          } else {
+            setShippingStreet(full);
+            setShippingStreetNumber("");
+          }
           setShippingCity(p.shippingCity ?? "");
           setShippingProvince(p.shippingProvince ?? "");
           setShippingPostalCode(p.shippingPostalCode ?? "");
@@ -161,9 +175,17 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     setError(null);
 
     if (shippingMethod === "DELIVERY") {
-      const addressLine = shippingAddress.trim();
+      if (!shippingStreet.trim()) {
+        setError("Indicá la calle de entrega.");
+        return;
+      }
+      if (!isValidStreetNumber(shippingStreetNumber)) {
+        setError("El número de casa es obligatorio (solo números, ej: 1234).");
+        return;
+      }
+      const addressLine = buildShippingAddressLine(shippingStreet, shippingStreetNumber);
       if (!shippingAddressHasStreetNumber(addressLine)) {
-        setError(SHIPPING_ADDRESS_HINT);
+        setError("La dirección debe incluir calle y número.");
         return;
       }
       if (!shippingCity.trim() || !shippingProvince.trim() || !shippingPostalCode.trim()) {
@@ -184,7 +206,10 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
           notes: notes || undefined,
           paymentMethod,
           shippingMethod,
-          shippingAddress: shippingMethod === "DELIVERY" ? shippingAddress : undefined,
+          shippingAddress:
+            shippingMethod === "DELIVERY"
+              ? buildShippingAddressLine(shippingStreet, shippingStreetNumber)
+              : undefined,
           shippingCity: shippingMethod === "DELIVERY" ? shippingCity : undefined,
           shippingProvince: shippingMethod === "DELIVERY" ? shippingProvince : undefined,
           shippingPostalCode: shippingMethod === "DELIVERY" ? shippingPostalCode : undefined,
@@ -297,7 +322,8 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                   <p className="font-medium text-slate-900">Dirección guardada en tu perfil</p>
                   <p className="mt-1">
-                    {shippingAddress}, {shippingCity} ({shippingProvince}) — CP {shippingPostalCode}
+                    {buildShippingAddressLine(shippingStreet, shippingStreetNumber)}, {shippingCity} (
+                    {shippingProvince}) — CP {shippingPostalCode}
                   </p>
                   {shippingNotes ? <p className="mt-1 text-xs text-slate-500">{shippingNotes}</p> : null}
                   <button
@@ -319,46 +345,19 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                       Usar dirección guardada
                     </button>
                   ) : null}
-                  <input
-                    required
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Calle y número (ej: Av. Corrientes 1234)"
-                    minLength={6}
-                    pattern=".*\d.*"
-                    title={SHIPPING_ADDRESS_HINT}
-                    className="w-full rounded-md border px-3 py-2"
-                  />
-                  <p className="text-xs text-slate-500">{SHIPPING_ADDRESS_HINT}</p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <input
-                      required
-                      value={shippingCity}
-                      onChange={(e) => setShippingCity(e.target.value)}
-                      placeholder="Ciudad"
-                      className="w-full rounded-md border px-3 py-2"
-                    />
-                    <input
-                      required
-                      value={shippingProvince}
-                      onChange={(e) => setShippingProvince(e.target.value)}
-                      placeholder="Provincia"
-                      className="w-full rounded-md border px-3 py-2"
-                    />
-                  </div>
-                  <input
-                    required
-                    value={shippingPostalCode}
-                    onChange={(e) => setShippingPostalCode(e.target.value)}
-                    placeholder="Código postal"
-                    className="w-full rounded-md border px-3 py-2"
-                  />
-                  <textarea
-                    value={shippingNotes}
-                    onChange={(e) => setShippingNotes(e.target.value)}
-                    placeholder="Referencias (piso, timbre, entre calles…)"
-                    rows={2}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  <AddressFields
+                    street={shippingStreet}
+                    streetNumber={shippingStreetNumber}
+                    city={shippingCity}
+                    province={shippingProvince}
+                    postalCode={shippingPostalCode}
+                    notes={shippingNotes}
+                    onStreetChange={setShippingStreet}
+                    onStreetNumberChange={setShippingStreetNumber}
+                    onCityChange={setShippingCity}
+                    onProvinceChange={setShippingProvince}
+                    onPostalCodeChange={setShippingPostalCode}
+                    onNotesChange={setShippingNotes}
                   />
                   <label className="flex items-center gap-2 text-sm text-slate-700">
                     <input

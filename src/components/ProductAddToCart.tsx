@@ -4,11 +4,16 @@ import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import { useCart } from "@/contexts/cart-context";
-import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
+
+type VariantImage = {
+  imageUrl: string;
+  imagePosition?: string | null;
+  imageScale?: unknown;
+};
 
 type Variant = {
   id: string;
@@ -16,6 +21,7 @@ type Variant = {
   imageUrl: string | null;
   imagePosition?: string | null;
   imageScale?: unknown;
+  gallery?: VariantImage[];
 };
 
 type Product = {
@@ -27,6 +33,9 @@ type Product = {
   listPrice: unknown;
   retailPrice: unknown;
   discountRetailPercent?: number;
+  promoPrice?: unknown | null;
+  showPromoBadge?: boolean;
+  promoBadgePercent?: number | null;
 };
 
 type ProductAddToCartProps = {
@@ -58,16 +67,37 @@ export function ProductAddToCart({
   reviewAverage,
   reviewCount,
 }: ProductAddToCartProps) {
-  const settings = useStoreSettings();
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const { addLine, hydrated } = useCart();
 
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
-  const displayImage = resolveProductImageUrl(selected?.imageUrl || product.imageUrl);
-  const imagePosition = selected?.imagePosition ?? product.imagePosition;
-  const imageScale = Number(selected?.imageScale ?? product.imageScale ?? 1);
+
+  const galleryImages = useMemo(() => {
+    if (!selected) return [];
+    const main: VariantImage = {
+      imageUrl: selected.imageUrl || product.imageUrl,
+      imagePosition: selected.imagePosition ?? product.imagePosition,
+      imageScale: selected.imageScale ?? product.imageScale,
+    };
+    const extra = (selected.gallery ?? []).filter((g) => g.imageUrl);
+    const all = [main, ...extra];
+    const seen = new Set<string>();
+    return all.filter((img) => {
+      const key = img.imageUrl;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [selected, product]);
+
+  const activeImage = galleryImages[galleryIndex] ?? galleryImages[0];
+  const displayImage = resolveProductImageUrl(activeImage?.imageUrl || product.imageUrl);
+  const imagePosition = activeImage?.imagePosition ?? product.imagePosition;
+  const imageScale = Number(activeImage?.imageScale ?? product.imageScale ?? 1);
+
   const pricing = useMemo(
     () => ({
       listPrice: getListPrice(product),
@@ -80,13 +110,18 @@ export function ProductAddToCart({
     return <p className="text-sm text-rose-600">No hay variantes disponibles.</p>;
   }
 
+  function handleVariantChange(id: string) {
+    setVariantId(id);
+    setGalleryIndex(0);
+  }
+
   function handleAdd() {
     addLine({
       variantId: selected.id,
       productId: product.id,
       productName: title,
       colorLabel: formatDisplayWords(selected.colorLabel),
-      imageUrl: displayImage,
+      imageUrl: resolveProductImageUrl(selected.imageUrl || product.imageUrl),
       listPrice: pricing.listPrice,
       transferPrice: pricing.transferPrice,
       discountPercent: 0,
@@ -110,6 +145,28 @@ export function ProductAddToCart({
             priority
           />
         </div>
+        {galleryImages.length > 1 ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {galleryImages.map((img, idx) => (
+              <button
+                key={`${img.imageUrl}-${idx}`}
+                type="button"
+                onClick={() => setGalleryIndex(idx)}
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${
+                  galleryIndex === idx ? "border-brand-dark" : "border-slate-200"
+                }`}
+              >
+                <ProductImage
+                  src={resolveProductImageUrl(img.imageUrl)}
+                  alt=""
+                  position={img.imagePosition}
+                  scale={Number(img.imageScale ?? 1)}
+                  sizes="64px"
+                />
+              </button>
+            ))}
+          </div>
+        ) : null}
         <p className="mt-2 text-xs text-slate-500">
           Categoría: <span className="font-medium text-slate-700">{categoryLabel}</span>
         </p>
@@ -130,12 +187,12 @@ export function ProductAddToCart({
               <StarsDisplay rating={reviewAverage} />
               <span className="font-semibold text-slate-800">{reviewAverage.toFixed(1)}</span>
               <a href="#opiniones-producto" className="text-brand-dark underline">
-                Leer las {reviewCount} opiniones
+                Leer las {reviewCount} calificaciones
               </a>
             </>
           ) : (
             <a href="#opiniones-producto" className="text-brand-dark underline">
-              Sé el primero en opinar
+              Sé el primero en calificar
             </a>
           )}
         </div>
@@ -152,7 +209,7 @@ export function ProductAddToCart({
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => setVariantId(v.id)}
+                  onClick={() => handleVariantChange(v.id)}
                   title={formatDisplayWords(v.colorLabel)}
                   aria-label={`Color ${formatDisplayWords(v.colorLabel)}`}
                   className={`flex h-11 w-11 items-center justify-center rounded-full border-2 transition ${
@@ -188,7 +245,9 @@ export function ProductAddToCart({
           type="button"
           disabled={!hydrated}
           onClick={handleAdd}
-          className="w-full rounded-md bg-brand py-4 text-base font-bold uppercase tracking-wide text-white shadow-md hover:bg-brand-dark disabled:opacity-60"
+          className={`w-full rounded-md py-4 text-base font-bold uppercase tracking-wide text-white shadow-md transition disabled:opacity-60 ${
+            added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-brand hover:bg-brand-dark"
+          }`}
         >
           {!hydrated ? "Cargando carrito…" : added ? "✓ Agregado al carrito" : "Agregar al carrito"}
         </button>

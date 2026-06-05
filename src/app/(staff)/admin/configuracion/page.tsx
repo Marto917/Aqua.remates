@@ -1,19 +1,23 @@
+import { AdminFooterImageForm } from "@/components/admin/AdminFooterImageForm";
 import { AdminStoreSettingsForm } from "@/components/admin/AdminStoreSettingsForm";
 import { getStoreSettings, ensureStoreSettings } from "@/lib/store-settings";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminConfiguracionPage() {
   await ensureStoreSettings();
   const settings = await getStoreSettings();
+  const row = await prisma.storeSettings.findUnique({ where: { id: "default" } });
 
   return (
-    <section className="mx-auto max-w-2xl space-y-4 px-4">
+    <section className="mx-auto max-w-2xl space-y-6 px-4">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Configuración de la tienda</h1>
         <p className="text-sm text-slate-600">
-          Datos bancarios para transferencias, recargo de Mercado Pago y texto del badge de descuento.
+          Datos bancarios, colores, pie de página y textos de la tienda pública.
         </p>
       </div>
       <AdminStoreSettingsForm initial={settings} />
+      <AdminFooterImageForm currentUrl={row?.footerImageUrl ?? null} />
     </section>
   );
 }

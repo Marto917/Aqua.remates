@@ -26,7 +26,7 @@ export default async function TiendaLayout({
       <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-5 pb-28 sm:px-4 sm:py-8 sm:pb-8">
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter footerImageUrl={settings.footerImageUrl} />
       <MobileCartBar />
     </StoreSettingsProvider>
   );

@@ -1,9 +1,13 @@
 import { getStorePriceDisplay } from "@/lib/product-pricing-display";
+import { getProductPromoDisplay } from "@/lib/product-promo";
 
 type Props = {
   product: {
     listPrice: unknown;
     retailPrice: unknown;
+    promoPrice?: unknown | null;
+    showPromoBadge?: boolean;
+    promoBadgePercent?: number | null;
   };
   size?: "card" | "detail";
   showMercadoPago?: boolean;
@@ -16,7 +20,10 @@ export function ProductPriceBlock({
 }: Props) {
   const { listFormatted, transferFormatted, mercadoPagoFormatted, listAmount, transferAmount } =
     getStorePriceDisplay(product);
+  const promo = getProductPromoDisplay(product);
   const showListOnCard = listAmount > transferAmount + 0.01;
+  const displayPrice = promo.showPromoPrice ? promo.promoPriceFormatted! : transferFormatted;
+  const strikePrice = promo.showPromoPrice ? promo.normalTransferFormatted : null;
 
   if (size === "detail") {
     return (
@@ -31,11 +38,12 @@ export function ProductPriceBlock({
             </div>
           ) : null}
           <div>
-            <p className="text-3xl font-bold tracking-tight text-brand sm:text-4xl">
-              {transferFormatted}
-            </p>
+            {strikePrice ? (
+              <p className="text-xl text-slate-400 line-through sm:text-2xl">{strikePrice}</p>
+            ) : null}
+            <p className="text-3xl font-bold tracking-tight text-brand sm:text-4xl">{displayPrice}</p>
             <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
-              Precio con transferencia
+              {promo.showPromoPrice ? "Precio promo con transferencia" : "Precio con transferencia"}
             </p>
           </div>
         </div>
@@ -54,7 +62,10 @@ export function ProductPriceBlock({
       {showListOnCard ? (
         <p className="text-sm text-slate-500">{listFormatted}</p>
       ) : null}
-      <p className="text-lg font-bold text-brand sm:text-xl">{transferFormatted}</p>
+      {strikePrice ? (
+        <p className="text-sm text-slate-400 line-through">{strikePrice}</p>
+      ) : null}
+      <p className="text-lg font-bold text-brand sm:text-xl">{displayPrice}</p>
       <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
         Con transferencia
       </p>

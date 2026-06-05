@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
-import { IconCamera } from "@/components/icons/StaffIcons";
 import { formatArs } from "@/lib/currency";
 
 type Props = {
@@ -19,7 +17,6 @@ type Props = {
 export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
   const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -27,24 +24,26 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
   function onFileChange(f: File | null) {
     setFile(f);
     setError(null);
-    if (preview) URL.revokeObjectURL(preview);
     if (f) {
       if (f.size > MAX_UPLOAD_BYTES) {
         setFile(null);
-        setPreview(null);
-        setError("La imagen supera 12 MB. Elegí una foto más liviana.");
+        setError("El archivo supera 12 MB. Elegí uno más liviano.");
         return;
       }
-      setPreview(URL.createObjectURL(f));
-    } else {
-      setPreview(null);
+      const ok =
+        f.type === "application/pdf" ||
+        f.type.startsWith("image/");
+      if (!ok) {
+        setFile(null);
+        setError("Formato no admitido. Usá PDF, JPG o PNG.");
+      }
     }
   }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
-      setError("Elegí una foto o captura del comprobante.");
+      setError("Elegí el comprobante de transferencia.");
       return;
     }
     setSubmitting(true);
@@ -65,7 +64,7 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
       }
       if (!res.ok) {
         if (res.status === 413) {
-          setError("La imagen es demasiado pesada. Probá con una captura más liviana.");
+          setError("El archivo es demasiado pesado. Probá con uno más liviano.");
           return;
         }
         setError(data.error ?? "No se pudo subir el comprobante.");
@@ -121,23 +120,22 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
         <form onSubmit={handleUpload} className="rounded-xl border bg-white p-5">
           <h3 className="font-semibold text-slate-900">Subir comprobante</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Foto o captura del comprobante de transferencia por {formatArs(totalAmount)}.
+            Adjuntá el comprobante de transferencia por {formatArs(totalAmount)} (PDF o imagen).
           </p>
           <label className="mt-4 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-8 hover:border-brand/40">
-            <IconCamera className="h-8 w-8 text-slate-400" />
-            <span className="text-sm font-medium text-brand-dark">Elegir imagen</span>
+            <span className="text-3xl text-slate-400" aria-hidden>
+              📄
+            </span>
+            <span className="text-sm font-medium text-brand-dark">
+              {file ? file.name : "Elegir archivo (PDF, JPG, PNG)"}
+            </span>
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
               className="sr-only"
               onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
             />
           </label>
-          {preview ? (
-            <div className="relative mt-3 aspect-[4/3] max-h-64 overflow-hidden rounded-lg border">
-              <Image src={preview} alt="Vista previa comprobante" fill className="object-contain" unoptimized />
-            </div>
-          ) : null}
           {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
           <button
             type="submit"
@@ -145,7 +143,6 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
             aria-label="Enviar comprobante"
           >
-            <IconCamera className="h-5 w-5" />
             {submitting ? "Enviando…" : "Enviar comprobante"}
           </button>
         </form>

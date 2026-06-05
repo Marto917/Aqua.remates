@@ -9,12 +9,12 @@ export default async function VerificarEmailPage({ searchParams }: PageProps) {
 
   const mensaje =
     estado === "ok"
-      ? "Email verificado. Ya podés comprar: iniciá sesión de nuevo si hace falta para actualizar la sesión."
+      ? "¡Listo! Tu email quedó verificado. Ya podés iniciar sesión y comprar."
       : estado === "expirado"
-        ? "El enlace expiró o no es válido. Pedí un nuevo mail de verificación (próximamente) o contactanos."
+        ? "El enlace expiró o ya no es válido. Registrate de nuevo o contactanos si necesitás ayuda."
         : estado === "error"
           ? "Enlace inválido."
-          : "Si acabás de registrarte, revisá tu correo y tocá el enlace para activar tu cuenta.";
+          : "Revisá tu correo y tocá el enlace que te enviamos para activar tu cuenta.";
 
   return (
     <section className="mx-auto max-w-lg rounded-xl border bg-white p-6 text-center shadow-sm">

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import packageJson from "../../package.json";
+import { resolveProductImageUrl } from "@/lib/product-images";
 
 const SOCIAL = {
   instagram: "https://www.instagram.com/aqua.remates/",
@@ -32,12 +34,31 @@ const navLinks = [
   { href: "/registro", label: "Registrarte" },
 ] as const;
 
-export function SiteFooter() {
+type Props = {
+  footerImageUrl?: string | null;
+};
+
+export function SiteFooter({ footerImageUrl }: Props) {
   const y = new Date().getFullYear();
   const wa = WHATSAPP.trim() || "—";
+  const customFooter = footerImageUrl?.trim();
 
   return (
     <footer className="relative mt-10 overflow-hidden border-t border-white/10 bg-slate-950 pb-[max(1rem,env(safe-area-inset-bottom))] text-white sm:mt-12">
+      {customFooter ? (
+        <div className="relative w-full">
+          <div className="relative aspect-[1920/400] max-h-48 w-full sm:max-h-56">
+            <Image
+              src={resolveProductImageUrl(customFooter)}
+              alt="Aqua Remates"
+              fill
+              className="object-cover object-center"
+              sizes="100vw"
+              priority={false}
+            />
+          </div>
+        </div>
+      ) : null}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_500px_at_50%_-20%,rgba(20,184,166,0.25),transparent_55%),radial-gradient(800px_400px_at_80%_100%,rgba(15,118,110,0.2),transparent_50%)]"
         aria-hidden

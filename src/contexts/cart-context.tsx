@@ -22,6 +22,11 @@ type CartState = {
 
 const defaultState: CartState = { lines: [] };
 
+export type CartToastPayload = {
+  productName: string;
+  imageUrl: string;
+};
+
 type CartContextValue = {
   lines: CartLine[];
   addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
@@ -32,6 +37,8 @@ type CartContextValue = {
   subtotalTransfer: string;
   subtotalTransferAmount: number;
   hydrated: boolean;
+  toast: CartToastPayload | null;
+  clearToast: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -67,6 +74,7 @@ function lineSubtotal(line: CartLine): number {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CartState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
+  const [toast, setToast] = useState<CartToastPayload | null>(null);
   const loadedRef = useRef(false);
 
   useEffect(() => {
@@ -83,8 +91,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) persistState(state);
   }, [state, hydrated]);
 
+  const clearToast = useCallback(() => setToast(null), []);
+
   const addLine = useCallback((line: Omit<CartLine, "quantity"> & { quantity?: number }) => {
     const qty = line.quantity ?? 1;
+    setToast({ productName: line.productName, imageUrl: line.imageUrl });
     setState((s) => {
       const idx = s.lines.findIndex((l) => l.variantId === line.variantId);
       if (idx >= 0) {
@@ -160,6 +171,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       subtotalTransfer,
       subtotalTransferAmount,
       hydrated,
+      toast,
+      clearToast,
     }),
     [
       state.lines,
@@ -171,6 +184,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       subtotalTransfer,
       subtotalTransferAmount,
       hydrated,
+      toast,
+      clearToast,
     ],
   );
 

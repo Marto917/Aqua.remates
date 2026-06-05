@@ -11,6 +11,7 @@ export type StoreSettingsData = {
   themeBrandPrimary: string | null;
   themeBrandDark: string | null;
   themeBrandMuted: string | null;
+  footerImageUrl: string | null;
 };
 
 const DEFAULTS: StoreSettingsData = {
@@ -24,6 +25,7 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandPrimary: null,
   themeBrandDark: null,
   themeBrandMuted: null,
+  footerImageUrl: null,
 };
 
 export async function getStoreSettings(): Promise<StoreSettingsData> {
@@ -43,6 +45,7 @@ export async function getStoreSettings(): Promise<StoreSettingsData> {
       themeBrandPrimary: row.themeBrandPrimary,
       themeBrandDark: row.themeBrandDark,
       themeBrandMuted: row.themeBrandMuted,
+      footerImageUrl: row.footerImageUrl,
     };
   } catch {
     return DEFAULTS;

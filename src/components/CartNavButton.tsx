@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CartPreviewDrawer } from "@/components/CartPreviewDrawer";
+import { CartPreviewPopover } from "@/components/CartPreviewPopover";
 import { IconCart } from "@/components/icons/NavIcons";
 import { useCart } from "@/contexts/cart-context";
 import { useCustomerCartGate } from "@/hooks/use-customer-cart-gate";
@@ -18,6 +19,8 @@ export function CartNavButton() {
   const { totalItems } = useCart();
   const { requireLogin } = useCustomerCartGate();
   const [open, setOpen] = useState(false);
+  const [hoverPreview, setHoverPreview] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function handleClick() {
     if (!requireLogin()) return;
@@ -28,8 +31,23 @@ export function CartNavButton() {
     setOpen(true);
   }
 
+  function openHoverPreview() {
+    if (!isDesktopViewport()) return;
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setHoverPreview(true), 200);
+  }
+
+  function closeHoverPreview() {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setHoverPreview(false);
+  }
+
   return (
-    <>
+    <div
+      className="relative"
+      onMouseEnter={openHoverPreview}
+      onMouseLeave={closeHoverPreview}
+    >
       <button
         type="button"
         onClick={handleClick}
@@ -43,10 +61,11 @@ export function CartNavButton() {
           </span>
         ) : null}
       </button>
+      {hoverPreview ? <CartPreviewPopover onClose={closeHoverPreview} /> : null}
       <CartPreviewDrawer open={open} onClose={() => setOpen(false)} />
       <Link href="/carrito" className="sr-only">
         Ir al carrito
       </Link>
-    </>
+    </div>
   );
 }

@@ -136,15 +136,7 @@ export default async function HomePage() {
             homeProducts.map((product) => <ProductCard key={product.id} product={product} />)
           ) : (
             <p className="col-span-full rounded-2xl border border-dashed border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 px-6 py-12 text-center text-slate-600">
-              Aún no hay productos. Podés usar{" "}
-              <Link href="/setup-demo" className="font-semibold text-brand-dark underline decoration-brand/30 underline-offset-2">
-                /setup-demo
-              </Link>{" "}
-              o <span className="font-medium">npm run db:seed</span>, o cargar desde el panel en{" "}
-              <Link href="/admin/productos" className="font-semibold text-brand-dark underline decoration-brand/30 underline-offset-2">
-                Admin → productos
-              </Link>
-              .
+              Próximamente vas a ver novedades acá. Volvé a visitarnos en unos días.
             </p>
           )}
         </div>

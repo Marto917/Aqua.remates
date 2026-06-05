@@ -7,7 +7,9 @@ import { canCustomerReview } from "@/lib/review-eligibility";
 
 const bodySchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
-  comment: z.string().trim().min(3).max(2000),
+  pros: z.string().trim().min(3).max(1000),
+  cons: z.string().trim().max(1000).optional(),
+  recommends: z.boolean().optional().default(true),
 });
 
 export async function POST(
@@ -54,7 +56,7 @@ export async function POST(
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Completá valoración y comentario." }, { status: 400 });
+    return NextResponse.json({ error: "Completá valoración y lo bueno del producto." }, { status: 400 });
   }
 
   const authorName = session.user.name?.trim() || user.name.trim();
@@ -62,13 +64,27 @@ export async function POST(
     return NextResponse.json({ error: "Actualizá tu nombre en el perfil." }, { status: 400 });
   }
 
+  const purchased = await prisma.retailOrderItem.findFirst({
+    where: {
+      productId,
+      order: {
+        customerId: session.user.id,
+        status: { in: ["CONFIRMED", "PAYMENT_APPROVED"] },
+      },
+    },
+    select: { id: true },
+  });
+
   const review = await prisma.productReview.create({
     data: {
       productId,
       userId: session.user.id,
       authorName,
       rating: parsed.data.rating,
-      comment: parsed.data.comment,
+      comment: parsed.data.pros,
+      pros: parsed.data.pros,
+      cons: parsed.data.cons?.trim() || null,
+      recommends: parsed.data.recommends ?? true,
     },
   });
 
@@ -78,6 +94,10 @@ export async function POST(
       authorName: review.authorName,
       rating: review.rating,
       comment: review.comment,
+      pros: review.pros,
+      cons: review.cons,
+      recommends: review.recommends,
+      isVerifiedBuyer: Boolean(purchased),
       createdAt: review.createdAt.toISOString(),
     },
   });

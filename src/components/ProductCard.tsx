@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
+import { WishlistButton } from "@/components/WishlistButton";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
+import { getProductPromoDisplay } from "@/lib/product-promo";
 
 type ProductCardProps = {
   product: {
@@ -19,6 +21,9 @@ type ProductCardProps = {
     listPrice: unknown;
     retailPrice: unknown;
     discountRetailPercent?: number;
+    promoPrice?: unknown | null;
+    showPromoBadge?: boolean;
+    promoBadgePercent?: number | null;
     variants: {
       id: string;
       colorLabel: string;
@@ -42,8 +47,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const shortDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
   const imagePosition = selectedVariant?.imagePosition ?? product.imagePosition;
   const imageScale = Number(selectedVariant?.imageScale ?? product.imageScale ?? 1);
+  const promo = getProductPromoDisplay(product);
+
   return (
-    <article className="group flex flex-col bg-white transition hover:shadow-md">
+    <article className="group flex flex-col bg-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-slate-200/80">
       <Link href={`/product/${product.slug}`} className="block">
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50">
           <ProductImage
@@ -53,6 +60,19 @@ export function ProductCard({ product }: ProductCardProps) {
             scale={imageScale}
             sizes="(max-width: 640px) 50vw, 25vw"
           />
+          <div className="absolute right-2 top-2 z-10">
+            <WishlistButton productId={product.id} />
+          </div>
+          {promo.showBadge && promo.badgePercent ? (
+            <div
+              className="absolute left-2 top-2 flex h-12 w-12 items-center justify-center rounded-full bg-rose-600 text-center text-xs font-bold leading-tight text-white shadow-md"
+              aria-label={`${promo.badgePercent}% de descuento`}
+            >
+              {promo.badgePercent}%
+              <br />
+              OFF
+            </div>
+          ) : null}
         </div>
 
         {colors.length > 0 ? (

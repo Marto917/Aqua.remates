@@ -134,6 +134,7 @@ model User {
   approvalRequestsCreated  ApprovalRequest[]         @relation("ApprovalRequester")
   approvalRequestsResolved ApprovalRequest[]         @relation("ApprovalResolver")
   productReviews           ProductReview[]
+  wishlistItems            WishlistItem[]
 }
 
 /// Valoración y comentario de clientes sobre un producto.
@@ -146,9 +147,37 @@ model ProductReview {
   authorName String
   rating     Int
   comment    String
+  /// Aspectos positivos (estilo Montagne: "Lo bueno").
+  pros       String?
+  /// Aspectos negativos ("Lo malo"; vacío = NADA).
+  cons       String?
+  recommends Boolean  @default(true)
   createdAt  DateTime @default(now())
 
   @@index([productId])
+}
+
+/// Límite anti-bots: registros por dispositivo.
+model RegistrationDevice {
+  id                 String   @id @default(cuid())
+  deviceKey          String   @unique
+  registrationCount  Int      @default(0)
+  lastRegistrationAt DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+/// Lista de deseados del cliente.
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
 }
 
 /// Repartidor (app de mapas). Tabla aislada; la app externa solo usa la API /api/riders/*.
@@ -199,6 +228,11 @@ model Product {
   discountWholesalePercent Int               @default(0)
   /// Texto del badge (sin números). Vacío = usar el de la tienda.
   discountBadgeLabel       String?
+  /// Badge circular de promo (ej. 20 = "20%"). Solo si showPromoBadge.
+  promoBadgePercent        Int?
+  /// Precio promo con transferencia (tachado el precio normal).
+  promoPrice               Decimal?          @db.Decimal(10, 2)
+  showPromoBadge           Boolean           @default(false)
   isActive                 Boolean           @default(true)
   isBestSeller             Boolean           @default(false)
   catalogVisibility        CatalogVisibility @default(PUBLIC_BOTH)
@@ -206,6 +240,7 @@ model Product {
   category                 Category          @relation(fields: [categoryId], references: [id])
   variants                 ProductVariant[]
   reviews                  ProductReview[]
+  wishlistItems            WishlistItem[]
   retailItems              RetailOrderItem[]
   wholesaleRequestItems    WholesaleRequestItem[]
   createdAt                DateTime          @default(now())
@@ -226,10 +261,25 @@ model ProductVariant {
   cartItems CartItem[]
   retailOrderItems RetailOrderItem[]
   wholesaleRequestItems WholesaleRequestItem[]
+  images    ProductVariantImage[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([productId, colorLabel])
+}
+
+/// Fotos adicionales por variante de color (galería).
+model ProductVariantImage {
+  id            String         @id @default(cuid())
+  variantId     String
+  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  imageUrl      String
+  imagePosition String?        @default("50% 50%")
+  imageScale    Decimal        @default(1) @db.Decimal(4, 2)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+
+  @@index([variantId])
 }
 
 model Cart {
@@ -412,5 +462,7 @@ model StoreSettings {
   themeBrandPrimary        String?
   themeBrandDark           String?
   themeBrandMuted          String?
+  /// Imagen de pie de página (full width). Recomendado 1920×400 px.
+  footerImageUrl           String?
   updatedAt               DateTime @updatedAt
 }
