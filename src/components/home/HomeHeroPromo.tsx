@@ -1,39 +1,42 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { HeroPromoSettings } from "@/lib/hero-promo";
+import { HERO_PROMO_SPECS } from "@/lib/hero-promo";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
   hero: HeroPromoSettings;
 };
 
+/** Muestra la imagen a ancho del contenedor, sin recortar ni agrandar (respeta proporción original). */
 function FullWidthHeroImage({
   src,
   alt,
-  aspectClass,
+  width,
+  height,
   className,
 }: {
   src: string;
   alt: string;
-  aspectClass: string;
+  width: number;
+  height: number;
   className?: string;
 }) {
   return (
-    <div className={`relative w-full overflow-hidden rounded-3xl ${aspectClass} ${className ?? ""}`}>
-      <Image
-        src={resolveProductImageUrl(src)}
-        alt={alt}
-        fill
-        className="object-cover"
-        sizes="100vw"
-        priority
-        unoptimized={src.startsWith("http")}
-      />
-    </div>
+    <Image
+      src={resolveProductImageUrl(src)}
+      alt={alt}
+      width={width}
+      height={height}
+      className={`h-auto w-full rounded-3xl ${className ?? ""}`}
+      sizes="(max-width: 1152px) 100vw, 1152px"
+      priority
+      unoptimized={src.startsWith("http")}
+    />
   );
 }
 
-/** Banner principal del inicio: imagen a ancho completo, sin texto superpuesto. */
+/** Banner principal del inicio: imagen a ancho completo, sin recorte. */
 export function HomeHeroBanner({ hero }: Props) {
   const { desktopImageUrl, mobileImageUrl, linkUrl } = hero;
   const link = linkUrl?.trim() || null;
@@ -44,11 +47,17 @@ export function HomeHeroBanner({ hero }: Props) {
     return null;
   }
 
+  const desktopW = HERO_PROMO_SPECS.desktop.minWidth;
+  const desktopH = Math.round(desktopW / 3);
+  const mobileW = HERO_PROMO_SPECS.mobile.minWidth;
+  const mobileH = HERO_PROMO_SPECS.mobile.minHeight;
+
   const desktop = desktopSrc ? (
     <FullWidthHeroImage
       src={desktopSrc}
       alt="Promoción AQUA"
-      aspectClass="aspect-[21/9] min-h-[12rem] sm:min-h-[14rem] lg:aspect-[3/1] lg:min-h-[16rem]"
+      width={desktopW}
+      height={desktopH}
       className="hidden sm:block"
     />
   ) : null;
@@ -57,7 +66,9 @@ export function HomeHeroBanner({ hero }: Props) {
     <FullWidthHeroImage
       src={mobileSrc}
       alt="Promoción AQUA"
-      aspectClass="aspect-[16/9] sm:hidden"
+      width={mobileSrc === desktopSrc && !mobileImageUrl ? desktopW : mobileW}
+      height={mobileSrc === desktopSrc && !mobileImageUrl ? desktopH : mobileH}
+      className="sm:hidden"
     />
   ) : null;
 
@@ -68,7 +79,8 @@ export function HomeHeroBanner({ hero }: Props) {
         <FullWidthHeroImage
           src={mobileSrc}
           alt="Promoción AQUA"
-          aspectClass="aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1]"
+          width={mobileW}
+          height={mobileH}
         />
       ) : null)}
     </>

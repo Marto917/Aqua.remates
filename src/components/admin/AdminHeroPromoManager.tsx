@@ -36,7 +36,8 @@ function ClickablePlacementPreview({
       aria-label={imageUrl ? `Cambiar ${label}` : `Subir ${label}`}
     >
       {imageUrl ? (
-        <Image src={imageUrl} alt={`Vista previa ${label}`} fill className="object-cover" unoptimized />
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt={`Vista previa ${label}`} className="h-full w-full object-contain" />
       ) : (
         <span className="absolute inset-0 flex items-center justify-center px-2 text-center text-[10px] font-bold leading-tight text-brand-dark group-hover:underline sm:text-xs">
           TOCAR PARA SUBIR
