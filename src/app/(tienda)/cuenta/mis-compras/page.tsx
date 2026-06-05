@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
@@ -92,7 +93,12 @@ export default async function MisComprasPage() {
                 <DeliveryCodeForCustomer code={order.deliveryCode} className="mt-3" />
               ) : null}
               {order.deliveryStatus === "DELIVERED" ? (
-                <p className="mt-2 text-xs font-medium text-emerald-800">Entrega confirmada con código.</p>
+                <div className="mt-3">
+                  <DeliveryDeliveredNotice
+                    deliveredAt={order.deliveryDeliveredAt}
+                    variant="customer"
+                  />
+                </div>
               ) : null}
             </li>
           ))}

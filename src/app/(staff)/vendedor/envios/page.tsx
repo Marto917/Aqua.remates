@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
+import { EnviosLiveRefresh } from "@/components/shipping/EnviosLiveRefresh";
 import { PickupDeliverButton } from "@/components/shipping/PickupDeliverButton";
 import { RiderAssignControls } from "@/components/shipping/RiderAssignControls";
 import { ShippingActionsMenu, type ShippingMenuItem } from "@/components/shipping/ShippingActionsMenu";
@@ -127,6 +129,10 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
     },
   });
 
+  const inTransitCount = retailOrders.filter(
+    (o) => isHomeDelivery(o.shippingMethod) && o.deliveryStatus === "DISPATCHED",
+  ).length;
+
   return (
     <div className="space-y-6">
       <header>
@@ -137,6 +143,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
             Ver viajes por repartidor
           </Link>
         </p>
+        <EnviosLiveRefresh enabled={inTransitCount > 0} />
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -195,8 +202,15 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
               ) : (
                 retailOrders.map((o) => {
                   const packed = isOrderPacked(o.packedAt);
+                  const homeDelivered =
+                    isHomeDelivery(o.shippingMethod) && o.deliveryStatus === "DELIVERED";
                   return (
-                    <tr key={o.id} className="border-b border-slate-100 align-top hover:bg-slate-50/80">
+                    <tr
+                      key={o.id}
+                      className={`border-b border-slate-100 align-top hover:bg-slate-50/80 ${
+                        homeDelivered ? "bg-emerald-50/70" : ""
+                      }`}
+                    >
                       <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                         {o.createdAt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
                       </td>
@@ -245,6 +259,16 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                           ) : null}
                           {o.shippingMethod === "PICKUP" && o.deliveryStatus === "DELIVERED" ? (
                             <p className="text-[11px] font-medium text-emerald-700">Entregado en sucursal</p>
+                          ) : null}
+                          {homeDelivered ? (
+                            <div className="mt-2 max-w-[16rem]">
+                              <DeliveryDeliveredNotice
+                                deliveredAt={o.deliveryDeliveredAt}
+                                buyerName={o.buyerName}
+                                variant="staff"
+                                compact
+                              />
+                            </div>
                           ) : null}
                         </div>
                       </td>

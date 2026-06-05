@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { ShippingTicketPrint } from "@/components/shipping/ShippingTicketPrint";
 import { TicketRiderRequired } from "@/components/shipping/TicketRiderRequired";
-import { buildShippingQrPayload, canPrintRetailDeliveryTicket } from "@/lib/shipping";
+import { buildShippingQrPayload, isHomeDelivery } from "@/lib/shipping";
 import { buildRetailTicketData, retailOrderToQrPayload } from "@/lib/shipping-ticket";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
@@ -44,6 +45,7 @@ async function loadRetailTicket(id: string) {
 
   return {
     needsRider: false as const,
+    order,
     ticket: buildRetailTicketData(order),
     qrPayloadJson: buildShippingQrPayload(qrPayload),
   };
@@ -91,19 +93,40 @@ export default async function RetailShippingTicketPage({ params }: PageProps) {
   }
 
   if (ticketData.needsRider) {
+    const order = ticketData.order;
+    const delivered =
+      isHomeDelivery(order.shippingMethod) && order.deliveryStatus === "DELIVERED";
     return (
-      <div className="py-4">
+      <div className="space-y-4 py-4">
+        {delivered ? (
+          <DeliveryDeliveredNotice
+            deliveredAt={order.deliveryDeliveredAt}
+            buyerName={order.buyerName}
+            variant="staff"
+          />
+        ) : null}
         <TicketRiderRequired
-          orderId={ticketData.order.id}
-          buyerName={ticketData.order.buyerName}
+          orderId={order.id}
+          buyerName={order.buyerName}
           riders={activeRiders}
         />
       </div>
     );
   }
 
+  const order = ticketData.order;
+  const showDelivered =
+    isHomeDelivery(order.shippingMethod) && order.deliveryStatus === "DELIVERED";
+
   return (
-    <div className="py-4">
+    <div className="space-y-4 py-4">
+      {showDelivered ? (
+        <DeliveryDeliveredNotice
+          deliveredAt={order.deliveryDeliveredAt}
+          buyerName={order.buyerName}
+          variant="staff"
+        />
+      ) : null}
       <ShippingTicketPrint ticket={ticketData.ticket} qrPayloadJson={ticketData.qrPayloadJson} />
     </div>
   );

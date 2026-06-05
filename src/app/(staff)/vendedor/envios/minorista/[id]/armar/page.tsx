@@ -1,10 +1,11 @@
 import { StaffBackLink } from "@/components/staff/StaffBackLink";
 import { notFound } from "next/navigation";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { OrderPickPanel, type PickLine } from "@/components/shipping/OrderPickPanel";
 import { colorLabelToDisplayName } from "@/lib/color-display";
 import { isInFulfillmentQueue } from "@/lib/fulfillment";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
-import { formatFullAddress, RETAIL_FULFILLMENT_STATUSES } from "@/lib/shipping";
+import { formatFullAddress, isHomeDelivery, RETAIL_FULFILLMENT_STATUSES } from "@/lib/shipping";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
@@ -93,6 +94,13 @@ export default async function RetailOrderPickPage({ params }: PageProps) {
         <h1 className="mt-3 text-2xl font-semibold text-slate-900">Armar pedido</h1>
         <p className="mt-1 text-sm text-slate-600">Pedido #{order.id.slice(-8).toUpperCase()}</p>
       </header>
+      {isHomeDelivery(order.shippingMethod) && order.deliveryStatus === "DELIVERED" ? (
+        <DeliveryDeliveredNotice
+          deliveredAt={order.deliveryDeliveredAt}
+          buyerName={order.buyerName}
+          variant="staff"
+        />
+      ) : null}
       <OrderPickPanel
         orderId={order.id}
         buyerName={order.buyerName}

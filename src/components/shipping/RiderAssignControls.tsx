@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { assignRiderFormAction, dispatchDeliveryFormAction } from "@/app/(staff)/vendedor/envios/actions";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatRiderNumber } from "@/lib/rider-number";
 
 type RiderOption = {
@@ -27,6 +28,10 @@ export function RiderAssignControls({
   isPacked,
 }: Props) {
   const [expanded, setExpanded] = useState(!assignedRider);
+
+  if (deliveryStatus === "DELIVERED") {
+    return <DeliveryDeliveredNotice variant="staff" compact />;
+  }
 
   if (riders.length === 0) {
     return (
