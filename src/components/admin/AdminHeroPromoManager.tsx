@@ -28,38 +28,51 @@ function ClickablePlacementPreview({
     inputRef.current?.click();
   }
 
+  const uploadButton = (aspectClass: string, label: string) => (
+    <button
+      type="button"
+      onClick={openPicker}
+      className={`group relative w-full overflow-hidden rounded-xl border-2 border-brand bg-brand/5 transition hover:border-brand-dark hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand/50 ${aspectClass}`}
+      aria-label={imageUrl ? `Cambiar ${label}` : `Subir ${label}`}
+    >
+      {imageUrl ? (
+        <Image src={imageUrl} alt={`Vista previa ${label}`} fill className="object-cover" unoptimized />
+      ) : (
+        <span className="absolute inset-0 flex items-center justify-center px-2 text-center text-[10px] font-bold leading-tight text-brand-dark group-hover:underline sm:text-xs">
+          TOCAR PARA SUBIR
+        </span>
+      )}
+      <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+    </button>
+  );
+
   if (variant === "desktop") {
     return (
-      <div className="rounded-xl border-2 border-dashed border-brand/30 bg-brand-muted/30 p-3">
-        <p className="mb-2 text-center text-[10px] font-semibold uppercase text-brand-dark">
-          Vista PC — inicio
+      <div className="rounded-xl border-2 border-dashed border-brand/30 bg-brand-muted/30 p-3 sm:p-4">
+        <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+          Vista PC — banner del inicio
         </p>
-        <div className="grid grid-cols-3 gap-1 rounded-lg bg-white p-2 shadow-sm">
-          <div className="col-span-2 space-y-1 pointer-events-none" aria-hidden>
-            <div className="h-3 w-3/4 rounded bg-slate-200" />
-            <div className="h-6 rounded bg-slate-100" />
-            <div className="h-8 rounded bg-brand/20" />
+        <p className="mb-3 text-center text-[9px] text-slate-500">{HERO_PROMO_SPECS.desktop.where}</p>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm sm:p-3">
+          <div className="mb-2 flex items-center gap-2 pointer-events-none" aria-hidden>
+            <div className="h-5 w-5 rounded-full bg-brand/20" />
+            <div className="h-2 flex-1 max-w-[40%] rounded bg-slate-100" />
+            <div className="ml-auto flex gap-1">
+              <div className="h-4 w-4 rounded bg-slate-100" />
+              <div className="h-4 w-4 rounded bg-slate-100" />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={openPicker}
-            className="group relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-lg border-2 border-brand bg-brand/10 transition hover:border-brand-dark hover:bg-brand/20 focus:outline-none focus:ring-2 focus:ring-brand/50"
-            aria-label={imageUrl ? "Cambiar imagen de PC" : "Subir imagen de PC"}
-          >
-            {imageUrl ? (
-              <Image src={imageUrl} alt="Vista previa PC" fill className="object-cover" unoptimized />
-            ) : (
-              <span className="px-1 text-center text-[9px] font-bold leading-tight text-brand-dark group-hover:underline">
-                TOCAR PARA
-                <br />
-                SUBIR
-              </span>
-            )}
-            <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-          </button>
+
+          {uploadButton("aspect-[3/1] min-h-[5rem] sm:min-h-[7rem]", "banner PC")}
+
+          <div className="mt-2 h-7 rounded-lg bg-slate-50 pointer-events-none" aria-hidden />
         </div>
-        <p className="mt-2 text-center text-[10px] text-slate-600">
-          {HERO_PROMO_SPECS.desktop.recommended}
+
+        <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-600">
+          <strong>{HERO_PROMO_SPECS.desktop.recommended}</strong>
+          <br />
+          También: {HERO_PROMO_SPECS.desktop.altRecommended} · {HERO_PROMO_SPECS.desktop.formats}
         </p>
         {imageUrl ? (
           <button
@@ -87,31 +100,33 @@ function ClickablePlacementPreview({
   }
 
   return (
-    <div className="rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 p-3">
-      <p className="mb-2 text-center text-[10px] font-semibold uppercase text-sky-800">
-        Vista celular — inicio
+    <div className="rounded-xl border-2 border-dashed border-sky-300 bg-sky-50/80 p-3 sm:p-4">
+      <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-sky-900">
+        Vista celular — banner del inicio
       </p>
-      <div className="mx-auto max-w-[140px] space-y-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-        <div className="h-4 rounded bg-slate-100 pointer-events-none" aria-hidden />
-        <button
-          type="button"
-          onClick={openPicker}
-          className="group relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-lg border-2 border-sky-400 bg-sky-100 transition hover:border-sky-600 hover:bg-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400/50"
-          aria-label={imageUrl ? "Cambiar imagen de celular" : "Subir imagen de celular"}
-        >
-          {imageUrl ? (
-            <Image src={imageUrl} alt="Vista previa celular" fill className="object-cover" unoptimized />
-          ) : (
-            <span className="px-1 text-center text-[8px] font-bold leading-tight text-sky-900 group-hover:underline">
-              TOCAR PARA SUBIR
-            </span>
-          )}
-          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-        </button>
-        <div className="h-3 rounded bg-slate-100 pointer-events-none" aria-hidden />
+      <p className="mb-3 text-center text-[9px] text-slate-500">{HERO_PROMO_SPECS.mobile.where}</p>
+
+      <div className="mx-auto max-w-[200px] rounded-2xl border-2 border-slate-300 bg-white p-1.5 shadow-sm sm:max-w-[220px]">
+        <div className="mb-1 flex items-center justify-between px-1 pointer-events-none" aria-hidden>
+          <div className="h-2 w-8 rounded bg-slate-200" />
+          <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+        </div>
+        <div className="space-y-1 rounded-xl bg-slate-50 p-1">
+          <div className="flex items-center gap-1 px-0.5 pointer-events-none" aria-hidden>
+            <div className="h-3 w-3 rounded-full bg-brand/20" />
+            <div className="h-1.5 flex-1 rounded bg-slate-200" />
+          </div>
+
+          {uploadButton("aspect-[16/9] min-h-[4.5rem]", "banner celular")}
+
+          <div className="h-4 rounded-md bg-white pointer-events-none" aria-hidden />
+        </div>
       </div>
-      <p className="mt-2 text-center text-[10px] text-slate-600">
-        {HERO_PROMO_SPECS.mobile.recommended}
+
+      <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-600">
+        <strong>{HERO_PROMO_SPECS.mobile.recommended}</strong>
+        <br />
+        {HERO_PROMO_SPECS.mobile.formats}
       </p>
       {imageUrl ? (
         <button
@@ -236,18 +251,22 @@ export function AdminHeroPromoManager({ initial }: Props) {
     }
   }
 
+  const hasPendingChanges =
+    Boolean(desktopFile) || Boolean(mobileFile) || clearDesktop || clearMobile;
+
   return (
     <div className="space-y-4 rounded-2xl border border-brand/20 bg-white p-5 shadow-sm">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">Imagen grande del inicio</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Banner principal del inicio</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Tocá el recuadro de la vista previa para subir la imagen. Una para PC (derecha del buscador) y otra
-          para celular (debajo del buscador).
+          La imagen ocupa <strong>todo el ancho</strong> arriba de la tienda, sin texto encima. Tocá la vista
+          previa para subir: una versión para PC (banner ancho 3:1) y otra para celular (16:9). Si subís solo
+          una, se usa en ambos dispositivos.
         </p>
       </div>
 
       <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           <ClickablePlacementPreview
             variant="desktop"
             imageUrl={desktopShown}
@@ -266,7 +285,7 @@ export function AdminHeroPromoManager({ initial }: Props) {
         {ok ? <p className="text-sm text-emerald-700">Guardado. Refrescá la tienda para verlo.</p> : null}
 
         <label className="block text-sm">
-          <span className="font-medium text-slate-700">Link al tocar la imagen (opcional)</span>
+          <span className="font-medium text-slate-700">Link al tocar el banner (opcional)</span>
           <input
             name="linkUrl"
             type="text"
@@ -278,10 +297,10 @@ export function AdminHeroPromoManager({ initial }: Props) {
 
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || !hasPendingChanges}
           className="rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
         >
-          {saving ? "Guardando…" : "Guardar imágenes del inicio"}
+          {saving ? "Guardando…" : "Guardar banner del inicio"}
         </button>
       </form>
     </div>

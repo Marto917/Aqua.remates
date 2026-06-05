@@ -1,23 +1,24 @@
 import { prisma } from "@/lib/prisma";
 
-/** Guía para el panel de vendedor/admin. */
+/** Guía para el panel de vendedor/admin (banner ancho completo en el inicio). */
 export const HERO_PROMO_SPECS = {
   desktop: {
-    label: "Computadora / tablet horizontal",
-    where: "Columna derecha del recuadro principal en la página de inicio (/)",
-    minWidth: 520,
-    minHeight: 650,
-    aspect: "4:5",
-    recommended: "1040 × 1300 px (Retina)",
+    label: "Computadora / tablet",
+    where: "Banner ancho completo arriba de todo en la página de inicio (/)",
+    minWidth: 1200,
+    minHeight: 400,
+    aspect: "3:1",
+    recommended: "1920 × 640 px (3:1)",
+    altRecommended: "1680 × 560 px (21:9)",
     formats: "JPG, PNG o WebP",
   },
   mobile: {
     label: "Celular",
-    where: "Debajo del buscador, dentro del mismo recuadro del inicio (/)",
+    where: "Mismo banner a ancho completo en el inicio (versión mobile)",
     minWidth: 1080,
-    minHeight: 600,
+    minHeight: 608,
     aspect: "16:9",
-    recommended: "1080 × 600 px o más",
+    recommended: "1080 × 608 px (16:9)",
     formats: "JPG, PNG o WebP",
   },
 } as const;
