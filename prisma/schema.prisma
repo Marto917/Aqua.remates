@@ -464,5 +464,12 @@ model StoreSettings {
   themeBrandMuted          String?
   /// Imagen de pie de página (full width). Recomendado 1920×400 px.
   footerImageUrl           String?
+  /// Promo global en catálogo: círculo de descuento + precio tachado.
+  catalogPromoEnabled      Boolean  @default(false)
+  catalogPromoBadgePercent Int?
+  /// Descuento % sobre precio transferencia (ej. 15 = 15% off).
+  catalogPromoDiscountPercent Int?
+  /// IDs de categorías incluidas. Vacío/null = todas las categorías.
+  catalogPromoCategoryIds  Json?
   updatedAt               DateTime @updatedAt
 }

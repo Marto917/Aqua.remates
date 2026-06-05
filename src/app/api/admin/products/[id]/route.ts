@@ -221,26 +221,6 @@ export async function POST(
     return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
   }
 
-  if (intent === "update_promo") {
-    const showPromoBadge = formData.get("showPromoBadge") === "on";
-    const badgeRaw = String(formData.get("promoBadgePercent") ?? "").trim();
-    const priceRaw = String(formData.get("promoPrice") ?? "").trim();
-    const promoBadgePercent = badgeRaw ? Number(badgeRaw) : null;
-    const promoPrice = priceRaw ? Number(priceRaw) : null;
-
-    await prisma.product.update({
-      where: { id },
-      data: {
-        showPromoBadge,
-        promoBadgePercent:
-          promoBadgePercent != null && Number.isFinite(promoBadgePercent) ? promoBadgePercent : null,
-        promoPrice: promoPrice != null && Number.isFinite(promoPrice) ? promoPrice : null,
-      },
-    });
-
-    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
-  }
-
   if (intent === "update_visibility") {
     const parsed = updateVisibilitySchema.safeParse({
       catalogVisibility: formData.get("catalogVisibility"),

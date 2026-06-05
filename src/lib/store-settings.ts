@@ -1,3 +1,8 @@
+import {
+  DEFAULT_CATALOG_PROMO,
+  type CatalogPromoSettings,
+  getCatalogPromoSettings,
+} from "@/lib/catalog-promo";
 import { prisma } from "@/lib/prisma";
 
 export type StoreSettingsData = {
@@ -12,6 +17,7 @@ export type StoreSettingsData = {
   themeBrandDark: string | null;
   themeBrandMuted: string | null;
   footerImageUrl: string | null;
+  catalogPromo: CatalogPromoSettings;
 };
 
 const DEFAULTS: StoreSettingsData = {
@@ -26,13 +32,17 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandDark: null,
   themeBrandMuted: null,
   footerImageUrl: null,
+  catalogPromo: DEFAULT_CATALOG_PROMO,
 };
 
 export async function getStoreSettings(): Promise<StoreSettingsData> {
   try {
-    const row = await prisma.storeSettings.findUnique({ where: { id: "default" } });
+    const [row, catalogPromo] = await Promise.all([
+      prisma.storeSettings.findUnique({ where: { id: "default" } }),
+      getCatalogPromoSettings(),
+    ]);
     if (!row) {
-      return DEFAULTS;
+      return { ...DEFAULTS, catalogPromo };
     }
     return {
       bankHolder: row.bankHolder,
@@ -46,6 +56,7 @@ export async function getStoreSettings(): Promise<StoreSettingsData> {
       themeBrandDark: row.themeBrandDark,
       themeBrandMuted: row.themeBrandMuted,
       footerImageUrl: row.footerImageUrl,
+      catalogPromo,
     };
   } catch {
     return DEFAULTS;

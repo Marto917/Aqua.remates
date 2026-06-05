@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_CATALOG_PROMO } from "@/lib/catalog-promo";
 import type { StoreSettingsData } from "@/lib/store-settings";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -15,6 +16,7 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandDark: null,
   themeBrandMuted: null,
   footerImageUrl: null,
+  catalogPromo: DEFAULT_CATALOG_PROMO,
 };
 
 const StoreSettingsContext = createContext<StoreSettingsData>(DEFAULTS);

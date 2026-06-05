@@ -33,9 +33,7 @@ type Product = {
   listPrice: unknown;
   retailPrice: unknown;
   discountRetailPercent?: number;
-  promoPrice?: unknown | null;
-  showPromoBadge?: boolean;
-  promoBadgePercent?: number | null;
+  categoryId: string;
 };
 
 type ProductAddToCartProps = {

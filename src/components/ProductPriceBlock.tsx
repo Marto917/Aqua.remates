@@ -1,3 +1,6 @@
+"use client";
+
+import { useStoreSettings } from "@/contexts/store-settings-context";
 import { getStorePriceDisplay } from "@/lib/product-pricing-display";
 import { getProductPromoDisplay } from "@/lib/product-promo";
 
@@ -5,9 +8,7 @@ type Props = {
   product: {
     listPrice: unknown;
     retailPrice: unknown;
-    promoPrice?: unknown | null;
-    showPromoBadge?: boolean;
-    promoBadgePercent?: number | null;
+    categoryId?: string | null;
   };
   size?: "card" | "detail";
   showMercadoPago?: boolean;
@@ -18,9 +19,10 @@ export function ProductPriceBlock({
   size = "card",
   showMercadoPago = false,
 }: Props) {
+  const settings = useStoreSettings();
   const { listFormatted, transferFormatted, mercadoPagoFormatted, listAmount, transferAmount } =
     getStorePriceDisplay(product);
-  const promo = getProductPromoDisplay(product);
+  const promo = getProductPromoDisplay(product, settings.catalogPromo);
   const showListOnCard = listAmount > transferAmount + 0.01;
   const displayPrice = promo.showPromoPrice ? promo.promoPriceFormatted! : transferFormatted;
   const strikePrice = promo.showPromoPrice ? promo.normalTransferFormatted : null;

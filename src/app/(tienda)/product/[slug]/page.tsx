@@ -107,9 +107,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           retailPrice: product.retailPrice,
           discountRetailPercent: product.discountRetailPercent,
           imageScale: product.imageScale,
-          promoPrice: product.promoPrice,
-          showPromoBadge: product.showPromoBadge,
-          promoBadgePercent: product.promoBadgePercent,
+          categoryId: product.categoryId,
         }}
         variants={product.variants.map((v) => ({
           id: v.id,

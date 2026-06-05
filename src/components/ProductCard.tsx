@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import { WishlistButton } from "@/components/WishlistButton";
+import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { getProductPromoDisplay } from "@/lib/product-promo";
@@ -21,9 +22,7 @@ type ProductCardProps = {
     listPrice: unknown;
     retailPrice: unknown;
     discountRetailPercent?: number;
-    promoPrice?: unknown | null;
-    showPromoBadge?: boolean;
-    promoBadgePercent?: number | null;
+    categoryId: string;
     variants: {
       id: string;
       colorLabel: string;
@@ -35,6 +34,7 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
+  const settings = useStoreSettings();
   const colors = product.variants.slice(0, 6);
   const [selectedVariantId, setSelectedVariantId] = useState<string>(colors[0]?.id ?? "");
 
@@ -47,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const shortDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
   const imagePosition = selectedVariant?.imagePosition ?? product.imagePosition;
   const imageScale = Number(selectedVariant?.imageScale ?? product.imageScale ?? 1);
-  const promo = getProductPromoDisplay(product);
+  const promo = getProductPromoDisplay(product, settings.catalogPromo);
 
   return (
     <article className="group flex flex-col bg-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-slate-200/80">

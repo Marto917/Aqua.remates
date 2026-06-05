@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminProductEditDetails } from "@/components/admin/AdminProductEditDetails";
-import { AdminProductPromoForm } from "@/components/admin/AdminProductPromoForm";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { prisma } from "@/lib/prisma";
@@ -73,14 +72,6 @@ export default async function AdminProductoImagenesPage({
         wholesalePrice={Number(product.wholesalePrice)}
         categories={categories}
         categoryName={product.category.name}
-      />
-
-      <AdminProductPromoForm
-        productId={product.id}
-        showPromoBadge={product.showPromoBadge}
-        promoBadgePercent={product.promoBadgePercent}
-        promoPrice={product.promoPrice != null ? Number(product.promoPrice) : null}
-        retailPrice={Number(product.retailPrice)}
       />
 
       <form
