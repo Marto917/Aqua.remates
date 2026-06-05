@@ -109,6 +109,7 @@ export default async function RetailShippingTicketPage({ params }: PageProps) {
           orderId={order.id}
           buyerName={order.buyerName}
           riders={activeRiders}
+          isPacked={order.packedAt != null}
         />
       </div>
     );

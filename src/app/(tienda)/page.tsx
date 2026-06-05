@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
-import { HomeHeroPromoDesktop, HomeHeroPromoMobile } from "@/components/home/HomeHeroPromo";
+import { HomeHeroBanner } from "@/components/home/HomeHeroPromo";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
 import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
 import { getHeroPromoSettings } from "@/lib/hero-promo";
@@ -54,52 +54,10 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8 sm:space-y-10">
-      <section className="relative overflow-hidden rounded-3xl border border-teal-100/80 bg-gradient-to-b from-white via-white to-brand-muted/50 shadow-sm">
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/25 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgb(255_255_255/0.5)_50%,transparent_100%)] opacity-40"
-          aria-hidden
-        />
+      <HomeHeroBanner hero={heroPromo} />
 
-        <div className="relative z-10 grid gap-8 px-4 py-7 sm:px-8 sm:py-10 lg:grid-cols-[1fr_minmax(0,280px)] lg:items-center lg:gap-12">
-          <div className="text-center sm:text-left">
-            <p className="flex justify-center sm:justify-start">
-              <span className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-muted/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
-                Bazar y hogar
-              </span>
-            </p>
-            <h1 className="mt-4 text-balance text-2xl font-bold leading-[1.2] tracking-tight text-slate-900 min-[400px]:text-3xl sm:text-4xl sm:leading-[1.15] lg:text-[2.5rem]">
-              Todo para tu casa, <span className="text-brand-dark">en un solo lugar</span>
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-slate-600 sm:mx-0 sm:text-lg">
-              Navegá el catálogo, elegí tus productos y comprá fácil desde tu celular o computadora.
-            </p>
-            <div className="mt-6 flex justify-center sm:justify-start">
-              <Link
-                href="/catalog"
-                className="inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/25 active:bg-brand-dark sm:min-h-0 sm:w-auto sm:py-2.5 sm:hover:bg-brand-dark"
-              >
-                Ver catálogo
-              </Link>
-            </div>
-            <div id="buscar" className="mx-auto mt-6 w-full max-w-xl scroll-mt-28 sm:mx-0">
-              <p className="mb-2 text-center text-xs font-medium text-slate-500 sm:text-left">
-                Buscar en el catálogo
-              </p>
-              <HomeHeroSearch />
-            </div>
-            <HomeHeroPromoMobile hero={heroPromo} />
-          </div>
-
-          <HomeHeroPromoDesktop hero={heroPromo} />
-        </div>
+      <section id="buscar" className="scroll-mt-28 rounded-2xl border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5">
+        <HomeHeroSearch />
       </section>
 
       {carouselBanners.length > 0 ? (

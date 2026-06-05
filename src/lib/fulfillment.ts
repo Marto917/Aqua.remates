@@ -23,6 +23,15 @@ export function canDispatchAfterPack(
   return deliveryStatus === "PENDING" || deliveryStatus == null;
 }
 
+export function canAssignRider(
+  packedAt: Date | null | undefined,
+  deliveryStatus: DeliveryDispatchStatus | null | undefined,
+): boolean {
+  if (!isOrderPacked(packedAt)) return false;
+  if (deliveryStatus === "DELIVERED") return false;
+  return true;
+}
+
 export function fulfillmentStatusLabel(params: {
   packedAt: Date | null | undefined;
   shippingMethod: RetailShippingMethod;

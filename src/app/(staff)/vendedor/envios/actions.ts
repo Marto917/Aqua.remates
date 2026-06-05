@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
-import { canDispatchAfterPack, canMarkPacked } from "@/lib/fulfillment";
+import { canAssignRider, canDispatchAfterPack, canMarkPacked } from "@/lib/fulfillment";
 import { sendOrderDispatchedEmail, sendOrderPackedEmail } from "@/lib/order-fulfillment-emails";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
@@ -34,14 +34,19 @@ export async function assignRiderToOrderAction(
 
   const order = await prisma.retailOrder.findUnique({
     where: { id: orderId },
-    select: { shippingMethod: true, deliveryStatus: true },
+    select: { shippingMethod: true, deliveryStatus: true, packedAt: true },
   });
   if (!order) return { ok: false, error: "Pedido no encontrado." };
   if (order.shippingMethod !== "DELIVERY") {
     return { ok: false, error: "Solo se asignan repartidores a envíos a domicilio." };
   }
-  if (order.deliveryStatus === "DELIVERED") {
-    return { ok: false, error: "El pedido ya fue entregado." };
+  if (!canAssignRider(order.packedAt, order.deliveryStatus)) {
+    return {
+      ok: false,
+      error: order.packedAt
+        ? "El pedido ya fue entregado o no admite cambio de repartidor."
+        : "Primero tenés que armar el pedido antes de asignar un repartidor.",
+    };
   }
 
   await prisma.retailOrder.update({

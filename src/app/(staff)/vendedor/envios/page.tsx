@@ -61,7 +61,7 @@ function buildOrderActions(order: {
     items.push({
       label: "Ticket / imprimir",
       disabled: true,
-      hint: "Asigná repartidor primero",
+      hint: packed ? "Asigná repartidor primero" : "Armá el pedido primero",
     });
   } else {
     items.push({

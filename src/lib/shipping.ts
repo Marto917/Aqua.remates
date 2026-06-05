@@ -133,12 +133,14 @@ export function buildShippingQrPayload(params: ShippingQrPayload): string {
   return JSON.stringify(payload);
 }
 
-/** Envío a domicilio: el ticket/QR solo se genera con repartidor asignado. */
+/** Envío a domicilio: ticket/QR solo con pedido armado y repartidor asignado. */
 export function canPrintRetailDeliveryTicket(order: {
   shippingMethod: RetailShippingMethod;
   assignedRiderId: string | null | undefined;
+  packedAt?: Date | null;
 }): boolean {
   if (order.shippingMethod !== "DELIVERY") return true;
+  if (!order.packedAt) return false;
   return Boolean(order.assignedRiderId);
 }
 

@@ -45,6 +45,7 @@ export function RiderAssignControls({
   }
 
   const canAssign =
+    isPacked &&
     deliveryStatus !== "DELIVERED" &&
     (!assignedRider || deliveryStatus !== "DISPATCHED");
   const showAssignPanel = canAssign && (expanded || !assignedRider);
@@ -116,7 +117,9 @@ export function RiderAssignControls({
       ) : null}
 
       {!isPacked && deliveryStatus !== "DELIVERED" ? (
-        <p className="text-[10px] text-amber-700">Armá el pedido antes de emitir.</p>
+        <p className="text-[10px] text-amber-700">
+          Armá el pedido antes de asignar repartidor o emitir el envío.
+        </p>
       ) : null}
     </div>
   );
