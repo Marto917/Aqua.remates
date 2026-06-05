@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { RetailOrderStatus } from "@prisma/client";
 import Image from "next/image";
 import { updateRetailOrderStatus } from "../actions";
+import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { TransferReviewButtons } from "@/components/staff/TransferReviewButtons";
+import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { formatArs } from "@/lib/currency";
 import {
   retailOrderStatusLabel,
@@ -80,6 +82,19 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
           </span>
         </div>
       </div>
+
+      {isHomeDelivery(order.shippingMethod) && order.deliveryStatus === "DELIVERED" ? (
+        <DeliveryDeliveredNotice
+          deliveredAt={order.deliveryDeliveredAt}
+          buyerName={order.buyerName}
+          variant="staff"
+        />
+      ) : null}
+      {isHomeDelivery(order.shippingMethod) && order.deliveryStatus && order.deliveryStatus !== "DELIVERED" ? (
+        <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+          Estado de envío: <strong>{deliveryDispatchStatusLabel(order.deliveryStatus)}</strong>
+        </p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

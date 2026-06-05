@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
 import { canDispatchAfterPack, canMarkPacked } from "@/lib/fulfillment";
 import { sendOrderDispatchedEmail, sendOrderPackedEmail } from "@/lib/order-fulfillment-emails";
 import { prisma } from "@/lib/prisma";
@@ -195,9 +196,7 @@ export async function markPickupDeliveredAction(orderId: string): Promise<PackRe
     },
   });
 
-  revalidatePath("/vendedor/envios");
-  revalidatePath(`/vendedor/envios/minorista/${orderId}/armar`);
-  revalidatePath("/cuenta/mis-compras");
+  revalidatePathsAfterRiderDelivery(orderId);
 
   return { ok: true };
 }

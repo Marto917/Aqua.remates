@@ -1,4 +1,5 @@
 import { sendOrderDeliveredEmail } from "@/lib/order-fulfillment-emails";
+import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
 import { prisma } from "@/lib/prisma";
 import { deliveryCodesMatch } from "@/lib/delivery-code";
 import { canConfirmDelivery } from "@/lib/delivery-dispatch";
@@ -117,6 +118,7 @@ export async function confirmRiderDelivery(params: {
   });
 
   await sendOrderDeliveredEmail(order);
+  revalidatePathsAfterRiderDelivery(params.orderId);
 
   return { ok: true };
 }
