@@ -42,31 +42,50 @@ export function AdminCatalogPromoManager({ initial, categories }: Props) {
     setError(null);
     setOk(false);
 
-    const res = await fetch("/api/admin/catalog-promo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        enabled,
-        badgePercent: badgePercent ? Number(badgePercent) : null,
-        discountPercent: discountPercent ? Number(discountPercent) : null,
-        categoryIds: allCategories ? [] : selectedCategoryIds,
-      }),
-    });
-    const data = (await res.json()) as { error?: string; settings?: CatalogPromoSettings };
-    setSaving(false);
-    if (!res.ok || !data.settings) {
-      setError(data.error ?? "No se pudo guardar.");
-      return;
+    try {
+      const res = await fetch("/api/admin/catalog-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enabled,
+          badgePercent: badgePercent.trim() ? Number(badgePercent) : null,
+          discountPercent: discountPercent.trim() ? Number(discountPercent) : null,
+          categoryIds: allCategories ? [] : selectedCategoryIds,
+        }),
+      });
+
+      const raw = await res.text();
+      let data: { error?: string; settings?: CatalogPromoSettings } = {};
+      try {
+        data = raw ? (JSON.parse(raw) as typeof data) : {};
+      } catch {
+        data = {};
+      }
+
+      if (!res.ok || !data.settings) {
+        setError(
+          data.error ??
+            (res.status === 500
+              ? "Error del servidor. ¿Corriste la migración de base de datos (npm run db:migrate)?"
+              : "No se pudo guardar."),
+        );
+        return;
+      }
+
+      setSettings(data.settings);
+      setEnabled(data.settings.enabled);
+      setBadgePercent(data.settings.badgePercent != null ? String(data.settings.badgePercent) : "");
+      setDiscountPercent(
+        data.settings.discountPercent != null ? String(data.settings.discountPercent) : "",
+      );
+      setSelectedCategoryIds(data.settings.categoryIds);
+      setAllCategories(data.settings.categoryIds.length === 0);
+      setOk(true);
+    } catch {
+      setError("No se pudo conectar con el servidor. Revisá tu conexión e intentá de nuevo.");
+    } finally {
+      setSaving(false);
     }
-    setSettings(data.settings);
-    setEnabled(data.settings.enabled);
-    setBadgePercent(data.settings.badgePercent != null ? String(data.settings.badgePercent) : "");
-    setDiscountPercent(
-      data.settings.discountPercent != null ? String(data.settings.discountPercent) : "",
-    );
-    setSelectedCategoryIds(data.settings.categoryIds);
-    setAllCategories(data.settings.categoryIds.length === 0);
-    setOk(true);
   }
 
   return (
