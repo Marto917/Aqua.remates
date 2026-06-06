@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -96,10 +96,12 @@ export async function POST(req: Request) {
       where: { id: "default" },
       data: {
         catalogPromoEnabled: parsed.data.enabled,
-        catalogPromoRules: parsed.data.enabled ? catalogPromoRulesPayload(settingsPayload) : null,
+        catalogPromoRules: parsed.data.enabled
+          ? catalogPromoRulesPayload(settingsPayload)
+          : Prisma.DbNull,
         catalogPromoBadgePercent: null,
         catalogPromoDiscountPercent: null,
-        catalogPromoCategoryIds: null,
+        catalogPromoCategoryIds: Prisma.DbNull,
       },
     });
 
