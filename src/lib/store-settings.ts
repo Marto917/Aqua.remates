@@ -51,7 +51,8 @@ const STORE_SETTINGS_CREATE = {
   catalogPromoEnabled: false,
   catalogPromoBadgePercent: null,
   catalogPromoDiscountPercent: null,
-  catalogPromoCategoryIds: [] as string[],
+  catalogPromoCategoryIds: null,
+  catalogPromoRules: null,
 };
 
 export async function getStoreSettings(): Promise<StoreSettingsData> {

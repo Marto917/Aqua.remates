@@ -1,26 +1,25 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCatalogPromoSettings } from "@/lib/catalog-promo";
+import {
+  catalogPromoRulesPayload,
+  getCatalogPromoSettings,
+  type CatalogPromoMode,
+} from "@/lib/catalog-promo";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { ensureStoreSettings } from "@/lib/store-settings";
 
-const nullablePercent = z.preprocess(
-  (v) => (v === null || v === undefined || v === "" ? null : v),
-  z.union([z.coerce.number().int().min(1).max(99), z.null()]),
-);
-
-const nullableDiscount = z.preprocess(
-  (v) => (v === null || v === undefined || v === "" ? null : v),
-  z.union([z.coerce.number().int().min(1).max(90), z.null()]),
-);
+const percentSchema = z.coerce.number().int().min(1).max(99);
 
 const schema = z.object({
   enabled: z.boolean(),
-  badgePercent: nullablePercent,
-  discountPercent: nullableDiscount,
-  categoryIds: z.array(z.string().min(1)),
+  mode: z.enum(["global", "byCategory"]),
+  globalPercent: z.preprocess(
+    (v) => (v === null || v === undefined || v === "" ? null : v),
+    z.union([percentSchema, z.null()]),
+  ),
+  categoryPercents: z.record(z.string(), percentSchema),
 });
 
 function isMissingColumnError(e: unknown): boolean {
@@ -70,17 +69,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  const mode = parsed.data.mode as CatalogPromoMode;
+
   if (parsed.data.enabled) {
-    if (parsed.data.discountPercent == null) {
+    if (mode === "global" && parsed.data.globalPercent == null) {
+      return NextResponse.json({ error: "Indicá el % de descuento." }, { status: 400 });
+    }
+    if (mode === "byCategory" && Object.keys(parsed.data.categoryPercents).length === 0) {
       return NextResponse.json(
-        { error: "Indicá el % de descuento sobre el precio transferencia." },
+        { error: "Indicá el % de descuento en al menos una categoría." },
         { status: 400 },
       );
     }
-    if (parsed.data.badgePercent == null) {
-      return NextResponse.json({ error: "Indicá el % del círculo de descuento." }, { status: 400 });
-    }
   }
+
+  const settingsPayload = {
+    enabled: parsed.data.enabled,
+    mode,
+    globalPercent: mode === "global" ? parsed.data.globalPercent : null,
+    categoryPercents: mode === "byCategory" ? parsed.data.categoryPercents : {},
+  };
 
   try {
     await ensureStoreSettings();
@@ -88,10 +96,10 @@ export async function POST(req: Request) {
       where: { id: "default" },
       data: {
         catalogPromoEnabled: parsed.data.enabled,
-        catalogPromoBadgePercent: parsed.data.enabled ? parsed.data.badgePercent : null,
-        catalogPromoDiscountPercent: parsed.data.enabled ? parsed.data.discountPercent : null,
-        catalogPromoCategoryIds:
-          parsed.data.categoryIds.length > 0 ? parsed.data.categoryIds : [],
+        catalogPromoRules: parsed.data.enabled ? catalogPromoRulesPayload(settingsPayload) : null,
+        catalogPromoBadgePercent: null,
+        catalogPromoDiscountPercent: null,
+        catalogPromoCategoryIds: null,
       },
     });
 
