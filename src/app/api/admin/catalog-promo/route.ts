@@ -25,7 +25,7 @@ const schema = z.object({
 
 function isMissingColumnError(e: unknown): boolean {
   const msg = e instanceof Error ? e.message : String(e);
-  return /catalogPromo/i.test(msg) || /column.*does not exist/i.test(msg);
+  return /column .* does not exist/i.test(msg) || /Unknown field .*catalogPromo/i.test(msg);
 }
 
 export async function GET() {

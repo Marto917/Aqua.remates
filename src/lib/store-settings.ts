@@ -35,6 +35,25 @@ const DEFAULTS: StoreSettingsData = {
   catalogPromo: DEFAULT_CATALOG_PROMO,
 };
 
+/** Valores para crear la fila única en Prisma (sin objetos anidados). */
+const STORE_SETTINGS_CREATE = {
+  bankHolder: DEFAULTS.bankHolder,
+  bankAlias: DEFAULTS.bankAlias,
+  bankCbu: "0000003100098765432101",
+  bankExtraNotes: DEFAULTS.bankExtraNotes,
+  transferDiscountPercent: DEFAULTS.transferDiscountPercent,
+  mercadoPagoMarkupPercent: DEFAULTS.mercadoPagoMarkupPercent,
+  discountBadgeLabel: DEFAULTS.discountBadgeLabel,
+  themeBrandPrimary: DEFAULTS.themeBrandPrimary,
+  themeBrandDark: DEFAULTS.themeBrandDark,
+  themeBrandMuted: DEFAULTS.themeBrandMuted,
+  footerImageUrl: DEFAULTS.footerImageUrl,
+  catalogPromoEnabled: false,
+  catalogPromoBadgePercent: null,
+  catalogPromoDiscountPercent: null,
+  catalogPromoCategoryIds: [] as string[],
+};
+
 export async function getStoreSettings(): Promise<StoreSettingsData> {
   try {
     const [row, catalogPromo] = await Promise.all([
@@ -67,6 +86,6 @@ export async function ensureStoreSettings() {
   await prisma.storeSettings.upsert({
     where: { id: "default" },
     update: {},
-    create: { id: "default", ...DEFAULTS, bankCbu: "0000003100098765432101" },
+    create: { id: "default", ...STORE_SETTINGS_CREATE },
   });
 }
