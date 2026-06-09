@@ -2,6 +2,7 @@ import type { RetailOrder, RetailOrderItem, RetailShippingMethod } from "@prisma
 import { formatArs } from "@/lib/currency";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { sendEmail } from "@/lib/send-email";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { isHomeDelivery } from "@/lib/shipping";
 
 type OrderWithItems = RetailOrder & { items: RetailOrderItem[] };
@@ -47,6 +48,7 @@ export async function sendOrderPackedEmail(order: OrderWithItems): Promise<void>
   const method = order.shippingMethod;
   const isPickup = method === "PICKUP";
   const isDelivery = isHomeDelivery(method);
+  const ridersOn = await isRidersAppEnabled();
 
   let headline = "Tu pedido ya está armado";
   let detail =
@@ -57,8 +59,9 @@ export async function sendOrderPackedEmail(order: OrderWithItems): Promise<void>
     detail =
       "<p>Ya podés pasar por la sucursal a retirarlo. Traé un documento y mencioná tu nombre o el mail de la compra.</p>";
   } else if (isDelivery) {
-    detail =
-      "<p>El pedido saldrá en breve con el repartidor. Cuando esté en camino te enviaremos otro mail con el código de entrega.</p>";
+    detail = ridersOn
+      ? "<p>El pedido saldrá en breve con el repartidor. Cuando esté en camino te enviaremos otro mail con el código de entrega.</p>"
+      : "<p>El pedido está listo para salir a domicilio. Te contactaremos para coordinar la entrega.</p>";
   } else {
     detail =
       "<p>Un vendedor te va a contactar para coordinar el envío. Si tenés dudas, respondé al mail de confirmación.</p>";

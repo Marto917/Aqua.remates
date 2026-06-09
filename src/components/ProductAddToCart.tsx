@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { FreeShippingBadge } from "@/components/FreeShippingBadge";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
 import { useCart } from "@/contexts/cart-context";
+import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
+import { getProductFreeShippingDisplay } from "@/lib/free-shipping";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type VariantImage = {
@@ -70,6 +73,11 @@ export function ProductAddToCart({
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const { addLine, hydrated } = useCart();
+  const storeSettings = useStoreSettings();
+  const freeShipping = getProductFreeShippingDisplay(
+    product.categoryId,
+    storeSettings.freeShipping,
+  );
 
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
 
@@ -196,6 +204,10 @@ export function ProductAddToCart({
         </div>
 
         <ProductPriceBlock product={product} size="detail" showMercadoPago />
+
+        {freeShipping ? (
+          <FreeShippingBadge display={freeShipping} variant="inline" />
+        ) : null}
 
         <div>
           <p className="mb-2 text-sm font-semibold text-slate-800">Color</p>

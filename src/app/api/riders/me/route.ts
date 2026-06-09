@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { extractBearerToken, verifyRiderToken } from "@/lib/rider-auth";
 
 /** Perfil del rider autenticado (solo tabla Rider). */
 export async function GET(req: Request) {
+  if (!(await isRidersAppEnabled())) {
+    return ridersAppDisabledResponse();
+  }
+
   const token = extractBearerToken(req);
   if (!token) {
     return NextResponse.json({ error: "Token requerido." }, { status: 401 });

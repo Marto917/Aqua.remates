@@ -3,13 +3,18 @@ import { notFound } from "next/navigation";
 import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { formatRiderNumber } from "@/lib/rider-number";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { getRiderTripsByNumber } from "@/lib/rider-trips";
 import { requireStaff } from "@/lib/staff-auth";
+import { redirect } from "next/navigation";
 
 type PageProps = { params: Promise<{ riderNumber: string }> };
 
 export default async function RepartidorViajesDetailPage({ params }: PageProps) {
   await requireStaff();
+  if (!(await isRidersAppEnabled())) {
+    redirect("/vendedor/envios");
+  }
   const { riderNumber: raw } = await params;
   const riderNumber = Number(raw);
   if (!Number.isFinite(riderNumber) || riderNumber < 1) notFound();

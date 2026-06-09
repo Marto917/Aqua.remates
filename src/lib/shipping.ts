@@ -133,14 +133,18 @@ export function buildShippingQrPayload(params: ShippingQrPayload): string {
   return JSON.stringify(payload);
 }
 
-/** Envío a domicilio: ticket/QR solo con pedido armado y repartidor asignado. */
-export function canPrintRetailDeliveryTicket(order: {
-  shippingMethod: RetailShippingMethod;
-  assignedRiderId: string | null | undefined;
-  packedAt?: Date | null;
-}): boolean {
+/** Envío a domicilio: con app riders hace falta repartidor; sin app, solo pedido armado. */
+export function canPrintRetailDeliveryTicket(
+  order: {
+    shippingMethod: RetailShippingMethod;
+    assignedRiderId: string | null | undefined;
+    packedAt?: Date | null;
+  },
+  ridersAppEnabled = true,
+): boolean {
   if (order.shippingMethod !== "DELIVERY") return true;
   if (!order.packedAt) return false;
+  if (!ridersAppEnabled) return true;
   return Boolean(order.assignedRiderId);
 }
 

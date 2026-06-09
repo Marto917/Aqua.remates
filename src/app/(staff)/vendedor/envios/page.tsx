@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { RetailShippingMethod } from "@prisma/client";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { EnviosLiveRefresh } from "@/components/shipping/EnviosLiveRefresh";
+import { HomeDeliverButton } from "@/components/shipping/HomeDeliverButton";
 import { PickupDeliverButton } from "@/components/shipping/PickupDeliverButton";
 import { RiderAssignControls } from "@/components/shipping/RiderAssignControls";
 import { ShippingActionsMenu, type ShippingMenuItem } from "@/components/shipping/ShippingActionsMenu";
@@ -12,6 +13,7 @@ import {
   isOrderPacked,
 } from "@/lib/fulfillment";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
 import {
@@ -33,15 +35,18 @@ const FILTERS: { key: FilterKey; label: string; method?: RetailShippingMethod }[
 
 type PageProps = { searchParams: Promise<{ filtro?: string }> };
 
-function buildOrderActions(order: {
-  id: string;
-  shippingMethod: RetailShippingMethod;
-  packedAt: Date | null;
-  assignedRiderId: string | null;
-}): ShippingMenuItem[] {
+function buildOrderActions(
+  order: {
+    id: string;
+    shippingMethod: RetailShippingMethod;
+    packedAt: Date | null;
+    assignedRiderId: string | null;
+  },
+  ridersAppEnabled: boolean,
+): ShippingMenuItem[] {
   const packed = isOrderPacked(order.packedAt);
   const home = isHomeDelivery(order.shippingMethod);
-  const ticketOk = canPrintRetailDeliveryTicket(order);
+  const ticketOk = canPrintRetailDeliveryTicket(order, ridersAppEnabled);
 
   const items: ShippingMenuItem[] = [
     {
@@ -61,7 +66,11 @@ function buildOrderActions(order: {
     items.push({
       label: "Ticket / imprimir",
       disabled: true,
-      hint: packed ? "Asigná repartidor primero" : "Armá el pedido primero",
+      hint: packed
+        ? ridersAppEnabled
+          ? "Asigná repartidor primero"
+          : "Armá el pedido primero"
+        : "Armá el pedido primero",
     });
   } else {
     items.push({
@@ -88,6 +97,8 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
   const shippingWhere =
     activeFilter.method != null ? { shippingMethod: activeFilter.method } : {};
 
+  const ridersAppEnabled = await isRidersAppEnabled();
+
   const [retailOrders, wholesaleOrders, activeRiders] = await Promise.all([
     prisma.retailOrder.findMany({
       where: {
@@ -110,11 +121,13 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       take: 40,
       include: { items: true },
     }),
-    prisma.rider.findMany({
-      where: { isActive: true },
-      orderBy: { riderNumber: "asc" },
-      select: { riderNumber: true, name: true },
-    }),
+    ridersAppEnabled
+      ? prisma.rider.findMany({
+          where: { isActive: true },
+          orderBy: { riderNumber: "asc" },
+          select: { riderNumber: true, name: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const riderOptions = activeRiders.map((r) => ({
@@ -138,10 +151,14 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Gestión de envíos</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Armá pedidos, asigná repartidor y emití envíos.{" "}
-          <Link href="/vendedor/envios/repartidores" className="font-medium text-brand-dark underline">
-            Ver viajes por repartidor
-          </Link>
+          {ridersAppEnabled
+            ? "Armá pedidos, asigná repartidor y emití envíos."
+            : "Armá pedidos e imprimí tickets. Los repartidores los gestiona el local (sin app riders)."}{" "}
+          {ridersAppEnabled ? (
+            <Link href="/vendedor/envios/repartidores" className="font-medium text-brand-dark underline">
+              Ver viajes por repartidor
+            </Link>
+          ) : null}
         </p>
         <EnviosLiveRefresh enabled={inTransitCount > 0} />
       </header>
@@ -188,7 +205,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3">Entrega</th>
                 <th className="px-4 py-3">Total</th>
                 <th className="px-4 py-3">Estado</th>
-                <th className="px-4 py-3">Repartidor</th>
+                <th className="px-4 py-3">{ridersAppEnabled ? "Repartidor" : "Cierre"}</th>
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
@@ -252,7 +269,10 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                             })}
                           </span>
                           <p className="text-[11px] text-slate-500">{retailOrderStatusLabel[o.status]}</p>
-                          {isHomeDelivery(o.shippingMethod) && o.deliveryStatus === "DISPATCHED" && o.deliveryCode ? (
+                          {ridersAppEnabled &&
+                          isHomeDelivery(o.shippingMethod) &&
+                          o.deliveryStatus === "DISPATCHED" &&
+                          o.deliveryCode ? (
                             <p className="inline-flex rounded-md bg-sky-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-sky-900">
                               Código {o.deliveryCode}
                             </p>
@@ -273,7 +293,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {isHomeDelivery(o.shippingMethod) ? (
+                        {isHomeDelivery(o.shippingMethod) && ridersAppEnabled ? (
                           <RiderAssignControls
                             orderId={o.id}
                             riders={riderOptions}
@@ -286,12 +306,14 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
                             deliveryStatus={o.deliveryStatus}
                             isPacked={packed}
                           />
+                        ) : isHomeDelivery(o.shippingMethod) && packed && o.deliveryStatus !== "DELIVERED" ? (
+                          <HomeDeliverButton orderId={o.id} />
                         ) : (
                           <span className="text-xs text-slate-400">No aplica</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <ShippingActionsMenu items={buildOrderActions(o)} />
+                        <ShippingActionsMenu items={buildOrderActions(o, ridersAppEnabled)} />
                       </td>
                     </tr>
                   );

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractBearerToken, verifyRiderToken } from "@/lib/rider-auth";
 import { listRiderDeliveries } from "@/lib/rider-deliveries";
+import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { prisma } from "@/lib/prisma";
 
 async function requireActiveRider(req: Request) {
@@ -28,6 +29,10 @@ async function requireActiveRider(req: Request) {
 
 /** Entregas a domicilio emitidas y pendientes de confirmación con código. */
 export async function GET(req: Request) {
+  if (!(await isRidersAppEnabled())) {
+    return ridersAppDisabledResponse();
+  }
+
   const auth = await requireActiveRider(req);
   if ("error" in auth && auth.error) {
     return auth.error;

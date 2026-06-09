@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { StaffBackLink } from "@/components/staff/StaffBackLink";
 import { formatRiderNumber } from "@/lib/rider-number";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { getRiderTripSummaries } from "@/lib/rider-trips";
 import { requireStaff } from "@/lib/staff-auth";
+import { redirect } from "next/navigation";
 
 export default async function RepartidoresViajesPage() {
   await requireStaff();
+  if (!(await isRidersAppEnabled())) {
+    redirect("/vendedor/envios");
+  }
   const summaries = await getRiderTripSummaries();
 
   return (

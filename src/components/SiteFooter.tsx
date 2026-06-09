@@ -1,14 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import packageJson from "../../package.json";
+import { formatWhatsAppHref, normalizeSocialUrl } from "@/lib/brand-contact";
 import { resolveProductImageUrl } from "@/lib/product-images";
-
-const SOCIAL = {
-  instagram: "https://www.instagram.com/aqua.remates/",
-  tiktok: "#",
-} as const;
-
-const WHATSAPP = "1161153502";
 
 function SocialIconInstagram({ className }: { className?: string }) {
   return (
@@ -36,11 +30,26 @@ const navLinks = [
 
 type Props = {
   footerImageUrl?: string | null;
+  storePhone?: string | null;
+  storeInstagram?: string | null;
+  storeTiktok?: string | null;
+  storeAddress?: string | null;
 };
 
-export function SiteFooter({ footerImageUrl }: Props) {
+export function SiteFooter({
+  footerImageUrl,
+  storePhone,
+  storeInstagram,
+  storeTiktok,
+  storeAddress,
+}: Props) {
   const y = new Date().getFullYear();
-  const wa = WHATSAPP.trim() || "—";
+  const phone = storePhone?.trim() || "1161153502";
+  const waHref = formatWhatsAppHref(phone);
+  const instagram =
+    normalizeSocialUrl(storeInstagram, "instagram") ?? "https://www.instagram.com/aqua.remates/";
+  const tiktok = normalizeSocialUrl(storeTiktok, "tiktok");
+  const address = storeAddress?.trim();
   const customFooter = footerImageUrl?.trim();
 
   return (
@@ -90,13 +99,20 @@ export function SiteFooter({ footerImageUrl }: Props) {
         <div className="mx-auto mt-8 w-full max-w-sm rounded-xl border border-white/25 bg-white/5 px-5 py-4 text-center backdrop-blur-sm sm:max-w-md sm:px-6">
           <p className="text-xs font-medium uppercase tracking-wider text-white/70">Contacto</p>
           <p className="mt-3 text-sm leading-relaxed text-white/90">
-            <span className="block">Tel / WhatsApp {wa}</span>
+            {waHref ? (
+              <a href={waHref} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                Tel / WhatsApp {phone}
+              </a>
+            ) : (
+              <span className="block">Tel / WhatsApp {phone}</span>
+            )}
+            {address ? <span className="mt-2 block">{address}</span> : null}
           </p>
         </div>
 
         <div className="mt-8 flex items-center justify-center gap-5 sm:gap-6">
           <a
-            href={SOCIAL.instagram}
+            href={instagram}
             target="_blank"
             rel="noopener noreferrer"
             className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white transition active:scale-95 active:bg-white/20 sm:h-12 sm:w-12 sm:hover:border-white/50 sm:hover:bg-white/15"
@@ -104,15 +120,17 @@ export function SiteFooter({ footerImageUrl }: Props) {
           >
             <SocialIconInstagram className="h-6 w-6 sm:h-5 sm:w-5" />
           </a>
-          <a
-            href={SOCIAL.tiktok}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white transition active:scale-95 active:bg-white/20 sm:h-12 sm:w-12 sm:hover:border-white/50 sm:hover:bg-white/15"
-            aria-label="TikTok AQUA"
-          >
-            <SocialIconTiktok className="h-6 w-6 sm:h-5 sm:w-5" />
-          </a>
+          {tiktok ? (
+            <a
+              href={tiktok}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white transition active:scale-95 active:bg-white/20 sm:h-12 sm:w-12 sm:hover:border-white/50 sm:hover:bg-white/15"
+              aria-label="TikTok AQUA"
+            >
+              <SocialIconTiktok className="h-6 w-6 sm:h-5 sm:w-5" />
+            </a>
+          ) : null}
         </div>
 
         <p className="mx-auto mt-8 max-w-[20rem] text-balance text-xs leading-relaxed text-white/50 sm:max-w-lg">

@@ -4,6 +4,7 @@ import { formatArs } from "@/lib/currency";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/send-email";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { isHomeDelivery } from "@/lib/shipping";
 
 const CONFIRMABLE: RetailOrderStatus[] = [
@@ -31,7 +32,8 @@ export async function confirmRetailOrderForCustomer(orderId: string): Promise<vo
   const wasAlreadyConfirmed = order.status === "CONFIRMED";
   const billingMode: BillingMode =
     order.paymentMethod === RetailPaymentMethod.BANK_TRANSFER ? "NEGRO" : "BLANCO";
-  const needsCode = isHomeDelivery(order.shippingMethod) && !order.deliveryCode;
+  const ridersOn = await isRidersAppEnabled();
+  const needsCode = ridersOn && isHomeDelivery(order.shippingMethod) && !order.deliveryCode;
   const deliveryCode = needsCode ? generateDeliveryCode() : order.deliveryCode;
 
   await prisma.retailOrder.update({

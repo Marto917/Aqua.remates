@@ -477,5 +477,12 @@ model StoreSettings {
   catalogPromoRules        Json?
   /// Envío gratis: monto mínimo y/o categorías.
   freeShippingRules        Json?
+  /// App de repartidores (QR, código, asignación). Desactivado = envíos propios del cliente.
+  ridersAppEnabled         Boolean  @default(false)
+  brandLogoUrl             String?
+  storePhone               String?
+  storeInstagram           String?
+  storeTiktok              String?
+  storeAddress             String?
   updatedAt               DateTime @updatedAt
 }

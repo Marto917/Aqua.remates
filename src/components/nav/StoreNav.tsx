@@ -11,9 +11,10 @@ import type { Session } from "next-auth";
 
 type Props = {
   session: Session | null;
+  logoUrl?: string | null;
 };
 
-export async function StoreNav({ session }: Props) {
+export async function StoreNav({ session, logoUrl }: Props) {
   let profileImage: string | null = null;
   let profileName = session?.user?.name ?? "";
 
@@ -41,7 +42,7 @@ export async function StoreNav({ session }: Props) {
           className="flex shrink-0 items-center font-semibold text-brand-dark"
           aria-label="Inicio AQUA"
         >
-          <SiteLogo />
+          <SiteLogo logoUrl={logoUrl} />
         </Link>
 
         <div className="flex justify-center px-1">

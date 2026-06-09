@@ -11,8 +11,9 @@ export default async function VendedorHomePage() {
   let pendingRetail = 0;
   let pendienteConfirmacion = 0;
   let enviosDomicilio = 0;
+  let ridersAppEnabled = false;
   try {
-    ;[pendingRetail, pendienteConfirmacion, enviosDomicilio] = await Promise.all([
+    ;[pendingRetail, pendienteConfirmacion, enviosDomicilio, ridersAppEnabled] = await Promise.all([
       prisma.retailOrder.count({
         where: { status: { in: ["PENDING_TRANSFER", "TRANSFER_REPORTED"] } },
       }),
@@ -23,6 +24,9 @@ export default async function VendedorHomePage() {
           shippingMethod: "DELIVERY",
         },
       }),
+      prisma.storeSettings
+        .findUnique({ where: { id: "default" }, select: { ridersAppEnabled: true } })
+        .then((r) => r?.ridersAppEnabled ?? false),
     ]);
   } catch {
     /* sin DB */
@@ -80,21 +84,23 @@ export default async function VendedorHomePage() {
             Abrir envíos →
           </p>
         </Link>
-        <Link
-          href="/vendedor/envios/repartidores"
-          className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"
-        >
-          <p className="mb-2 text-2xl" aria-hidden>
-            🛵
-          </p>
-          <p className="font-semibold text-slate-900">Viajes por repartidor</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Registro de envíos asignados por número (#001, #002…) para liquidar pagos
-          </p>
-          <p className="mt-3 inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-900 group-hover:bg-violet-200">
-            Ver registro →
-          </p>
-        </Link>
+        {ridersAppEnabled ? (
+          <Link
+            href="/vendedor/envios/repartidores"
+            className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"
+          >
+            <p className="mb-2 text-2xl" aria-hidden>
+              🛵
+            </p>
+            <p className="font-semibold text-slate-900">Viajes por repartidor</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Registro de envíos asignados por número (#001, #002…) para liquidar pagos
+            </p>
+            <p className="mt-3 inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-900 group-hover:bg-violet-200">
+              Ver registro →
+            </p>
+          </Link>
+        ) : null}
         <Link
           href="/vendedor/pedidos"
           className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:shadow-md"

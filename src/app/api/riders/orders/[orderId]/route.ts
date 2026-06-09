@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { extractBearerToken, verifyRiderToken } from "@/lib/rider-auth";
 import { getRiderOrderAccess } from "@/lib/rider-order-access";
+import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { prisma } from "@/lib/prisma";
 
 const querySchema = z.object({
@@ -36,6 +37,10 @@ async function requireActiveRider(req: Request) {
  * Query opcional: ?riderNumber=3 (debe coincidir con el del QR y con la asignación).
  */
 export async function GET(req: Request, context: { params: Promise<{ orderId: string }> }) {
+  if (!(await isRidersAppEnabled())) {
+    return ridersAppDisabledResponse();
+  }
+
   const auth = await requireActiveRider(req);
   if ("error" in auth && auth.error) {
     return auth.error;

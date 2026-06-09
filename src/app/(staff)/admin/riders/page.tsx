@@ -1,5 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { AdminRidersAppToggle } from "@/components/admin/AdminRidersAppToggle";
 import { AdminRidersManager } from "@/components/admin/AdminRidersManager";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +11,8 @@ export default async function AdminRidersPage() {
     redirect("/admin");
   }
 
-  const riders = await prisma.rider.findMany({
+  const [riders, settings] = await Promise.all([
+    prisma.rider.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -21,7 +23,12 @@ export default async function AdminRidersPage() {
       isActive: true,
       createdAt: true,
     },
-  });
+  }),
+    prisma.storeSettings.findUnique({
+      where: { id: "default" },
+      select: { ridersAppEnabled: true },
+    }),
+  ]);
 
   const initialRiders = riders.map((r) => ({
     ...r,
@@ -36,6 +43,7 @@ export default async function AdminRidersPage() {
           Cuentas para la app de mapas. Solo el admin principal puede crearlas o desactivarlas.
         </p>
       </div>
+      <AdminRidersAppToggle initialEnabled={settings?.ridersAppEnabled ?? false} />
       <AdminRidersManager initialRiders={initialRiders} />
     </section>
   );

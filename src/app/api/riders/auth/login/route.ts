@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { signRiderToken } from "@/lib/rider-auth";
 
 const loginSchema = z.object({
@@ -11,6 +12,10 @@ const loginSchema = z.object({
 
 /** Login exclusivo para la app de riders. No expone otras tablas. */
 export async function POST(req: Request) {
+  if (!(await isRidersAppEnabled())) {
+    return ridersAppDisabledResponse();
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {

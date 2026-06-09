@@ -5,6 +5,7 @@ import { ShippingTicketPrint } from "@/components/shipping/ShippingTicketPrint";
 import { TicketRiderRequired } from "@/components/shipping/TicketRiderRequired";
 import { buildShippingQrPayload, isHomeDelivery } from "@/lib/shipping";
 import { buildRetailTicketData, retailOrderToQrPayload } from "@/lib/shipping-ticket";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-async function loadRetailTicket(id: string) {
+async function loadRetailTicket(id: string, ridersAppEnabled: boolean) {
   const order = await prisma.retailOrder.findUnique({
     where: { id },
     include: {
@@ -38,7 +39,7 @@ async function loadRetailTicket(id: string) {
     notFound();
   }
 
-  const qrPayload = retailOrderToQrPayload(order);
+  const qrPayload = retailOrderToQrPayload(order, { ridersAppEnabled });
   if (!qrPayload) {
     return { needsRider: true as const, order };
   }
@@ -59,14 +60,18 @@ export default async function RetailShippingTicketPage({ params }: PageProps) {
   let loadError: string | null = null;
   let activeRiders: { riderNumber: number; name: string }[] = [];
 
+  const ridersAppEnabled = await isRidersAppEnabled();
+
   try {
     [ticketData, activeRiders] = await Promise.all([
-      loadRetailTicket(id),
-      prisma.rider.findMany({
-        where: { isActive: true },
-        orderBy: { riderNumber: "asc" },
-        select: { riderNumber: true, name: true },
-      }),
+      loadRetailTicket(id, ridersAppEnabled),
+      ridersAppEnabled
+        ? prisma.rider.findMany({
+            where: { isActive: true },
+            orderBy: { riderNumber: "asc" },
+            select: { riderNumber: true, name: true },
+          })
+        : Promise.resolve([]),
     ]);
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e) {

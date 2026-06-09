@@ -1,13 +1,16 @@
 import Image from "next/image";
+import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
   size?: number;
   showText?: boolean;
   className?: string;
+  logoUrl?: string | null;
 };
 
-/** Logo de marca (imagen en public/logo-aqua.png). */
-export function SiteLogo({ size = 44, showText = false, className = "" }: Props) {
+/** Logo de marca (configurable en admin o public/logo-aqua.png). */
+export function SiteLogo({ size = 44, showText = false, className = "", logoUrl }: Props) {
+  const src = logoUrl?.trim() ? resolveProductImageUrl(logoUrl) : "/logo-aqua.png";
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <span
@@ -15,7 +18,7 @@ export function SiteLogo({ size = 44, showText = false, className = "" }: Props)
         style={{ width: size, height: size }}
       >
         <Image
-          src="/logo-aqua.png"
+          src={src}
           alt="AQUA"
           width={size}
           height={size}

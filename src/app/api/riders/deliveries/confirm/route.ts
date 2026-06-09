@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { extractBearerToken, verifyRiderToken } from "@/lib/rider-auth";
 import { confirmRiderDelivery } from "@/lib/rider-deliveries";
+import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
@@ -34,6 +35,10 @@ async function requireActiveRider(req: Request) {
 
 /** Finaliza una entrega validando el código de 4 dígitos del cliente. */
 export async function POST(req: Request) {
+  if (!(await isRidersAppEnabled())) {
+    return ridersAppDisabledResponse();
+  }
+
   const auth = await requireActiveRider(req);
   if ("error" in auth && auth.error) {
     return auth.error;

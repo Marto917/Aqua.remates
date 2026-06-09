@@ -1,3 +1,4 @@
+import { AdminBrandSettingsForm } from "@/components/admin/AdminBrandSettingsForm";
 import { AdminFooterImageForm } from "@/components/admin/AdminFooterImageForm";
 import { AdminStoreSettingsForm } from "@/components/admin/AdminStoreSettingsForm";
 import { getStoreSettings, ensureStoreSettings } from "@/lib/store-settings";
@@ -16,6 +17,15 @@ export default async function AdminConfiguracionPage() {
           Datos bancarios, colores, pie de página y textos de la tienda pública.
         </p>
       </div>
+      <AdminBrandSettingsForm
+        logoUrl={settings.brandLogoUrl}
+        contact={{
+          storePhone: settings.storePhone,
+          storeInstagram: settings.storeInstagram,
+          storeTiktok: settings.storeTiktok,
+          storeAddress: settings.storeAddress,
+        }}
+      />
       <AdminStoreSettingsForm initial={settings} />
       <AdminFooterImageForm currentUrl={row?.footerImageUrl ?? null} />
     </section>

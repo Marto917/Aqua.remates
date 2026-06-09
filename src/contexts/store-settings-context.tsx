@@ -1,6 +1,7 @@
 "use client";
 
 import { DEFAULT_CATALOG_PROMO } from "@/lib/catalog-promo";
+import { DEFAULT_FREE_SHIPPING } from "@/lib/free-shipping";
 import type { StoreSettingsData } from "@/lib/store-settings";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -17,6 +18,13 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandMuted: null,
   footerImageUrl: null,
   catalogPromo: DEFAULT_CATALOG_PROMO,
+  freeShipping: DEFAULT_FREE_SHIPPING,
+  ridersAppEnabled: false,
+  brandLogoUrl: null,
+  storePhone: null,
+  storeInstagram: null,
+  storeTiktok: null,
+  storeAddress: null,
 };
 
 const StoreSettingsContext = createContext<StoreSettingsData>(DEFAULTS);

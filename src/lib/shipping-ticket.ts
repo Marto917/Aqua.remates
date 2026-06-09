@@ -92,8 +92,12 @@ export function buildRetailTicketData(order: RetailOrderForTicket): ShippingTick
   };
 }
 
-export function retailOrderToQrPayload(order: RetailOrderForTicket): ShippingQrPayload | null {
-  if (order.shippingMethod === "DELIVERY" && !order.assignedRider) {
+export function retailOrderToQrPayload(
+  order: RetailOrderForTicket,
+  options?: { ridersAppEnabled?: boolean },
+): ShippingQrPayload | null {
+  const ridersOn = options?.ridersAppEnabled !== false;
+  if (order.shippingMethod === "DELIVERY" && ridersOn && !order.assignedRider) {
     return null;
   }
 

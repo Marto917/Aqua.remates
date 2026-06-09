@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
+import { prisma } from "@/lib/prisma";
 import { canManageUsers, getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { getStaffLoginPath } from "@/lib/staff-login-path";
 import { staffProfileLine } from "@/lib/staff-display";
@@ -20,13 +21,18 @@ export async function StaffNav({ area }: StaffNavProps) {
   const showUsers = canManageUsers(ctx);
   const homeHref = area === "admin" ? "/admin" : "/vendedor";
   const staffLogin = getStaffLoginPath();
+  const storeRow = await prisma.storeSettings.findUnique({
+    where: { id: "default" },
+    select: { ridersAppEnabled: true, brandLogoUrl: true },
+  });
+  const ridersOn = storeRow?.ridersAppEnabled ?? false;
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
       <div className="mx-auto max-w-6xl px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href={homeHref} className="font-semibold text-brand-dark">
-            <SiteLogo />
+            <SiteLogo logoUrl={storeRow?.brandLogoUrl} />
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             {ctx.preview ? (
@@ -59,9 +65,11 @@ export async function StaffNav({ area }: StaffNavProps) {
           <Link href="/vendedor/envios" className={linkClass}>
             Envíos
           </Link>
-          <Link href="/vendedor/envios/repartidores" className={linkClass}>
-            Viajes riders
-          </Link>
+          {ridersOn ? (
+            <Link href="/vendedor/envios/repartidores" className={linkClass}>
+              Viajes riders
+            </Link>
+          ) : null}
           <Link href="/admin/mayoristas" className={linkClass}>
             Mayoristas
           </Link>

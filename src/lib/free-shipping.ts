@@ -109,3 +109,35 @@ export function qualifiesForFreeShipping(
 
   return { free: false, reason: null };
 }
+
+export type ProductFreeShippingDisplay = {
+  label: string;
+  /** true = envío gratis al comprar este producto (regla por categoría). */
+  definite: boolean;
+};
+
+/** Badge de envío gratis para un producto en catálogo / ficha. */
+export function getProductFreeShippingDisplay(
+  categoryId: string | undefined | null,
+  settings: FreeShippingSettings = DEFAULT_FREE_SHIPPING,
+): ProductFreeShippingDisplay | null {
+  if (!settings.enabled) return null;
+
+  const categoryQualifies =
+    settings.categoryFreeEnabled &&
+    (settings.categoryMode === "all" ||
+      (categoryId != null && settings.categoryIds.includes(categoryId)));
+
+  if (categoryQualifies) {
+    return { label: "Envío gratis", definite: true };
+  }
+
+  if (settings.minOrderEnabled && settings.minOrderAmount != null) {
+    return {
+      label: `Envío gratis desde $${settings.minOrderAmount.toLocaleString("es-AR")}`,
+      definite: false,
+    };
+  }
+
+  return null;
+}

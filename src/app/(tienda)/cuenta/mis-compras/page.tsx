@@ -7,6 +7,7 @@ import { formatArs } from "@/lib/currency";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { isHomeDelivery } from "@/lib/shipping";
@@ -21,6 +22,7 @@ export default async function MisComprasPage() {
   }
 
   const email = session.user.email?.toLowerCase() ?? "";
+  const ridersAppEnabled = await isRidersAppEnabled();
   const orders = await prisma.retailOrder.findMany({
     where: {
       OR: [{ customerId: session.user.id }, { buyerEmail: email }],
@@ -35,8 +37,10 @@ export default async function MisComprasPage() {
       <div>
         <h1 className="text-2xl font-bold text-brand-dark">Mis compras</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pedidos minoristas asociados a tu cuenta. Si tu envío ya salió, acá verás el código para entregárselo al
-          repartidor.
+          Pedidos minoristas asociados a tu cuenta.
+          {ridersAppEnabled
+            ? " Si tu envío ya salió, acá verás el código para entregárselo al repartidor."
+            : ""}
         </p>
       </div>
 
@@ -85,7 +89,8 @@ export default async function MisComprasPage() {
                   Repartidor: {deliveryDispatchStatusLabel(order.deliveryStatus)}
                 </p>
               ) : null}
-              {isHomeDelivery(order.shippingMethod) &&
+              {ridersAppEnabled &&
+              isHomeDelivery(order.shippingMethod) &&
               order.deliveryCode &&
               (order.status === "CONFIRMED" ||
                 order.deliveryStatus === "DISPATCHED" ||

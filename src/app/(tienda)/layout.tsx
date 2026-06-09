@@ -22,11 +22,17 @@ export default async function TiendaLayout({
         dark={settings.themeBrandDark}
         muted={settings.themeBrandMuted}
       />
-      <StoreNav session={session} />
+      <StoreNav session={session} logoUrl={settings.brandLogoUrl} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-5 pb-28 sm:px-4 sm:py-8 sm:pb-8">
         {children}
       </main>
-      <SiteFooter footerImageUrl={settings.footerImageUrl} />
+      <SiteFooter
+        footerImageUrl={settings.footerImageUrl}
+        storePhone={settings.storePhone}
+        storeInstagram={settings.storeInstagram}
+        storeTiktok={settings.storeTiktok}
+        storeAddress={settings.storeAddress}
+      />
       <MobileCartBar />
     </StoreSettingsProvider>
   );

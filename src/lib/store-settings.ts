@@ -3,6 +3,11 @@ import {
   type CatalogPromoSettings,
   getCatalogPromoSettings,
 } from "@/lib/catalog-promo";
+import {
+  DEFAULT_FREE_SHIPPING,
+  type FreeShippingSettings,
+  getFreeShippingSettings,
+} from "@/lib/free-shipping";
 import { prisma } from "@/lib/prisma";
 
 export type StoreSettingsData = {
@@ -18,6 +23,13 @@ export type StoreSettingsData = {
   themeBrandMuted: string | null;
   footerImageUrl: string | null;
   catalogPromo: CatalogPromoSettings;
+  freeShipping: FreeShippingSettings;
+  ridersAppEnabled: boolean;
+  brandLogoUrl: string | null;
+  storePhone: string | null;
+  storeInstagram: string | null;
+  storeTiktok: string | null;
+  storeAddress: string | null;
 };
 
 const DEFAULTS: StoreSettingsData = {
@@ -33,6 +45,13 @@ const DEFAULTS: StoreSettingsData = {
   themeBrandMuted: null,
   footerImageUrl: null,
   catalogPromo: DEFAULT_CATALOG_PROMO,
+  freeShipping: DEFAULT_FREE_SHIPPING,
+  ridersAppEnabled: false,
+  brandLogoUrl: null,
+  storePhone: null,
+  storeInstagram: null,
+  storeTiktok: null,
+  storeAddress: null,
 };
 
 /** Valores para crear la fila única en Prisma (sin objetos anidados). */
@@ -55,12 +74,13 @@ const STORE_SETTINGS_CREATE = {
 
 export async function getStoreSettings(): Promise<StoreSettingsData> {
   try {
-    const [row, catalogPromo] = await Promise.all([
+    const [row, catalogPromo, freeShipping] = await Promise.all([
       prisma.storeSettings.findUnique({ where: { id: "default" } }),
       getCatalogPromoSettings(),
+      getFreeShippingSettings(),
     ]);
     if (!row) {
-      return { ...DEFAULTS, catalogPromo };
+      return { ...DEFAULTS, catalogPromo, freeShipping };
     }
     return {
       bankHolder: row.bankHolder,
@@ -75,6 +95,13 @@ export async function getStoreSettings(): Promise<StoreSettingsData> {
       themeBrandMuted: row.themeBrandMuted,
       footerImageUrl: row.footerImageUrl,
       catalogPromo,
+      freeShipping,
+      ridersAppEnabled: row.ridersAppEnabled,
+      brandLogoUrl: row.brandLogoUrl,
+      storePhone: row.storePhone,
+      storeInstagram: row.storeInstagram,
+      storeTiktok: row.storeTiktok,
+      storeAddress: row.storeAddress,
     };
   } catch {
     return DEFAULTS;

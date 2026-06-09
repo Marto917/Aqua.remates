@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
 import { canAssignRider, canDispatchAfterPack, canMarkPacked } from "@/lib/fulfillment";
+import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { sendOrderDispatchedEmail, sendOrderPackedEmail } from "@/lib/order-fulfillment-emails";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/staff-auth";
@@ -27,6 +28,9 @@ export async function assignRiderToOrderAction(
   riderNumber: number,
 ): Promise<AssignRiderResult> {
   await requireStaff();
+  if (!(await isRidersAppEnabled())) {
+    return { ok: false, error: "La app de repartidores está desactivada." };
+  }
 
   const rider = await findRiderByNumber(riderNumber);
   if (!rider) return { ok: false, error: "Repartidor no encontrado." };
@@ -70,6 +74,9 @@ export async function dispatchDeliveryAction(
   riderNumber?: number,
 ): Promise<DispatchResult> {
   await requireStaff();
+  if (!(await isRidersAppEnabled())) {
+    return { ok: false, error: "La app de repartidores está desactivada." };
+  }
 
   const order = await prisma.retailOrder.findUnique({
     where: { id: orderId },
@@ -162,6 +169,46 @@ export async function markOrderPackedAction(orderId: string): Promise<PackResult
   revalidatePath(`/vendedor/envios/minorista/${orderId}/armar`);
   revalidatePath(`/vendedor/envios/minorista/${orderId}/ticket`);
   revalidatePath("/cuenta/mis-compras");
+
+  return { ok: true };
+}
+
+export async function markHomeDeliveredAction(orderId: string): Promise<PackResult> {
+  await requireStaff();
+
+  const order = await prisma.retailOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      shippingMethod: true,
+      packedAt: true,
+      deliveryStatus: true,
+      status: true,
+    },
+  });
+
+  if (!order) return { ok: false, error: "Pedido no encontrado." };
+  if (order.shippingMethod !== "DELIVERY") {
+    return { ok: false, error: "Solo aplica a envío a domicilio." };
+  }
+  if (!RETAIL_FULFILLMENT_STATUSES.includes(order.status)) {
+    return { ok: false, error: "El pedido no está en la bandeja de envíos." };
+  }
+  if (!order.packedAt) {
+    return { ok: false, error: "Primero armá el pedido." };
+  }
+  if (order.deliveryStatus === "DELIVERED") {
+    return { ok: false, error: "Ya fue marcado como entregado." };
+  }
+
+  await prisma.retailOrder.update({
+    where: { id: orderId },
+    data: {
+      deliveryStatus: "DELIVERED",
+      deliveryDeliveredAt: new Date(),
+    },
+  });
+
+  revalidatePathsAfterRiderDelivery(orderId);
 
   return { ok: true };
 }
