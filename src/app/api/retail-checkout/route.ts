@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { BillingMode, UserRole } from "@prisma/client";
 import { z } from "zod";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
+import { computeShippingQuote } from "@/lib/shipping-quote";
 import { getStoreSettings } from "@/lib/store-settings";
 
 const lineSchema = z.object({
@@ -86,8 +88,23 @@ export async function POST(req: Request) {
   const customerId =
     session?.user?.id && session.user.role === UserRole.CUSTOMER ? session.user.id : null;
 
-  const settings = await getStoreSettings();
+  const [settings, freeShipping] = await Promise.all([getStoreSettings(), getFreeShippingSettings()]);
   const { cart } = resolved;
+  const cartCategoryIds = [...new Set(cart.lines.map((l) => l.categoryId))];
+
+  const quote = computeShippingQuote({
+    shippingMethod: data.shippingMethod,
+    postalCode: data.shippingPostalCode,
+    province: data.shippingProvince,
+    subtotalAmount: cart.subtotalAmount,
+    cartCategoryIds,
+    freeShipping,
+  });
+
+  if (quote.error) {
+    return NextResponse.json({ error: quote.error }, { status: 400 });
+  }
+
   const isTransfer = data.paymentMethod === "BANK_TRANSFER";
   const status = isTransfer ? "PENDING_TRANSFER" : "PENDING_PAYMENT";
   const billingMode: BillingMode = isTransfer ? "NEGRO" : "BLANCO";
@@ -108,7 +125,10 @@ export async function POST(req: Request) {
       shippingPostalCode: data.shippingPostalCode?.trim() || null,
       shippingNotes: data.shippingNotes?.trim() || null,
       deliveryStatus: initialDeliveryStatus(data.shippingMethod),
-      totalAmount: cart.totalAmount,
+      subtotalAmount: cart.subtotalAmount,
+      shippingAmount: quote.shippingAmount,
+      shippingZone: quote.zone,
+      totalAmount: quote.totalAmount,
       status,
       transferAlias: isTransfer ? settings.bankAlias : null,
       transferCbu: isTransfer ? settings.bankCbu : null,
@@ -159,7 +179,9 @@ export async function POST(req: Request) {
         cbu: settings.bankCbu,
         notes: settings.bankExtraNotes,
       },
-      totalAmount: cart.totalAmount,
+      subtotalAmount: cart.subtotalAmount,
+      shippingAmount: quote.shippingAmount,
+      totalAmount: quote.totalAmount,
     });
   }
 
@@ -169,7 +191,8 @@ export async function POST(req: Request) {
       buyerEmail: order.buyerEmail,
       buyerName: order.buyerName,
       lines: cart.lines,
-      totalAmount: cart.totalAmount,
+      shippingAmount: quote.shippingAmount,
+      totalAmount: quote.totalAmount,
     });
 
     await prisma.retailOrder.update({
@@ -181,7 +204,9 @@ export async function POST(req: Request) {
       orderId: order.id,
       paymentMethod: "MERCADO_PAGO",
       initPoint,
-      totalAmount: cart.totalAmount,
+      subtotalAmount: cart.subtotalAmount,
+      shippingAmount: quote.shippingAmount,
+      totalAmount: quote.totalAmount,
     });
   } catch (e) {
     console.error("Mercado Pago preference error:", e);

@@ -23,6 +23,7 @@ export async function createCheckoutPreference(params: {
   buyerEmail: string;
   buyerName: string;
   lines: ResolvedRetailLine[];
+  shippingAmount?: number;
   totalAmount: number;
 }): Promise<{ preferenceId: string; initPoint: string }> {
   const base = getAppBaseUrl();
@@ -35,6 +36,16 @@ export async function createCheckoutPreference(params: {
     unit_price: line.unitPrice,
     currency_id: "ARS",
   }));
+
+  if (params.shippingAmount != null && params.shippingAmount > 0) {
+    items.push({
+      id: "shipping",
+      title: "Envío a domicilio",
+      quantity: 1,
+      unit_price: params.shippingAmount,
+      currency_id: "ARS",
+    });
+  }
 
   const response = await preferenceApi.create({
     body: {

@@ -126,6 +126,29 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Pago y envío</h2>
           <dl className="mt-3 space-y-2 text-sm">
+            {Number(order.shippingAmount) > 0 || order.subtotalAmount != null ? (
+              <>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">Subtotal productos</dt>
+                  <dd className="text-right text-slate-800">
+                    {formatArs(
+                      Number(
+                        order.subtotalAmount ??
+                          Number(order.totalAmount) - Number(order.shippingAmount),
+                      ),
+                    )}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">Costo de envío</dt>
+                  <dd className="text-right text-slate-800">
+                    {Number(order.shippingAmount) > 0
+                      ? formatArs(Number(order.shippingAmount))
+                      : "Gratis"}
+                  </dd>
+                </div>
+              </>
+            ) : null}
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500">Total</dt>
               <dd className="text-right text-lg font-semibold text-brand-dark">

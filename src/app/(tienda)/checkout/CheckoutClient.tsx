@@ -14,6 +14,7 @@ import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { AddressFields } from "@/components/checkout/AddressFields";
 import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
+import type { ShippingQuote } from "@/lib/shipping-quote";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type PaymentChoice = "BANK_TRANSFER" | "MERCADO_PAGO";
@@ -54,6 +55,8 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     transfer: TransferInfo;
     totalAmount: number;
   } | null>(null);
+  const [shippingQuote, setShippingQuote] = useState<ShippingQuote | null>(null);
+  const [shippingQuoteLoading, setShippingQuoteLoading] = useState(false);
 
   const lineSummaries = useMemo(() => {
     return lines.map((line) => {
@@ -74,21 +77,97 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     });
   }, [lines, paymentMethod]);
 
+  const subtotalAmount = useMemo(
+    () => lineSummaries.reduce((a, l) => a + l.lineTotal, 0),
+    [lineSummaries],
+  );
+
   const totalDisplay = useMemo(() => {
-    const sum = lineSummaries.reduce((a, l) => a + l.lineTotal, 0);
-    return sum.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  }, [lineSummaries]);
+    const total =
+      shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
+        ? shippingQuote.totalAmount
+        : subtotalAmount;
+    return total.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+  }, [shippingMethod, shippingQuote, subtotalAmount]);
+
+  const subtotalDisplay = useMemo(
+    () => subtotalAmount.toLocaleString("es-AR", { style: "currency", currency: "ARS" }),
+    [subtotalAmount],
+  );
+
+  const mpSubtotal = useMemo(
+    () => lineSummaries.reduce((a, l) => a + l.mpUnit * l.quantity, 0),
+    [lineSummaries],
+  );
 
   const mpTotal = useMemo(() => {
-    const sum = lineSummaries.reduce((a, l) => a + l.mpUnit * l.quantity, 0);
-    return sum.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  }, [lineSummaries]);
+    const shipping =
+      shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
+        ? shippingQuote.shippingAmount
+        : 0;
+    return (mpSubtotal + shipping).toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+  }, [mpSubtotal, shippingMethod, shippingQuote]);
 
   useEffect(() => {
     if (paymentMethod === "MERCADO_PAGO" && !mercadoPagoEnabled) {
       setPaymentMethod("BANK_TRANSFER");
     }
   }, [mercadoPagoEnabled, paymentMethod]);
+
+  useEffect(() => {
+    if (shippingMethod !== "DELIVERY" || lines.length === 0) {
+      setShippingQuote(null);
+      return;
+    }
+    if (!shippingPostalCode.trim()) {
+      setShippingQuote(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setShippingQuoteLoading(true);
+      try {
+        const res = await fetch("/api/shipping/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentMethod,
+            shippingMethod,
+            shippingPostalCode: shippingPostalCode.trim(),
+            shippingProvince: shippingProvince.trim() || undefined,
+            lines: lines.map((l) => ({
+              variantId: l.variantId,
+              productId: l.productId,
+              quantity: l.quantity,
+            })),
+          }),
+        });
+        const data = (await res.json()) as { quote?: ShippingQuote; error?: string };
+        if (cancelled) return;
+        if (data.quote) {
+          setShippingQuote(data.quote);
+        } else {
+          setShippingQuote(null);
+        }
+      } catch {
+        if (!cancelled) setShippingQuote(null);
+      } finally {
+        if (!cancelled) setShippingQuoteLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    shippingMethod,
+    shippingPostalCode,
+    shippingProvince,
+    paymentMethod,
+    lines,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,6 +269,10 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
       }
       if (!shippingCity.trim() || !shippingProvince.trim() || !shippingPostalCode.trim()) {
         setError("Completá ciudad, provincia y código postal para el envío.");
+        return;
+      }
+      if (!shippingQuote || shippingQuote.error) {
+        setError(shippingQuote?.error ?? "No pudimos calcular el costo de envío. Revisá el código postal.");
         return;
       }
     }
@@ -376,6 +459,39 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
                   </p>
                 </>
               )}
+              {shippingPostalCode.trim() ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  {shippingQuoteLoading ? (
+                    <p>Calculando envío…</p>
+                  ) : shippingQuote?.error ? (
+                    <p className="text-amber-800">{shippingQuote.error}</p>
+                  ) : shippingQuote ? (
+                    <>
+                      <p>
+                        Zona: <strong>{shippingQuote.zoneLabel}</strong>
+                      </p>
+                      <p className="mt-1">
+                        Envío:{" "}
+                        {shippingQuote.freeShipping ? (
+                          <span className="font-semibold text-emerald-700">
+                            Gratis
+                            {shippingQuote.freeShippingReason
+                              ? ` (${shippingQuote.freeShippingReason})`
+                              : ""}
+                          </span>
+                        ) : (
+                          <strong>
+                            {shippingQuote.shippingAmount.toLocaleString("es-AR", {
+                              style: "currency",
+                              currency: "ARS",
+                            })}
+                          </strong>
+                        )}
+                      </p>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           )}
         </section>
@@ -447,9 +563,28 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex justify-between border-t pt-4">
-          <span className="text-slate-600">Total</span>
-          <span className="text-xl font-bold text-brand-dark">{totalDisplay}</span>
+        <div className="mt-4 space-y-2 border-t pt-4 text-sm">
+          <div className="flex justify-between text-slate-600">
+            <span>Subtotal productos</span>
+            <span>{subtotalDisplay}</span>
+          </div>
+          {shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error ? (
+            <div className="flex justify-between text-slate-600">
+              <span>Envío ({shippingQuote.zoneLabel})</span>
+              <span>
+                {shippingQuote.freeShipping
+                  ? "Gratis"
+                  : shippingQuote.shippingAmount.toLocaleString("es-AR", {
+                      style: "currency",
+                      currency: "ARS",
+                    })}
+              </span>
+            </div>
+          ) : null}
+          <div className="flex justify-between pt-1">
+            <span className="font-medium text-slate-800">Total</span>
+            <span className="text-xl font-bold text-brand-dark">{totalDisplay}</span>
+          </div>
         </div>
         <Link href="/carrito" className="mt-4 block text-center text-sm text-brand-dark underline">
           Editar carrito

@@ -2,8 +2,10 @@ import { UserRole } from "@prisma/client";
 import { StaffBackLink } from "@/components/staff/StaffBackLink";
 import { AdminBannersManager } from "@/components/admin/AdminBannersManager";
 import { AdminCatalogPromoManager } from "@/components/admin/AdminCatalogPromoManager";
+import { AdminFreeShippingManager } from "@/components/admin/AdminFreeShippingManager";
 import { AdminHeroPromoManager } from "@/components/admin/AdminHeroPromoManager";
 import { getCatalogPromoSettings } from "@/lib/catalog-promo";
+import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { placementFromSortOrder } from "@/lib/banner-placement";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
@@ -25,12 +27,13 @@ export default async function AdminPromocionesPage() {
     );
   }
 
-  const [banners, heroPromo, catalogPromo, categories] = await Promise.all([
+  const [banners, heroPromo, catalogPromo, freeShipping, categories] = await Promise.all([
     prisma.banner.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
     getHeroPromoSettings(),
     getCatalogPromoSettings(),
+    getFreeShippingSettings(),
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
@@ -50,12 +53,13 @@ export default async function AdminPromocionesPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Promociones e imágenes</h1>
           <p className="text-sm text-slate-600">
-            Banners del inicio, carrusel y promos de precio en el catálogo (círculo de descuento).
+            Banners, promos de catálogo, envío gratis y tarifas de envío por zona.
           </p>
         </div>
         <StaffBackLink href="/admin" label="Panel" />
       </div>
       <AdminCatalogPromoManager initial={catalogPromo} categories={categories} />
+      <AdminFreeShippingManager initial={freeShipping} categories={categories} />
       <AdminHeroPromoManager initial={heroPromo} />
       <AdminBannersManager initialBanners={initialBanners} />
     </section>

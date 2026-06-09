@@ -10,6 +10,7 @@ export type RetailCheckoutLineInput = {
 export type ResolvedRetailLine = {
   variantId: string;
   productId: string;
+  categoryId: string;
   productName: string;
   variantColorLabel: string;
   quantity: number;
@@ -19,6 +20,8 @@ export type ResolvedRetailLine = {
 
 export type ResolvedRetailCart = {
   lines: ResolvedRetailLine[];
+  subtotalAmount: number;
+  /** @deprecated Usar subtotalAmount */
   totalAmount: number;
 };
 
@@ -38,7 +41,7 @@ export async function resolveRetailCartLines(
   const byId = new Map(variants.map((v) => [v.id, v]));
 
   const lines: ResolvedRetailLine[] = [];
-  let totalAmount = 0;
+  let subtotalAmount = 0;
 
   for (const input of inputs) {
     const variant = byId.get(input.variantId);
@@ -67,10 +70,11 @@ export async function resolveRetailCartLines(
       paymentMethod === "MERCADO_PAGO" ? getListPrice(pricing) : getTransferPrice(pricing);
 
     const subtotal = unitPrice * input.quantity;
-    totalAmount += subtotal;
+    subtotalAmount += subtotal;
     lines.push({
       variantId: variant.id,
       productId: variant.productId,
+      categoryId: variant.product.categoryId,
       productName: variant.product.name,
       variantColorLabel: variant.colorLabel,
       quantity: input.quantity,
@@ -79,9 +83,9 @@ export async function resolveRetailCartLines(
     });
   }
 
-  if (totalAmount <= 0) {
+  if (subtotalAmount <= 0) {
     return { ok: false, error: "El total del pedido debe ser mayor a cero." };
   }
 
-  return { ok: true, cart: { lines, totalAmount } };
+  return { ok: true, cart: { lines, subtotalAmount, totalAmount: subtotalAmount } };
 }
