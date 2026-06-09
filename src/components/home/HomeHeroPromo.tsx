@@ -28,8 +28,8 @@ function FullWidthHeroImage({
       alt={alt}
       width={width}
       height={height}
-      className={`h-auto w-full rounded-3xl ${className ?? ""}`}
-      sizes="(max-width: 1152px) 100vw, 1152px"
+      className={`block h-auto w-full ${className ?? ""}`}
+      sizes="100vw"
       priority
       unoptimized={src.startsWith("http")}
     />
@@ -86,15 +86,20 @@ export function HomeHeroBanner({ hero }: Props) {
     </>
   );
 
-  if (link) {
-    return (
-      <Link href={link} className="block w-full">
-        {content}
-      </Link>
-    );
-  }
+  const inner = link ? (
+    <Link href={link} className="block w-full">
+      {content}
+    </Link>
+  ) : (
+    <div className="w-full">{content}</div>
+  );
 
-  return <div className="w-full">{content}</div>;
+  /** Sale del max-w-6xl del layout y ocupa todo el ancho de la pantalla. */
+  return (
+    <div className="-mt-5 w-screen max-w-[100vw] ml-[calc(50%-50vw)] sm:-mt-8">
+      {inner}
+    </div>
+  );
 }
 
 /** @deprecated Usar HomeHeroBanner */
