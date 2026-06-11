@@ -14,41 +14,105 @@ type Props = {
   showMercadoPago?: boolean;
 };
 
+function PriceColumn({
+  amount,
+  label,
+  size,
+}: {
+  amount: string;
+  label: string;
+  size: "card" | "detail";
+}) {
+  const amountClass =
+    size === "detail"
+      ? "text-2xl font-bold text-slate-900 sm:text-3xl"
+      : "text-base font-bold text-slate-800 sm:text-lg";
+
+  const labelClass =
+    size === "detail"
+      ? "mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500"
+      : "text-[10px] font-semibold uppercase tracking-wide text-slate-500";
+
+  return (
+    <div
+      className={
+        size === "detail"
+          ? "rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center"
+          : "rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-center"
+      }
+    >
+      <p className={amountClass}>{amount}</p>
+      <p className={labelClass}>{label}</p>
+    </div>
+  );
+}
+
 export function ProductPriceBlock({
   product,
   size = "card",
   showMercadoPago = false,
 }: Props) {
   const settings = useStoreSettings();
-  const { listFormatted, transferFormatted, mercadoPagoFormatted, listAmount, transferAmount } =
+  const { listFormatted, transferFormatted, mercadoPagoFormatted, showListAndTransfer } =
     getStorePriceDisplay(product);
   const promo = getProductPromoDisplay(product, settings.catalogPromo);
-  const showListOnCard = listAmount > transferAmount + 0.01;
   const displayPrice = promo.showPromoPrice ? promo.promoPriceFormatted! : transferFormatted;
-  const strikePrice = promo.showPromoPrice ? promo.normalTransferFormatted : null;
+  const strikeTransfer = promo.showPromoPrice ? promo.normalTransferFormatted : null;
+  const transferLabel = promo.showPromoPrice ? "Promo transferencia" : "Con transferencia";
+
+  const pricesRow = (
+    <div
+      className={
+        size === "detail"
+          ? "flex flex-wrap items-stretch justify-start gap-4 sm:gap-6"
+          : "flex flex-wrap items-stretch justify-center gap-3"
+      }
+    >
+      {showListAndTransfer ? (
+        <PriceColumn amount={listFormatted} label="Precio de lista" size={size} />
+      ) : null}
+      <div className="text-center">
+        {strikeTransfer ? (
+          <p
+            className={
+              size === "detail"
+                ? "text-lg text-slate-400 line-through sm:text-xl"
+                : "text-sm text-slate-400 line-through"
+            }
+          >
+            {strikeTransfer}
+          </p>
+        ) : null}
+        <p
+          className={
+            size === "detail"
+              ? showListAndTransfer
+                ? "text-2xl font-bold text-brand sm:text-3xl"
+                : "text-2xl font-bold text-slate-900 sm:text-3xl"
+              : showListAndTransfer
+                ? "text-base font-bold text-brand sm:text-lg"
+                : "text-base font-bold text-slate-800 sm:text-lg"
+          }
+        >
+          {displayPrice}
+        </p>
+        <p
+          className={
+            size === "detail"
+              ? "mt-1 text-xs font-semibold uppercase tracking-wider text-brand-dark"
+              : "text-[10px] font-semibold uppercase tracking-wide text-brand-dark"
+          }
+        >
+          {transferLabel}
+        </p>
+      </div>
+    </div>
+  );
 
   if (size === "detail") {
     return (
       <div className="space-y-3 border-b border-slate-100 pb-5">
-        <div className="flex flex-wrap items-end gap-6">
-          {showListOnCard ? (
-            <div className="order-1 w-full sm:order-none sm:w-auto">
-              <p className="text-lg text-slate-500 sm:text-xl">{listFormatted}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Precio de lista
-              </p>
-            </div>
-          ) : null}
-          <div>
-            {strikePrice ? (
-              <p className="text-xl text-slate-400 line-through sm:text-2xl">{strikePrice}</p>
-            ) : null}
-            <p className="text-3xl font-bold tracking-tight text-brand sm:text-4xl">{displayPrice}</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-brand-dark">
-              {promo.showPromoPrice ? "Precio promo con transferencia" : "Precio con transferencia"}
-            </p>
-          </div>
-        </div>
+        {pricesRow}
         {showMercadoPago ? (
           <p className="text-sm text-slate-600">
             Con Mercado Pago: <span className="font-semibold text-slate-800">{mercadoPagoFormatted}</span>
@@ -61,16 +125,7 @@ export function ProductPriceBlock({
 
   return (
     <div className="space-y-0.5">
-      {showListOnCard ? (
-        <p className="text-sm text-slate-500">{listFormatted}</p>
-      ) : null}
-      {strikePrice ? (
-        <p className="text-sm text-slate-400 line-through">{strikePrice}</p>
-      ) : null}
-      <p className="text-lg font-bold text-brand sm:text-xl">{displayPrice}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
-        Con transferencia
-      </p>
+      {pricesRow}
     </div>
   );
 }

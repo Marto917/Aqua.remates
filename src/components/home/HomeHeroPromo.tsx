@@ -7,7 +7,7 @@ type Props = {
   hero: HeroPromoSettings;
 };
 
-/** Banner ancho completo con altura máxima para que no ocupe toda la pantalla. */
+/** Banner a ancho completo; altura más baja que la proporción original (3:1). */
 function FullWidthHeroImage({
   src,
   alt,
@@ -18,18 +18,18 @@ function FullWidthHeroImage({
   className?: string;
 }) {
   return (
-    <div
-      className={`relative w-full bg-slate-100 h-[160px] sm:h-[220px] md:h-[280px] lg:h-[340px] ${className ?? ""}`}
-    >
-      <Image
-        src={resolveProductImageUrl(src)}
-        alt={alt}
-        fill
-        className="object-contain object-center"
-        sizes="100vw"
-        priority
-        unoptimized={src.startsWith("http")}
-      />
+    <div className={`relative w-full overflow-hidden ${className ?? ""}`}>
+      <div className="relative aspect-[4.5/1] w-full sm:aspect-[5/1] md:aspect-[5.5/1]">
+        <Image
+          src={resolveProductImageUrl(src)}
+          alt={alt}
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+          priority
+          unoptimized={src.startsWith("http")}
+        />
+      </div>
     </div>
   );
 }
