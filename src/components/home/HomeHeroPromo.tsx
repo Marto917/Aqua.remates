@@ -1,38 +1,36 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { HeroPromoSettings } from "@/lib/hero-promo";
-import { HERO_PROMO_SPECS } from "@/lib/hero-promo";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
   hero: HeroPromoSettings;
 };
 
-/** Muestra la imagen a ancho del contenedor, sin recortar ni agrandar (respeta proporción original). */
+/** Banner ancho completo con altura máxima para que no ocupe toda la pantalla. */
 function FullWidthHeroImage({
   src,
   alt,
-  width,
-  height,
   className,
 }: {
   src: string;
   alt: string;
-  width: number;
-  height: number;
   className?: string;
 }) {
   return (
-    <Image
-      src={resolveProductImageUrl(src)}
-      alt={alt}
-      width={width}
-      height={height}
-      className={`block h-auto w-full ${className ?? ""}`}
-      sizes="100vw"
-      priority
-      unoptimized={src.startsWith("http")}
-    />
+    <div
+      className={`relative w-full bg-slate-100 h-[160px] sm:h-[220px] md:h-[280px] lg:h-[340px] ${className ?? ""}`}
+    >
+      <Image
+        src={resolveProductImageUrl(src)}
+        alt={alt}
+        fill
+        className="object-contain object-center"
+        sizes="100vw"
+        priority
+        unoptimized={src.startsWith("http")}
+      />
+    </div>
   );
 }
 
@@ -47,42 +45,18 @@ export function HomeHeroBanner({ hero }: Props) {
     return null;
   }
 
-  const desktopW = HERO_PROMO_SPECS.desktop.minWidth;
-  const desktopH = Math.round(desktopW / 3);
-  const mobileW = HERO_PROMO_SPECS.mobile.minWidth;
-  const mobileH = HERO_PROMO_SPECS.mobile.minHeight;
-
   const desktop = desktopSrc ? (
-    <FullWidthHeroImage
-      src={desktopSrc}
-      alt="Promoción AQUA"
-      width={desktopW}
-      height={desktopH}
-      className="hidden sm:block"
-    />
+    <FullWidthHeroImage src={desktopSrc} alt="Promoción AQUA" className="hidden sm:block" />
   ) : null;
 
   const mobile = mobileSrc ? (
-    <FullWidthHeroImage
-      src={mobileSrc}
-      alt="Promoción AQUA"
-      width={mobileSrc === desktopSrc && !mobileImageUrl ? desktopW : mobileW}
-      height={mobileSrc === desktopSrc && !mobileImageUrl ? desktopH : mobileH}
-      className="sm:hidden"
-    />
+    <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" className="sm:hidden" />
   ) : null;
 
   const content = (
     <>
       {mobile}
-      {desktop ?? (mobileSrc ? (
-        <FullWidthHeroImage
-          src={mobileSrc}
-          alt="Promoción AQUA"
-          width={mobileW}
-          height={mobileH}
-        />
-      ) : null)}
+      {desktop ?? (mobileSrc ? <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" /> : null)}
     </>
   );
 
