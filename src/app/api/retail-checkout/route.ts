@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { BillingMode, UserRole } from "@prisma/client";
 import { z } from "zod";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
-import { sendOrderReceivedEmail } from "@/lib/order-transaction-emails";
 import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
@@ -147,14 +146,6 @@ export async function POST(req: Request) {
     },
     include: { items: true },
   });
-
-  try {
-    if (!isTransfer) {
-      await sendOrderReceivedEmail(order);
-    }
-  } catch (e) {
-    console.error("Email pedido recibido:", e);
-  }
 
   if (customerId && data.saveToProfile) {
     await prisma.user.update({
