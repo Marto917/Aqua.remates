@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { AdminProductCreateForm } from "@/components/admin/AdminProductCreateForm";
+import { AdminProductCreatePanel } from "@/components/admin/AdminProductCreatePanel";
 import { ProductVisibilitySelect } from "@/components/admin/ProductVisibilitySelect";
 import { IconCamera, IconPencil, IconToggle } from "@/components/icons/StaffIcons";
 import { formatArs } from "@/lib/currency";
@@ -74,9 +74,12 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
       ) : null}
 
-      <div id="crear-producto">
-        <AdminProductCreateForm initialError={error} supplierNames={supplierNames} categories={categories} />
-      </div>
+      <AdminProductCreatePanel
+        initialError={error}
+        supplierNames={supplierNames}
+        categories={categories}
+        defaultOpen={Boolean(error)}
+      />
 
       <div className="overflow-hidden rounded-xl border bg-white">
         <table className="w-full text-sm">
@@ -84,8 +87,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             <tr>
               <th className="px-3 py-2 text-left">Producto</th>
               <th className="px-3 py-2 text-left">Categoria</th>
-              <th className="px-3 py-2 text-left">Lista / MP</th>
-              <th className="px-3 py-2 text-left">Transferencia</th>
+              <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Mayorista</th>
               <th className="px-3 py-2 text-left">Colores</th>
               <th className="px-3 py-2 text-left">Visibilidad</th>
@@ -114,7 +116,6 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                 </td>
                 <td className="px-3 py-2">{product.category.name}</td>
                 <td className="px-3 py-2">{formatArs(Number(product.listPrice))}</td>
-                <td className="px-3 py-2">{formatArs(Number(product.retailPrice))}</td>
                 <td className="px-3 py-2">{formatArs(Number(product.wholesalePrice))}</td>
                 <td className="px-3 py-2 text-xs text-slate-600">
                   {formatVariantColorsForStaff(product.variants.map((v) => v.colorLabel))}

@@ -68,7 +68,6 @@ export default async function AdminProductoImagenesPage({
         description={product.description}
         supplierName={product.supplierName}
         listPrice={Number(product.listPrice)}
-        transferPrice={Number(product.retailPrice)}
         wholesalePrice={Number(product.wholesalePrice)}
         categories={categories}
         categoryName={product.category.name}

@@ -82,7 +82,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
   const product = await prisma.product.upsert({
     where: { slug: "botella-termica-pro" },
     update: {
-      discountRetailPercent: 10,
       discountWholesalePercent: 15,
     },
     create: {
@@ -91,9 +90,7 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       description: "Botella de acero premium para uso diario.",
       imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 45000,
-      retailPrice: 39000,
       wholesalePrice: 32000,
-      discountRetailPercent: 10,
       discountWholesalePercent: 15,
       isActive: true,
       isBestSeller: true,
@@ -124,7 +121,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       description: "Tres cajas para ordenar el placard o la cocina.",
       imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 28900,
-      retailPrice: 24900,
       wholesalePrice: 19800,
       categoryId: catOrg.id,
       colors: ["Gris", "Beige"],
@@ -135,7 +131,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       description: "Ideal para plantas medianas en living o balcón.",
       imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 15900,
-      retailPrice: 12900,
       wholesalePrice: 9900,
       categoryId: catDeco.id,
       colors: ["Blanco", "Terracota"],
@@ -146,7 +141,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       description: "Barra adhesiva o tornillos; acabado satinado.",
       imageUrl: DEFAULT_PRODUCT_IMAGE,
       listPrice: 22000,
-      retailPrice: 18900,
       wholesalePrice: 15200,
       categoryId: catBano.id,
       colors: ["Cromo"],
@@ -162,7 +156,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
         description: data.description,
         imageUrl: data.imageUrl,
         listPrice: data.listPrice,
-        retailPrice: data.retailPrice,
         wholesalePrice: data.wholesalePrice,
         categoryId: data.categoryId,
         isActive: true,
@@ -170,7 +163,6 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
       },
       create: {
         ...data,
-        discountRetailPercent: 5,
         discountWholesalePercent: 10,
         isActive: true,
         isBestSeller: true,

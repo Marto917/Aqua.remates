@@ -34,8 +34,6 @@ type Product = {
   imagePosition?: string | null;
   imageScale?: unknown;
   listPrice: unknown;
-  retailPrice: unknown;
-  discountRetailPercent?: number;
   categoryId: string;
 };
 
@@ -104,12 +102,14 @@ export function ProductAddToCart({
   const imagePosition = activeImage?.imagePosition ?? product.imagePosition;
   const imageScale = Number(activeImage?.imageScale ?? product.imageScale ?? 1);
 
+  const settings = useStoreSettings();
+
   const pricing = useMemo(
     () => ({
       listPrice: getListPrice(product),
-      transferPrice: getTransferPrice(product),
+      transferPrice: getTransferPrice(product, settings.catalogPromo),
     }),
-    [product],
+    [product, settings.catalogPromo],
   );
 
   if (!selected) {
@@ -128,6 +128,7 @@ export function ProductAddToCart({
       productName: title,
       colorLabel: formatDisplayWords(selected.colorLabel),
       imageUrl: resolveProductImageUrl(selected.imageUrl || product.imageUrl),
+      categoryId: product.categoryId,
       listPrice: pricing.listPrice,
       transferPrice: pricing.transferPrice,
       discountPercent: 0,

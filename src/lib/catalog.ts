@@ -5,6 +5,8 @@ export type CatalogFilters = {
   q?: string;
   category?: string;
   audience?: CatalogAudience;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 export async function getCatalogData(filters: CatalogFilters) {
@@ -26,6 +28,14 @@ export async function getCatalogData(filters: CatalogFilters) {
           }
         : {}),
       category: filters.category ? { slug: filters.category } : undefined,
+      ...(filters.minPrice != null || filters.maxPrice != null
+        ? {
+            listPrice: {
+              ...(filters.minPrice != null ? { gte: filters.minPrice } : {}),
+              ...(filters.maxPrice != null ? { lte: filters.maxPrice } : {}),
+            },
+          }
+        : {}),
     },
     include: {
       category: true,

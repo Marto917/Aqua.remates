@@ -62,9 +62,9 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
     return lines.map((line) => {
       const product = {
         listPrice: line.listPrice,
-        retailPrice: line.transferPrice,
+        categoryId: line.categoryId,
       };
-      const transferUnit = getTransferPrice(product);
+      const transferUnit = getTransferPrice(product, settings.catalogPromo);
       const mpUnit = getListPrice(product);
       const unit = paymentMethod === "BANK_TRANSFER" ? transferUnit : mpUnit;
       return {
@@ -75,7 +75,7 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
         lineTotal: unit * line.quantity,
       };
     });
-  }, [lines, paymentMethod]);
+  }, [lines, paymentMethod, settings.catalogPromo]);
 
   const subtotalAmount = useMemo(
     () => lineSummaries.reduce((a, l) => a + l.lineTotal, 0),

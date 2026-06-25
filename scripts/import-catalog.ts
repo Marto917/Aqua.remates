@@ -22,7 +22,33 @@ const variantSchema = z.object({
   isActive: z.boolean(),
 });
 
-const catalogSchema = z.object({
+const productBaseSchema = z.object({
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  imageUrl: z.string().min(1),
+  listPrice: z.string(),
+  wholesalePrice: z.string(),
+  discountWholesalePercent: z.number().int(),
+  isActive: z.boolean(),
+  isBestSeller: z.boolean(),
+  categorySlug: z.string(),
+  variants: z.array(variantSchema),
+});
+
+const catalogV2Schema = z.object({
+  version: z.literal(2),
+  exportedAt: z.string().optional(),
+  categories: z.array(
+    z.object({
+      name: z.string(),
+      slug: z.string(),
+    }),
+  ),
+  products: z.array(productBaseSchema),
+});
+
+const catalogV1Schema = z.object({
   version: z.literal(1),
   exportedAt: z.string().optional(),
   categories: z.array(
@@ -32,20 +58,9 @@ const catalogSchema = z.object({
     }),
   ),
   products: z.array(
-    z.object({
-      slug: z.string().min(1),
-      name: z.string().min(1),
-      description: z.string(),
-      imageUrl: z.string().min(1),
-      listPrice: z.string(),
-      retailPrice: z.string(),
-      wholesalePrice: z.string(),
-      discountRetailPercent: z.number().int(),
-      discountWholesalePercent: z.number().int(),
-      isActive: z.boolean(),
-      isBestSeller: z.boolean(),
-      categorySlug: z.string(),
-      variants: z.array(variantSchema),
+    productBaseSchema.extend({
+      retailPrice: z.string().optional(),
+      discountRetailPercent: z.number().int().optional(),
     }),
   ),
 });
@@ -68,11 +83,18 @@ function resolveJsonPath(arg: string | undefined): string {
   throw new Error(`No se encontró catalog-aqua.json (argumento: ${arg ?? "vacío"})`);
 }
 
+function parseCatalog(raw: unknown) {
+  const version = (raw as { version?: number })?.version;
+  if (version === 2) return catalogV2Schema.parse(raw);
+  if (version === 1) return catalogV1Schema.parse(raw);
+  throw new Error("Versión de catálogo no soportada (use version 1 o 2).");
+}
+
 async function main() {
   const arg = process.argv[2];
   const jsonPath = resolveJsonPath(arg);
   const raw = readFileSync(jsonPath, "utf8");
-  const data = catalogSchema.parse(JSON.parse(raw));
+  const data = parseCatalog(JSON.parse(raw));
 
   for (const c of data.categories) {
     await prisma.category.upsert({
@@ -97,9 +119,7 @@ async function main() {
         description: p.description,
         imageUrl: p.imageUrl,
         listPrice: new Prisma.Decimal(p.listPrice),
-        retailPrice: new Prisma.Decimal(p.retailPrice),
         wholesalePrice: new Prisma.Decimal(p.wholesalePrice),
-        discountRetailPercent: p.discountRetailPercent,
         discountWholesalePercent: p.discountWholesalePercent,
         isActive: p.isActive,
         isBestSeller: p.isBestSeller,
@@ -111,9 +131,7 @@ async function main() {
         description: p.description,
         imageUrl: p.imageUrl,
         listPrice: new Prisma.Decimal(p.listPrice),
-        retailPrice: new Prisma.Decimal(p.retailPrice),
         wholesalePrice: new Prisma.Decimal(p.wholesalePrice),
-        discountRetailPercent: p.discountRetailPercent,
         discountWholesalePercent: p.discountWholesalePercent,
         isActive: p.isActive,
         isBestSeller: p.isBestSeller,

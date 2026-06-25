@@ -218,13 +218,9 @@ model Product {
   imagePosition            String?           @default("50% 50%")
   /// Zoom visual 0.8–1.5
   imageScale               Decimal           @default(1) @db.Decimal(4, 2)
-  /// Precio de lista (= precio transferencia × 1.15 por defecto).
+  /// Precio único de lista (Mercado Pago cobra este monto; transferencia aplica descuento de promos).
   listPrice                Decimal           @db.Decimal(10, 2)
-  /// Precio con transferencia bancaria.
-  retailPrice              Decimal           @db.Decimal(10, 2)
   wholesalePrice           Decimal           @db.Decimal(10, 2)
-  /// Descuento % sobre lista → precio transferencia (default 15).
-  discountRetailPercent    Int               @default(15)
   discountWholesalePercent Int               @default(0)
   /// Texto del badge (sin números). Vacío = usar el de la tienda.
   discountBadgeLabel       String?

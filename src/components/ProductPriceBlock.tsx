@@ -7,7 +7,6 @@ import { getProductPromoDisplay } from "@/lib/product-promo";
 type Props = {
   product: {
     listPrice: unknown;
-    retailPrice: unknown;
     categoryId?: string | null;
   };
   size?: "card" | "detail";
@@ -54,7 +53,7 @@ export function ProductPriceBlock({
 }: Props) {
   const settings = useStoreSettings();
   const { listFormatted, transferFormatted, mercadoPagoFormatted, showListAndTransfer } =
-    getStorePriceDisplay(product);
+    getStorePriceDisplay(product, settings.catalogPromo);
   const promo = getProductPromoDisplay(product, settings.catalogPromo);
   const displayPrice = promo.showPromoPrice ? promo.promoPriceFormatted! : transferFormatted;
   const strikeTransfer = promo.showPromoPrice ? promo.normalTransferFormatted : null;

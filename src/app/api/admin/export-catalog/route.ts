@@ -4,7 +4,7 @@ import path from "path";
 import archiver from "archiver";
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
-import type { CatalogExportV1 } from "@/lib/catalog-export-schema";
+import type { CatalogExportV2 } from "@/lib/catalog-export-schema";
 import { CATALOG_EXPORT_VERSION } from "@/lib/catalog-export-schema";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { getSafeSession } from "@/lib/get-session";
@@ -54,7 +54,7 @@ async function fetchUrlBytes(url: string) {
   return buf;
 }
 
-function buildCatalogJson(): Promise<CatalogExportV1> {
+function buildCatalogJson(): Promise<CatalogExportV2> {
   return (async () => {
     const products = await prisma.product.findMany({
       include: {
@@ -84,9 +84,7 @@ function buildCatalogJson(): Promise<CatalogExportV1> {
         description: p.description,
         imageUrl: p.imageUrl,
         listPrice: String(p.listPrice),
-        retailPrice: String(p.retailPrice),
         wholesalePrice: String(p.wholesalePrice),
-        discountRetailPercent: p.discountRetailPercent,
         discountWholesalePercent: p.discountWholesalePercent,
         isActive: p.isActive,
         isBestSeller: p.isBestSeller,

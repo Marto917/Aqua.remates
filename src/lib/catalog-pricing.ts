@@ -6,31 +6,28 @@ export type CatalogFilters = {
   q?: string;
   category?: string;
   priceMode?: PriceMode;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 export function getFinalUnitPrice(
   product: {
-    retailPrice: unknown;
     wholesalePrice: unknown;
-    discountRetailPercent: number;
     discountWholesalePercent: number;
+    listPrice?: unknown;
   },
   mode: PriceMode,
 ) {
-  const base =
-    mode === "wholesale" ? Number(product.wholesalePrice) : Number(product.retailPrice);
-  const pct =
-    mode === "wholesale" ? product.discountWholesalePercent : product.discountRetailPercent;
+  if (mode === "retail") {
+    return Number(product.listPrice ?? 0);
+  }
+  const base = Number(product.wholesalePrice);
+  const pct = product.discountWholesalePercent;
   return base * (1 - Math.min(100, Math.max(0, pct)) / 100);
 }
 
 export function getProductDisplayPrice(
-  product: {
-    retailPrice: unknown;
-    wholesalePrice: unknown;
-    discountRetailPercent: number;
-    discountWholesalePercent: number;
-  },
+  product: Parameters<typeof getFinalUnitPrice>[0],
   mode: PriceMode,
 ) {
   return getFinalUnitPrice(product, mode).toLocaleString("es-AR", {
@@ -40,10 +37,10 @@ export function getProductDisplayPrice(
 }
 
 export function getDiscountPercentForMode(
-  product: { discountRetailPercent: number; discountWholesalePercent: number },
+  product: { discountWholesalePercent: number },
   mode: PriceMode,
 ) {
-  return mode === "wholesale" ? product.discountWholesalePercent : product.discountRetailPercent;
+  return mode === "wholesale" ? product.discountWholesalePercent : 0;
 }
 
 /** Texto de precio en grilla: en modo mayorista muestra referencia mayorista + aclaración de regla. */

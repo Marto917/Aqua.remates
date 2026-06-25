@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-const STORAGE_KEY = "aqua-cart-v3";
+const STORAGE_KEY = "aqua-cart-v4";
 
 export type CartLine = {
   variantId: string;
@@ -11,6 +11,7 @@ export type CartLine = {
   productName: string;
   colorLabel: string;
   imageUrl: string;
+  categoryId: string;
   listPrice: number;
   transferPrice: number;
   discountPercent: number;
@@ -100,7 +101,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const idx = s.lines.findIndex((l) => l.variantId === line.variantId);
       if (idx >= 0) {
         const next = [...s.lines];
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + qty };
+        next[idx] = {
+          ...next[idx],
+          quantity: next[idx].quantity + qty,
+          listPrice: line.listPrice,
+          transferPrice: line.transferPrice,
+          categoryId: line.categoryId,
+        };
         return { lines: next };
       }
       return {
@@ -112,6 +119,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             productName: line.productName,
             colorLabel: line.colorLabel,
             imageUrl: line.imageUrl,
+            categoryId: line.categoryId,
             listPrice: line.listPrice,
             transferPrice: line.transferPrice,
             discountPercent: line.discountPercent,

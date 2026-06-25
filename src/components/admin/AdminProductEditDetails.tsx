@@ -7,7 +7,6 @@ type Props = {
   description: string;
   supplierName: string | null;
   listPrice: number;
-  transferPrice: number;
   wholesalePrice: number;
   categories: { id: string; name: string }[];
   categoryName: string;
@@ -20,7 +19,6 @@ export function AdminProductEditDetails({
   description,
   supplierName,
   listPrice,
-  transferPrice,
   wholesalePrice,
   categories,
   categoryName,
@@ -74,17 +72,7 @@ export function AdminProductEditDetails({
           step="0.01"
           min="0.01"
           defaultValue={listPrice}
-          placeholder="Precio lista / Mercado Pago"
-          className="rounded-md border px-3 py-2"
-        />
-        <input
-          name="transferPrice"
-          required
-          type="number"
-          step="0.01"
-          min="0.01"
-          defaultValue={transferPrice}
-          placeholder="Precio transferencia"
+          placeholder="Precio de lista"
           className="rounded-md border px-3 py-2"
         />
         <input
@@ -97,6 +85,9 @@ export function AdminProductEditDetails({
           className="rounded-md border px-3 py-2"
         />
       </div>
+      <p className="text-xs text-slate-500">
+        El precio con transferencia se calcula automáticamente según las promociones del catálogo.
+      </p>
       <textarea
         name="description"
         rows={3}

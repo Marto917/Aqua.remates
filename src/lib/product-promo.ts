@@ -4,11 +4,10 @@ import {
   DEFAULT_CATALOG_PROMO,
   getProductCatalogPromoPercent,
 } from "@/lib/catalog-promo";
-import { getTransferPrice } from "@/lib/store-pricing";
+import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 export type ProductPromoFields = {
   listPrice: unknown;
-  retailPrice: unknown;
   categoryId?: string | null;
 };
 
@@ -16,25 +15,23 @@ export function getProductPromoDisplay(
   product: ProductPromoFields,
   catalogPromo: CatalogPromoSettings = DEFAULT_CATALOG_PROMO,
 ) {
-  const normalTransfer = getTransferPrice(product);
+  const listAmount = getListPrice(product);
+  const transferAmount = getTransferPrice(product, catalogPromo);
   const percent = getProductCatalogPromoPercent(product.categoryId, catalogPromo);
 
-  const promoPrice =
-    percent != null
-      ? Math.round(normalTransfer * (1 - percent / 100) * 100) / 100
-      : null;
-
-  const showPromoPrice = promoPrice != null && promoPrice < normalTransfer - 0.01;
+  const showPromoPrice = percent != null && transferAmount < listAmount - 0.01;
   const showBadge = percent != null;
-  const badgePercent = percent;
 
   return {
-    normalTransfer,
-    promoPrice,
+    listAmount,
+    transferAmount,
+    normalTransfer: transferAmount,
+    promoPrice: showPromoPrice ? transferAmount : null,
     showPromoPrice,
     showBadge,
-    badgePercent,
-    normalTransferFormatted: formatArs(normalTransfer),
-    promoPriceFormatted: promoPrice != null ? formatArs(promoPrice) : null,
+    badgePercent: percent,
+    listFormatted: formatArs(listAmount),
+    normalTransferFormatted: formatArs(transferAmount),
+    promoPriceFormatted: showPromoPrice ? formatArs(transferAmount) : null,
   };
 }

@@ -38,7 +38,6 @@ const productSchema = z.object({
   description: z.string().optional().transform((value) => value?.trim() ?? ""),
   categoryName: categoryNameSchema,
   listPrice: positiveAmountSchema,
-  transferPrice: positiveAmountSchema,
   isBestSeller: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -96,7 +95,6 @@ export async function POST(req: Request) {
   }
 
   const listCandidate = parseNumericInput(formData.get("listPrice"));
-  const transferCandidate = parseNumericInput(formData.get("transferPrice") ?? formData.get("retailPrice"));
 
   const normalizedData = parsed.success
     ? parsed.data
@@ -107,12 +105,10 @@ export async function POST(req: Request) {
         description: rawDescription,
         categoryName: rawCategory || "bazar",
         listPrice: listCandidate && listCandidate > 0 ? listCandidate : 1,
-        transferPrice: transferCandidate && transferCandidate > 0 ? transferCandidate : 1,
         isBestSeller: formData.get("isBestSeller") === "on",
         isActive: formData.get("isActive") === "on",
       };
 
-  const transferPrice = normalizedData.transferPrice;
   const listPrice = normalizedData.listPrice;
 
   const file = formData.get("imageFile");
@@ -147,9 +143,7 @@ export async function POST(req: Request) {
       description: normalizedData.description,
       imageUrl,
       listPrice,
-      retailPrice: transferPrice,
-      wholesalePrice: transferPrice,
-      discountRetailPercent: 0,
+      wholesalePrice: listPrice,
       discountWholesalePercent: 0,
       discountBadgeLabel: null,
       isBestSeller: normalizedData.isBestSeller,

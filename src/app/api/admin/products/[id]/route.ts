@@ -42,7 +42,6 @@ const updateDetailsSchema = z.object({
   description: z.string().optional(),
   categoryName: z.string().trim().min(2).max(40),
   listPrice: z.preprocess(parseNumericInput, z.number().positive()),
-  transferPrice: z.preprocess(parseNumericInput, z.number().positive()),
   wholesalePrice: z.preprocess(
     (v) => (v === "" || v == null ? undefined : parseNumericInput(v)),
     z.number().nonnegative().optional(),
@@ -185,7 +184,6 @@ export async function POST(
       description: formData.get("description"),
       categoryName: formData.get("categoryName"),
       listPrice: formData.get("listPrice"),
-      transferPrice: formData.get("transferPrice"),
       wholesalePrice: formData.get("wholesalePrice"),
     });
 
@@ -211,9 +209,7 @@ export async function POST(
         description: parsed.data.description?.trim() ?? "",
         categoryId: category.id,
         listPrice: parsed.data.listPrice,
-        retailPrice: parsed.data.transferPrice,
-        wholesalePrice: parsed.data.wholesalePrice ?? parsed.data.transferPrice,
-        discountRetailPercent: 0,
+        wholesalePrice: parsed.data.wholesalePrice ?? parsed.data.listPrice,
         discountBadgeLabel: null,
       },
     });

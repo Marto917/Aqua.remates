@@ -104,8 +104,6 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           imageUrl: product.imageUrl,
           imagePosition: product.imagePosition,
           listPrice: product.listPrice,
-          retailPrice: product.retailPrice,
-          discountRetailPercent: product.discountRetailPercent,
           imageScale: product.imageScale,
           categoryId: product.categoryId,
         }}

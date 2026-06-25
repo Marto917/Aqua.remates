@@ -1,21 +1,16 @@
+import { sendEmail } from "@/lib/send-email";
+
 type SendVerificationEmailParams = {
   to: string;
   name: string;
   verifyUrl: string;
 };
 
-const FROM_EMAIL = process.env.EMAIL_FROM?.trim() || "Aqua Remates <onboarding@resend.dev>";
-
 export async function sendVerificationEmail({
   to,
   name,
   verifyUrl,
 }: SendVerificationEmailParams): Promise<{ sent: boolean; error?: string }> {
-  const resendKey = process.env.RESEND_API_KEY?.trim();
-  if (!resendKey) {
-    return { sent: false, error: "RESEND_API_KEY no configurada." };
-  }
-
   const subject = "Confirmá tu email — Aqua Remates";
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
@@ -35,24 +30,9 @@ export async function sendVerificationEmail({
     </div>
   `;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: FROM_EMAIL,
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error("[email] Resend error:", res.status, body);
-    return { sent: false, error: "No se pudo enviar el email de verificación." };
+  const result = await sendEmail({ to, subject, html });
+  if (!result.sent) {
+    return { sent: false, error: result.reason ?? "No se pudo enviar el email de verificación." };
   }
 
   return { sent: true };

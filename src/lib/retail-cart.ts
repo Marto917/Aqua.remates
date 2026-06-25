@@ -1,3 +1,4 @@
+import { getCatalogPromoSettings } from "@/lib/catalog-promo";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -33,6 +34,7 @@ export async function resolveRetailCartLines(
     return { ok: false, error: "El carrito está vacío." };
   }
 
+  const catalogPromo = await getCatalogPromoSettings();
   const variantIds = [...new Set(inputs.map((l) => l.variantId))];
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: variantIds }, isActive: true },
@@ -63,11 +65,13 @@ export async function resolveRetailCartLines(
 
     const pricing = {
       listPrice: variant.product.listPrice,
-      retailPrice: variant.product.retailPrice,
+      categoryId: variant.product.categoryId,
     };
 
     const unitPrice =
-      paymentMethod === "MERCADO_PAGO" ? getListPrice(pricing) : getTransferPrice(pricing);
+      paymentMethod === "MERCADO_PAGO"
+        ? getListPrice(pricing)
+        : getTransferPrice(pricing, catalogPromo);
 
     const subtotal = unitPrice * input.quantity;
     subtotalAmount += subtotal;

@@ -22,8 +22,6 @@ type ProductCardProps = {
     imagePosition?: string | null;
     imageScale?: unknown;
     listPrice: unknown;
-    retailPrice: unknown;
-    discountRetailPercent?: number;
     categoryId: string;
     variants: {
       id: string;

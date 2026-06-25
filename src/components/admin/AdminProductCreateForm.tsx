@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
+import { BarcodeCameraScanner } from "@/components/barcode/BarcodeCameraScanner";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { COLOR_OPTIONS } from "@/lib/color-options";
 
@@ -13,6 +14,8 @@ type Props = {
 export function AdminProductCreateForm({ initialError, supplierNames = [], categories }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
+  const [sku, setSku] = useState("");
+  const skuInputRef = useRef<HTMLInputElement>(null);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
     { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.hex ?? "#2563eb" },
   ]);
@@ -142,14 +145,26 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
             />
           </label>
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-2">
           <input
+            ref={skuInputRef}
             name="sku"
-            placeholder="Código / código de barras (escaneá con lector USB)"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            placeholder="Código / código de barras"
             autoComplete="off"
             className="w-full rounded-md border px-3 py-2 font-mono text-sm"
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <BarcodeCameraScanner
+            title="Escanear código con cámara"
+            hint="Apuntá al código de barras del producto para cargar el SKU automáticamente."
+            onScan={(code) => {
+              setSku(code);
+              skuInputRef.current?.focus();
+            }}
+            disabled={submitting}
+          />
+          <p className="text-xs text-slate-500">
             El SKU no se muestra al cliente; sirve para buscar y escanear en armado de pedidos.
           </p>
         </div>
@@ -166,18 +181,13 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
           required
           type="number"
           step="0.01"
-          placeholder="Precio lista (Mercado Pago)"
-          className="rounded-md border px-3 py-2"
-        />
-        <input
-          name="transferPrice"
-          required
-          type="number"
-          step="0.01"
-          placeholder="Precio transferencia"
-          className="rounded-md border px-3 py-2"
+          placeholder="Precio de lista"
+          className="rounded-md border px-3 py-2 md:col-span-2"
         />
       </div>
+      <p className="text-xs text-slate-500">
+        El precio con transferencia se calcula con el descuento configurado en Promociones.
+      </p>
 
       <textarea
         name="description"
