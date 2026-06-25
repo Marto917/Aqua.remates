@@ -1,12 +1,13 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { buildPublicUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const plainToken = searchParams.get("token");
   if (!plainToken) {
-    return NextResponse.redirect(new URL("/cuenta/verificar-email?estado=error", req.url));
+    return NextResponse.redirect(buildPublicUrl("/cuenta/verificar-email", { estado: "error" }));
   }
 
   const emailVerificationTokenHash = createHash("sha256").update(plainToken).digest("hex");
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
   });
 
   if (!user) {
-    return NextResponse.redirect(new URL("/cuenta/verificar-email?estado=expirado", req.url));
+    return NextResponse.redirect(buildPublicUrl("/cuenta/verificar-email", { estado: "expirado" }));
   }
 
   await prisma.user.update({
@@ -31,5 +32,5 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL("/cuenta/verificar-email?estado=ok", req.url));
+  return NextResponse.redirect(buildPublicUrl("/cuenta/verificar-email", { estado: "ok" }));
 }

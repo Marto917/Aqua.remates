@@ -1,6 +1,5 @@
 import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { createHash, randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +7,11 @@ import {
   checkRegistrationDeviceLimit,
   recordRegistrationDevice,
 } from "@/lib/registration-device-limit";
-import { sendVerificationEmail } from "@/lib/send-verification-email";
+import {
+  createVerificationToken,
+  deliverVerificationEmail,
+} from "@/lib/verification-email";
+import { recordVerificationEmailSent } from "@/lib/verification-resend-limit";
 
 const registerSchema = z
   .object({
@@ -22,12 +25,6 @@ const registerSchema = z
     message: "Las contraseñas no coinciden.",
     path: ["passwordConfirm"],
   });
-
-function buildVerificationLink(token: string, origin: string) {
-  const url = new URL("/api/auth/verify-email", origin);
-  url.searchParams.set("token", token);
-  return url.toString();
-}
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -50,9 +47,7 @@ export async function POST(req: Request) {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const plainToken = randomBytes(32).toString("base64url");
-  const emailVerificationTokenHash = createHash("sha256").update(plainToken).digest("hex");
-  const emailVerificationExpires = new Date(Date.now() + 1000 * 60 * 60 * 48);
+  const { plainToken, tokenHash, expires } = createVerificationToken();
 
   await prisma.user.create({
     data: {
@@ -60,30 +55,32 @@ export async function POST(req: Request) {
       email: parsed.data.email,
       passwordHash,
       role: UserRole.CUSTOMER,
-      emailVerificationTokenHash,
-      emailVerificationExpires,
+      emailVerificationTokenHash: tokenHash,
+      emailVerificationExpires: expires,
     },
   });
 
   await recordRegistrationDevice(parsed.data.deviceId);
 
-  const origin = new URL(req.url).origin;
-  const link = buildVerificationLink(plainToken, origin);
-
-  const emailResult = await sendVerificationEmail({
+  const emailResult = await deliverVerificationEmail({
     to: parsed.data.email,
     name: parsed.data.name,
-    verifyUrl: link,
+    plainToken,
   });
+
+  if (emailResult.sent) {
+    await recordVerificationEmailSent(parsed.data.email);
+  }
 
   if (!emailResult.sent) {
     if (process.env.NODE_ENV === "development") {
-      console.info("[registro] Link de verificación (dev):", link);
+      console.info("[registro] Link de verificación (dev):", emailResult.verifyUrl);
       return NextResponse.json({
         ok: true,
+        email: parsed.data.email,
         message:
           "Cuenta creada. En desarrollo el link de verificación se muestra abajo (email no configurado).",
-        devLink: link,
+        devLink: emailResult.verifyUrl,
       });
     }
     return NextResponse.json(
@@ -97,6 +94,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    email: parsed.data.email,
     message:
       "Te enviamos un enlace de verificación a tu correo. Revisá también la carpeta de spam.",
   });

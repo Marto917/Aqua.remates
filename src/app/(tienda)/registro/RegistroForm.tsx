@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import {
@@ -16,6 +15,7 @@ type Props = {
 };
 
 export function RegistroForm({ googleReady }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawCallback = searchParams.get("callbackUrl");
   const callbackUrl =
@@ -76,6 +76,13 @@ export function RegistroForm({ googleReady }: Props) {
           setLoading(false);
           if (!res.ok) {
             setMensaje(data.error ?? "No se pudo registrar.");
+            return;
+          }
+          const registeredEmail = String(fd.get("email") ?? "").trim();
+          if (registeredEmail && !data.devLink) {
+            router.push(
+              `/cuenta/verificar-email?email=${encodeURIComponent(registeredEmail)}`,
+            );
             return;
           }
           setMensaje(data.message ?? "Listo.");
@@ -140,16 +147,6 @@ export function RegistroForm({ googleReady }: Props) {
           </a>
         </p>
       ) : null}
-
-      <p className="mt-5 text-center text-sm text-slate-600">
-        ¿Ya tenés cuenta?{" "}
-        <Link
-          href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-          className="font-semibold text-brand-dark hover:underline"
-        >
-          Ingresar
-        </Link>
-      </p>
     </>
   );
 }

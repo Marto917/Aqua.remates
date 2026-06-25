@@ -102,6 +102,14 @@ model WholesaleLead {
   updatedAt       DateTime            @updatedAt
 }
 
+/// Límite de reenvíos del mail de verificación (cooldown + tope diario).
+model VerificationEmailThrottle {
+  email           String   @id
+  lastSentAt      DateTime
+  sendsInWindow   Int      @default(1)
+  windowStartedAt DateTime
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
