@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
+import { sendOrderReceivedEmail } from "@/lib/order-transaction-emails";
 import { saveTransferReceiptFile } from "@/lib/save-receipt-file";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   const { orderId } = await params;
-  const order = await prisma.retailOrder.findUnique({ where: { id: orderId } });
+  const order = await prisma.retailOrder.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
 
   if (!order) {
     return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
@@ -37,14 +42,25 @@ export async function POST(
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const proofUrl = await saveTransferReceiptFile(buffer, file.type);
-    await prisma.retailOrder.update({
+    const wasPendingTransfer = order.status === "PENDING_TRANSFER";
+    const updated = await prisma.retailOrder.update({
       where: { id: orderId },
       data: {
         transferProofUrl: proofUrl,
         transferProofUploadedAt: new Date(),
         status: "TRANSFER_REPORTED",
       },
+      include: { items: true },
     });
+
+    if (wasPendingTransfer) {
+      try {
+        await sendOrderReceivedEmail(updated);
+      } catch (e) {
+        console.error("Email pedido recibido:", e);
+      }
+    }
+
     return NextResponse.json({ ok: true, proofUrl });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "No se pudo guardar el comprobante.";

@@ -149,7 +149,9 @@ export async function POST(req: Request) {
   });
 
   try {
-    await sendOrderReceivedEmail(order);
+    if (!isTransfer) {
+      await sendOrderReceivedEmail(order);
+    }
   } catch (e) {
     console.error("Email pedido recibido:", e);
   }

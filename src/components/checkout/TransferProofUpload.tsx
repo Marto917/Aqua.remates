@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatArs } from "@/lib/currency";
 
@@ -15,7 +16,9 @@ type Props = {
 };
 
 export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
+  const router = useRouter();
   const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+  const UPLOAD_TIMEOUT_MS = 90_000;
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
       const res = await fetch(`/api/retail-orders/${orderId}/transfer-proof`, {
         method: "POST",
         body: fd,
+        signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
       });
       const raw = await res.text();
       let data: { error?: string; ok?: boolean } = {};
@@ -71,9 +75,14 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
         return;
       }
       setDone(true);
+      router.push("/cuenta/mis-compras");
     } catch (e) {
       const msg =
-        e instanceof Error && e.message ? e.message : "Error de conexión. Intentá de nuevo.";
+        e instanceof DOMException && e.name === "TimeoutError"
+          ? "La subida tardó demasiado. Probá con una foto más liviana o en JPG."
+          : e instanceof Error && e.message
+            ? e.message
+            : "Error de conexión. Intentá de nuevo.";
       setError(msg);
     } finally {
       setSubmitting(false);

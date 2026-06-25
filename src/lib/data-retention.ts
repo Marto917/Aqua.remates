@@ -3,6 +3,35 @@ import { prisma } from "@/lib/prisma";
 const DELIVERED_ORDER_RETENTION_DAYS = 30;
 const INACTIVE_USER_RETENTION_DAYS = 90;
 
+/** Cuentas de cliente sin verificar cuyo enlace venció (48 h). */
+export async function purgeUnverifiedCustomerAccounts(): Promise<number> {
+  const now = new Date();
+
+  const staleUsers = await prisma.user.findMany({
+    where: {
+      role: "CUSTOMER",
+      emailVerified: null,
+      emailVerificationExpires: { lt: now },
+      retailOrders: { none: {} },
+      wholesaleRequests: { none: {} },
+    },
+    select: { id: true, email: true },
+    take: 200,
+  });
+
+  if (staleUsers.length === 0) return 0;
+
+  const ids = staleUsers.map((u) => u.id);
+  const emails = staleUsers.map((u) => u.email.toLowerCase());
+
+  await prisma.$transaction([
+    prisma.verificationEmailThrottle.deleteMany({ where: { email: { in: emails } } }),
+    prisma.user.deleteMany({ where: { id: { in: ids } } }),
+  ]);
+
+  return ids.length;
+}
+
 export async function purgeOldDeliveredOrders(): Promise<number> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - DELIVERED_ORDER_RETENTION_DAYS);
@@ -37,10 +66,15 @@ export async function purgeInactiveCustomerAccounts(): Promise<number> {
   return ids.length;
 }
 
-export async function runDataRetention(): Promise<{ orders: number; users: number }> {
-  const [orders, users] = await Promise.all([
+export async function runDataRetention(): Promise<{
+  orders: number;
+  users: number;
+  unverifiedUsers: number;
+}> {
+  const [orders, users, unverifiedUsers] = await Promise.all([
     purgeOldDeliveredOrders(),
     purgeInactiveCustomerAccounts(),
+    purgeUnverifiedCustomerAccounts(),
   ]);
-  return { orders, users };
+  return { orders, users, unverifiedUsers };
 }

@@ -1,5 +1,4 @@
-import { sendOrderDeliveredEmail } from "@/lib/order-fulfillment-emails";
-import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
+import { completeOrderDelivery } from "@/lib/complete-order-delivery";
 import { prisma } from "@/lib/prisma";
 import { deliveryCodesMatch } from "@/lib/delivery-code";
 import { canConfirmDelivery } from "@/lib/delivery-dispatch";
@@ -109,16 +108,7 @@ export async function confirmRiderDelivery(params: {
     return { ok: false, error: "Código incorrecto.", status: 403 };
   }
 
-  await prisma.retailOrder.update({
-    where: { id: params.orderId },
-    data: {
-      deliveryStatus: "DELIVERED",
-      deliveryDeliveredAt: new Date(),
-    },
-  });
-
-  await sendOrderDeliveredEmail(order);
-  revalidatePathsAfterRiderDelivery(params.orderId);
+  await completeOrderDelivery(params.orderId);
 
   return { ok: true };
 }

@@ -7,6 +7,7 @@ import {
   checkRegistrationDeviceLimit,
   recordRegistrationDevice,
 } from "@/lib/registration-device-limit";
+import { purgeUnverifiedCustomerAccounts } from "@/lib/data-retention";
 import {
   createVerificationToken,
   deliverVerificationEmail,
@@ -37,6 +38,12 @@ export async function POST(req: Request) {
   const deviceCheck = await checkRegistrationDeviceLimit(parsed.data.deviceId);
   if (!deviceCheck.allowed) {
     return NextResponse.json({ error: deviceCheck.message }, { status: 429 });
+  }
+
+  try {
+    await purgeUnverifiedCustomerAccounts();
+  } catch (e) {
+    console.error("Limpieza cuentas sin verificar:", e);
   }
 
   const exists = await prisma.user.findUnique({

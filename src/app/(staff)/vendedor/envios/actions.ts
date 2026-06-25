@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { revalidatePathsAfterRiderDelivery } from "@/lib/revalidate-after-delivery";
+import { completeOrderDelivery } from "@/lib/complete-order-delivery";
 import { canAssignRider, canDispatchAfterPack, canMarkPacked } from "@/lib/fulfillment";
 import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { sendOrderDispatchedEmail, sendOrderPackedEmail } from "@/lib/order-fulfillment-emails";
@@ -200,15 +200,7 @@ export async function markHomeDeliveredAction(orderId: string): Promise<PackResu
     return { ok: false, error: "Ya fue marcado como entregado." };
   }
 
-  await prisma.retailOrder.update({
-    where: { id: orderId },
-    data: {
-      deliveryStatus: "DELIVERED",
-      deliveryDeliveredAt: new Date(),
-    },
-  });
-
-  revalidatePathsAfterRiderDelivery(orderId);
+  await completeOrderDelivery(orderId);
 
   return { ok: true };
 }
@@ -240,15 +232,7 @@ export async function markPickupDeliveredAction(orderId: string): Promise<PackRe
     return { ok: false, error: "Ya fue marcado como entregado." };
   }
 
-  await prisma.retailOrder.update({
-    where: { id: orderId },
-    data: {
-      deliveryStatus: "DELIVERED",
-      deliveryDeliveredAt: new Date(),
-    },
-  });
-
-  revalidatePathsAfterRiderDelivery(orderId);
+  await completeOrderDelivery(orderId);
 
   return { ok: true };
 }

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RetailOrderStatus } from "@prisma/client";
-import Image from "next/image";
 import { updateRetailOrderStatus } from "../actions";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
+import { TransferProofPreview } from "@/components/staff/TransferProofPreview";
 import { TransferReviewButtons } from "@/components/staff/TransferReviewButtons";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { formatArs } from "@/lib/currency";
@@ -242,20 +242,7 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
           <p className="mt-1 text-xs text-amber-800">
             Corroborá en el banco que el monto sea exactamente {formatArs(Number(order.totalAmount))}.
           </p>
-          <a
-            href={order.transferProofUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative mt-4 block aspect-[4/3] max-w-md overflow-hidden rounded-lg border border-amber-200 bg-white"
-          >
-            <Image
-              src={order.transferProofUrl}
-              alt="Comprobante de pago"
-              fill
-              className="object-contain"
-              unoptimized
-            />
-          </a>
+          <TransferProofPreview url={order.transferProofUrl} />
           {order.transferProofUploadedAt ? (
             <p className="mt-2 text-xs text-slate-600">
               Subido:{" "}
