@@ -21,7 +21,7 @@ export async function createMercadoPagoCheckoutForOrder(
   }
 
   const lines: ResolvedRetailLine[] = order.items.map((it) => ({
-    variantId: it.variantId,
+    variantId: it.variantId ?? it.productId,
     productId: it.productId,
     categoryId: "",
     productName: it.productName,

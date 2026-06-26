@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { buildCatalogHref } from "@/lib/catalog";
 import { SearchAutocompleteInput } from "@/components/search/SearchAutocompleteInput";
 
 type CategoryChip = { slug: string; name: string };
@@ -33,19 +34,12 @@ export function CatalogToolbarClient({
     min?: string;
     max?: string;
   }) {
-    const params = new URLSearchParams();
-    const q = opts?.q ?? search;
-    const category = opts?.category ?? selectedCategory;
-    const min = opts?.min ?? localMin;
-    const max = opts?.max ?? localMax;
-
-    if (q?.trim()) params.set("q", q.trim());
-    if (category) params.set("category", category);
-    if (min?.trim()) params.set("minPrice", min.trim());
-    if (max?.trim()) params.set("maxPrice", max.trim());
-
-    const qs = params.toString();
-    return qs ? `/catalog?${qs}` : "/catalog";
+    return buildCatalogHref({
+      q: opts?.q ?? search,
+      category: opts?.category ?? selectedCategory,
+      minPrice: opts?.min ?? localMin,
+      maxPrice: opts?.max ?? localMax,
+    });
   }
 
   function applyFilters(e: FormEvent) {

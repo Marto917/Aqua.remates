@@ -17,7 +17,7 @@ export default async function CheckoutErrorPage({ searchParams }: PageProps) {
       select: { status: true, paymentMethod: true },
     });
     canRetry =
-      Boolean(order) &&
+      order != null &&
       order.paymentMethod === "MERCADO_PAGO" &&
       order.status === "PENDING_PAYMENT";
   }
