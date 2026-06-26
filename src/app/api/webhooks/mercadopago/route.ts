@@ -54,12 +54,11 @@ export async function POST(req: Request) {
         console.error("Confirmación post-MP:", e);
       }
     } else if (status === "cancelled" || status === "rejected") {
-      if (order.status === "PENDING_PAYMENT") {
-        await prisma.retailOrder.update({
-          where: { id: orderId },
-          data: { status: "CANCELLED", mercadoPagoPaymentId: String(payment.id ?? id) },
-        });
-      }
+      // Mantener PENDING_PAYMENT para que el cliente pueda reintentar el mismo pedido.
+      await prisma.retailOrder.update({
+        where: { id: orderId },
+        data: { mercadoPagoPaymentId: String(payment.id ?? id) },
+      });
     }
   } catch (e) {
     console.error("Mercado Pago webhook error:", e);

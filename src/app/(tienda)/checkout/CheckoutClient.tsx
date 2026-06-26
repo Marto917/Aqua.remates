@@ -324,7 +324,6 @@ export function CheckoutClient({
         return;
       }
       if (data.paymentMethod === "MERCADO_PAGO" && data.initPoint) {
-        clearLines();
         window.location.href = data.initPoint;
         return;
       }

@@ -56,7 +56,6 @@ export function ProductPriceBlock({
     getStorePriceDisplay(product, settings.catalogPromo);
   const promo = getProductPromoDisplay(product, settings.catalogPromo);
   const displayPrice = promo.showPromoPrice ? promo.promoPriceFormatted! : transferFormatted;
-  const strikeTransfer = promo.showPromoPrice ? promo.normalTransferFormatted : null;
   const transferLabel = promo.showPromoPrice ? "Promo transferencia" : "Con transferencia";
 
   const pricesRow = (
@@ -71,17 +70,6 @@ export function ProductPriceBlock({
         <PriceColumn amount={listFormatted} label="Precio de lista" size={size} />
       ) : null}
       <div className="text-center">
-        {strikeTransfer ? (
-          <p
-            className={
-              size === "detail"
-                ? "text-lg text-slate-400 line-through sm:text-xl"
-                : "text-sm text-slate-400 line-through"
-            }
-          >
-            {strikeTransfer}
-          </p>
-        ) : null}
         <p
           className={
             size === "detail"

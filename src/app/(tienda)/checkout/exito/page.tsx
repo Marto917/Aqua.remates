@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ClearCartOnPaymentSuccess } from "@/components/checkout/ClearCartOnPaymentSuccess";
+import { RetryMercadoPagoButton } from "@/components/checkout/RetryMercadoPagoButton";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -41,14 +43,11 @@ export default async function CheckoutExitoPage({ searchParams }: PageProps) {
 
   const order = await prisma.retailOrder.findUnique({
     where: { id: orderId },
-    select: { status: true, paymentMethod: true, mercadoPagoPaymentId: true },
+    select: { status: true, paymentMethod: true },
   });
 
   const paidInDb =
-    order &&
-    (order.status === "PAYMENT_APPROVED" ||
-      order.status === "CONFIRMED" ||
-      Boolean(order.mercadoPagoPaymentId));
+    order && (order.status === "PAYMENT_APPROVED" || order.status === "CONFIRMED");
 
   const returnLooksApproved = returnStatus === "approved";
 
@@ -69,12 +68,12 @@ export default async function CheckoutExitoPage({ searchParams }: PageProps) {
       <div className="mx-auto max-w-lg rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
         <h1 className="text-xl font-bold text-amber-900">Pago no confirmado</h1>
         <p className="mt-3 text-sm text-amber-800">
-          El pago no se completó o fue rechazado. No se envió confirmación de compra. Podés reintentar
-          desde el carrito o elegir transferencia.
+          El pago no se completó. Tu pedido y el carrito siguen guardados.
         </p>
+        <RetryMercadoPagoButton orderId={orderId} />
         <Link
           href="/carrito"
-          className="mt-6 inline-block rounded-full bg-brand px-6 py-2 text-sm font-semibold text-white"
+          className="mt-4 inline-block text-sm font-medium text-brand-dark underline"
         >
           Volver al carrito
         </Link>
@@ -99,18 +98,21 @@ export default async function CheckoutExitoPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center">
-      <h1 className="text-2xl font-bold text-emerald-900">¡Pago confirmado!</h1>
-      <p className="mt-3 text-sm text-emerald-800">
-        Tu pago con Mercado Pago fue acreditado. Te enviamos un email con el detalle y coordinamos el
-        envío o retiro según lo elegiste.
-      </p>
-      <Link
-        href="/catalog"
-        className="mt-6 inline-block rounded-full bg-brand px-6 py-2 text-sm font-semibold text-white"
-      >
-        Seguir comprando
-      </Link>
-    </div>
+    <>
+      <ClearCartOnPaymentSuccess active={Boolean(paidInDb)} />
+      <div className="mx-auto max-w-lg rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center">
+        <h1 className="text-2xl font-bold text-emerald-900">¡Pago confirmado!</h1>
+        <p className="mt-3 text-sm text-emerald-800">
+          Tu pago con Mercado Pago fue acreditado. Te enviamos un email con el detalle y coordinamos el
+          envío o retiro según lo elegiste.
+        </p>
+        <Link
+          href="/catalog"
+          className="mt-6 inline-block rounded-full bg-brand px-6 py-2 text-sm font-semibold text-white"
+        >
+          Seguir comprando
+        </Link>
+      </div>
+    </>
   );
 }

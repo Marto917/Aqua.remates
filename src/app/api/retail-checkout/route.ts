@@ -211,12 +211,11 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     console.error("Mercado Pago preference error:", e);
-    await prisma.retailOrder.update({
-      where: { id: order.id },
-      data: { status: "CANCELLED" },
-    });
     return NextResponse.json(
-      { error: "No se pudo iniciar el pago con Mercado Pago. Intentá de nuevo o elegí transferencia." },
+      {
+        error: "No se pudo iniciar el pago con Mercado Pago. Intentá de nuevo o elegí transferencia.",
+        orderId: order.id,
+      },
       { status: 502 },
     );
   }
