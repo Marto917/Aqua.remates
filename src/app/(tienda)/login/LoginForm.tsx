@@ -8,9 +8,12 @@ import { authDividerClass, authFieldClass, authPrimaryButtonClass } from "@/comp
 
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "No se pudo ingresar con Google. Probá con email o usá otra cuenta de cliente.",
+  StaffGoogle:
+    "Esa cuenta es del equipo interno. Ingresá con email y contraseña desde el acceso de staff.",
   Configuration: "Google no está bien configurado en el servidor.",
   OAuthSignin: "Error al iniciar sesión con Google. Intentá de nuevo.",
-  OAuthCallback: "Error al volver desde Google. Revisá que NEXTAUTH_URL coincida con tu dominio.",
+  OAuthCallback:
+    "Error al volver desde Google. En Google Cloud agregá https://www.aquaremates.com.ar/api/auth/callback/google y verificá NEXTAUTH_URL.",
 };
 
 type Props = {

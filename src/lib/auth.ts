@@ -12,12 +12,13 @@ import {
   resolveGoogleSignInUser,
 } from "@/lib/google-auth";
 import { prisma } from "@/lib/prisma";
+import { getPublicAppUrl } from "@/lib/app-url";
 
-/** Normaliza NEXTAUTH_URL (sin barra final) para que coincida con Google OAuth. */
+/** Normaliza NEXTAUTH_URL (sin barra final, www canónico en producción). */
 function ensureNextAuthUrl(): void {
   const raw = process.env.NEXTAUTH_URL?.trim();
   if (raw) {
-    process.env.NEXTAUTH_URL = raw.replace(/\/$/, "");
+    process.env.NEXTAUTH_URL = getPublicAppUrl();
   }
 }
 
@@ -138,7 +139,10 @@ export const authOptions: NextAuthOptions = {
         image: user.image,
       });
       if (!resolved.ok) {
-        return false;
+        if (resolved.reason === "staff_account") {
+          return "/login?error=StaffGoogle";
+        }
+        return "/login?error=AccessDenied";
       }
       const u = user as NextAuthUser & {
         id?: string;

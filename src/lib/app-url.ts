@@ -60,12 +60,12 @@ export function syncNextAuthUrlFromRequest(req: Request): string {
   const proto = forwardedProto ?? (new URL(req.url).protocol.replace(":", "") || "https");
 
   if (host) {
-    const base = `${proto}://${host}`.replace(/\/$/, "");
+    const base = preferWwwForKnownApex(`${proto}://${host}`.replace(/\/$/, ""));
     process.env.NEXTAUTH_URL = base;
     return base;
   }
 
-  const origin = new URL(req.url).origin.replace(/\/$/, "");
+  const origin = preferWwwForKnownApex(new URL(req.url).origin.replace(/\/$/, ""));
   process.env.NEXTAUTH_URL = origin;
   return origin;
 }

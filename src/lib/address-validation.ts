@@ -14,5 +14,34 @@ export function buildShippingAddressLine(street: string, streetNumber: string): 
   return `${street.trim()} ${streetNumber.trim()}`.trim();
 }
 
+/** Separa "Av. Corrientes 1234" en calle y número. */
+export function parseAddressLine(line: string): { street: string; number: string } {
+  const trimmed = line.trim();
+  const match = trimmed.match(/^(.+?)\s+(\d+[a-zA-Z]?)$/);
+  if (match) {
+    return { street: match[1].trim(), number: match[2] };
+  }
+  return { street: trimmed, number: "" };
+}
+
+export function formatAddressLine(street: string, streetNumber: string): string {
+  const s = street.trim();
+  const n = streetNumber.trim();
+  if (!s) return "";
+  return n ? `${s} ${n}` : s;
+}
+
+export function validateShippingAddressLine(line: string): string | null {
+  const { street, number } = parseAddressLine(line);
+  if (!street.trim()) return "Indicá la calle y el número.";
+  if (!number) return "Falta el número de casa (ej: Av. Corrientes 1234).";
+  if (!isValidStreetNumber(number)) return "El número debe ser solo dígitos (ej: 1234).";
+  const full = buildShippingAddressLine(street, number);
+  if (!shippingAddressHasStreetNumber(full)) {
+    return "La dirección debe incluir calle y número.";
+  }
+  return null;
+}
+
 export const SHIPPING_ADDRESS_HINT =
-  "El número de casa es obligatorio (ej: 1234). Sin número la app de reparto no puede tomar el pedido.";
+  "Escribí calle y número juntos (ej: San Martín 1234). Podés elegir una sugerencia o completar a mano.";
