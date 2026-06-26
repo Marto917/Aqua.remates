@@ -1,8 +1,9 @@
 import { CheckoutClient } from "./CheckoutClient";
-import { isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { isMercadoPagoConfigured, isMercadoPagoSandbox } from "@/lib/mercadopago";
 
 export default function CheckoutPage() {
   const mercadoPagoEnabled = isMercadoPagoConfigured();
+  const mercadoPagoSandbox = isMercadoPagoSandbox();
 
   return (
     <div className="space-y-6">
@@ -12,7 +13,7 @@ export default function CheckoutPage() {
           Elegí envío y pago. Los precios se calculan desde tu carrito minorista.
         </p>
       </div>
-      <CheckoutClient mercadoPagoEnabled={mercadoPagoEnabled} />
+      <CheckoutClient mercadoPagoEnabled={mercadoPagoEnabled} mercadoPagoSandbox={mercadoPagoSandbox} />
     </div>
   );
 }

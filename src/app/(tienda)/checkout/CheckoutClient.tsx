@@ -27,7 +27,13 @@ type TransferInfo = {
   notes?: string | null;
 };
 
-export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boolean }) {
+export function CheckoutClient({
+  mercadoPagoEnabled,
+  mercadoPagoSandbox = false,
+}: {
+  mercadoPagoEnabled: boolean;
+  mercadoPagoSandbox?: boolean;
+}) {
   const router = useRouter();
   const settings = useStoreSettings();
   const { lines, subtotalTransfer, subtotalTransferAmount, clearLines } = useCart();
@@ -526,6 +532,14 @@ export function CheckoutClient({ mercadoPagoEnabled }: { mercadoPagoEnabled: boo
               </label>
             )}
           </div>
+          {mercadoPagoEnabled && mercadoPagoSandbox && paymentMethod === "MERCADO_PAGO" ? (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              Modo prueba: abrí el pago en una ventana incógnito, no uses tu cuenta vendedor de Mercado Pago
+              ni tarjetas reales. Tarjeta de prueba Visa{" "}
+              <strong>4509 9535 6623 3704</strong>, titular <strong>APRO</strong>, DNI{" "}
+              <strong>12345678</strong>.
+            </p>
+          ) : null}
         </section>
 
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
