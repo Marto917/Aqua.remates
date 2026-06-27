@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import { SignOutButton } from "@/components/SignOutButton";
+import { CustomerAccountMenu } from "@/components/nav/CustomerAccountMenu";
 import { SiteLogo } from "@/components/SiteLogo";
 import { IconUser } from "@/components/icons/NavIcons";
 import { StoreNavToolbar } from "@/components/nav/StoreNavToolbar";
-import { UserProfileChip } from "@/components/nav/UserProfileChip";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
 import { prisma } from "@/lib/prisma";
 import type { Session } from "next-auth";
@@ -18,7 +17,11 @@ export async function StoreNav({ session, logoUrl }: Props) {
   let profileImage: string | null = null;
   let profileName = session?.user?.name ?? "";
 
-  if (session?.user?.id && session.user.role === UserRole.CUSTOMER) {
+  const isCustomer =
+    session?.user?.role === UserRole.CUSTOMER ||
+    (Boolean(session?.user?.id) && session?.user?.role !== UserRole.OWNER && session?.user?.role !== UserRole.EMPLOYEE);
+
+  if (session?.user?.id && isCustomer) {
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { name: true, imageUrl: true },
@@ -31,11 +34,10 @@ export async function StoreNav({ session, logoUrl }: Props) {
     }
   }
 
-  const isCustomer = session?.user?.role === UserRole.CUSTOMER;
   const isLoggedIn = Boolean(session?.user);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 relative">
+    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90">
       <nav className="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/"
@@ -74,24 +76,10 @@ export async function StoreNav({ session, logoUrl }: Props) {
               </Link>
             </>
           ) : isCustomer ? (
-            <>
-              <div className="ml-1 hidden sm:block">
-                <UserProfileChip name={profileName} imageUrl={profileImage} />
-              </div>
-              <div className="ml-1 hidden lg:block">
-                <SignOutButton className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50" />
-              </div>
-            </>
+            <CustomerAccountMenu name={profileName} imageUrl={profileImage} />
           ) : null}
         </div>
       </nav>
-
-      {session?.user && isCustomer ? (
-        <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 pb-2 sm:hidden">
-          <UserProfileChip name={profileName} imageUrl={profileImage} />
-          <SignOutButton className="shrink-0 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600" />
-        </div>
-      ) : null}
     </header>
   );
 }
