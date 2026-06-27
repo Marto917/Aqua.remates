@@ -1,20 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { authPrimaryButtonClass } from "@/components/auth/auth-styles";
 
 type Props = {
   initialEmail?: string;
   /** Si el enlace expiró, mostramos texto distinto. */
   expired?: boolean;
+  turnstileSiteKey?: string | null;
 };
 
-export function ResendVerificationForm({ initialEmail = "", expired = false }: Props) {
+export function ResendVerificationForm({
+  initialEmail = "",
+  expired = false,
+  turnstileSiteKey = null,
+}: Props) {
   const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const needsTurnstile = Boolean(turnstileSiteKey);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -27,13 +35,17 @@ export function ResendVerificationForm({ initialEmail = "", expired = false }: P
   const onSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (needsTurnstile && !turnstileToken) {
+        setError("Completá la verificación anti-bots.");
+        return;
+      }
       setLoading(true);
       setMensaje(null);
       setError(null);
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken: turnstileToken ?? undefined }),
       });
       const data = await res.json().catch(() => ({}));
       setLoading(false);
@@ -47,7 +59,7 @@ export function ResendVerificationForm({ initialEmail = "", expired = false }: P
       setMensaje(data.message ?? "Te enviamos un nuevo enlace.");
       setCooldown(180);
     },
-    [email],
+    [email, needsTurnstile, turnstileToken],
   );
 
   return (
@@ -68,9 +80,12 @@ export function ResendVerificationForm({ initialEmail = "", expired = false }: P
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           readOnly={Boolean(initialEmail)}
         />
+        {turnstileSiteKey ? (
+          <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+        ) : null}
         <button
           type="submit"
-          disabled={loading || cooldown > 0 || !email.trim()}
+          disabled={loading || cooldown > 0 || !email.trim() || (needsTurnstile && !turnstileToken)}
           className={`${authPrimaryButtonClass} w-full text-sm`}
         >
           {loading

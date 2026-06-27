@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { authDividerClass, authFieldClass, authPrimaryButtonClass } from "@/components/auth/auth-styles";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -18,9 +19,10 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 type Props = {
   googleReady: boolean;
+  turnstileSiteKey: string | null;
 };
 
-export function LoginForm({ googleReady }: Props) {
+export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
   const searchParams = useSearchParams();
   const rawCallback = searchParams.get("callbackUrl");
   const callbackUrl =
@@ -32,6 +34,8 @@ export function LoginForm({ googleReady }: Props) {
     oauthError ? (ERROR_MESSAGES[oauthError] ?? "No se pudo ingresar con Google.") : null,
   );
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const needsTurnstile = Boolean(turnstileSiteKey);
 
   const googleHint = !googleReady
     ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Railway para activar Google."
@@ -56,6 +60,10 @@ export function LoginForm({ googleReady }: Props) {
         className="space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (needsTurnstile && !turnstileToken) {
+            setError("Completá la verificación anti-bots.");
+            return;
+          }
           setLoading(true);
           setError(null);
           const form = new FormData(event.currentTarget);
@@ -65,6 +73,7 @@ export function LoginForm({ googleReady }: Props) {
             email,
             password,
             loginMode: "customer",
+            turnstileToken: turnstileToken ?? "",
             callbackUrl,
             redirect: false,
           });
@@ -111,7 +120,14 @@ export function LoginForm({ googleReady }: Props) {
             {error}
           </p>
         ) : null}
-        <button disabled={loading} type="submit" className={authPrimaryButtonClass}>
+        {turnstileSiteKey ? (
+          <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+        ) : null}
+        <button
+          disabled={loading || (needsTurnstile && !turnstileToken)}
+          type="submit"
+          className={authPrimaryButtonClass}
+        >
           {loading ? "Ingresando…" : "Ingresar"}
         </button>
       </form>

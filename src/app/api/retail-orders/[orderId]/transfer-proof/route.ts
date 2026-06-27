@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { getSafeSession } from "@/lib/get-session";
+import { canCustomerAccessOrder } from "@/lib/order-access";
 import { sendOrderReceivedEmail } from "@/lib/order-transaction-emails";
+import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import { saveTransferReceiptFile } from "@/lib/save-receipt-file";
 import { prisma } from "@/lib/prisma";
 
@@ -10,6 +13,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
+  const session = await getSafeSession();
   const { orderId } = await params;
   const order = await prisma.retailOrder.findUnique({
     where: { id: orderId },
@@ -18,6 +22,15 @@ export async function POST(
 
   if (!order) {
     return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
+  }
+  if (!canCustomerAccessOrder(order, session)) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+
+  const proofLimit = RATE_LIMITS.transferProofOrder(orderId);
+  const proofCheck = await checkRateLimit(proofLimit);
+  if (!proofCheck.allowed) {
+    return NextResponse.json({ error: proofCheck.message }, { status: 429 });
   }
   if (order.paymentMethod !== "BANK_TRANSFER") {
     return NextResponse.json({ error: "Este pedido no es por transferencia." }, { status: 400 });
@@ -60,6 +73,8 @@ export async function POST(
         console.error("Email pedido recibido:", e);
       }
     }
+
+    await recordRateLimitAttempt(proofLimit);
 
     return NextResponse.json({ ok: true, proofUrl });
   } catch (e) {

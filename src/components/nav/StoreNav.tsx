@@ -2,7 +2,6 @@ import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { CustomerAccountMenu } from "@/components/nav/CustomerAccountMenu";
 import { SiteLogo } from "@/components/SiteLogo";
-import { IconUser } from "@/components/icons/NavIcons";
 import { StoreNavToolbar } from "@/components/nav/StoreNavToolbar";
 import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
 import { prisma } from "@/lib/prisma";
@@ -51,30 +50,23 @@ export async function StoreNav({ session, logoUrl }: Props) {
           <WholesaleModeToggle />
         </div>
 
-        <div className="flex items-center justify-end gap-0.5">
+        <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
           <StoreNavToolbar />
           {!isLoggedIn ? (
-            <>
+            <div className="ml-0.5 flex shrink-0 items-center gap-1 sm:ml-1 sm:gap-1.5">
               <Link
                 href="/login"
-                className="ml-1 hidden min-h-10 rounded-full border border-brand px-3 py-1.5 text-xs font-semibold text-brand-dark sm:inline-flex sm:items-center"
+                className="inline-flex min-h-9 items-center justify-center rounded-full border border-brand px-2.5 py-1 text-[11px] font-semibold leading-none text-brand-dark hover:bg-brand/5 sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
               >
                 Ingresar
               </Link>
               <Link
                 href="/registro"
-                className="hidden min-h-10 rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex sm:items-center"
+                className="inline-flex min-h-9 items-center justify-center rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold leading-none text-white hover:bg-brand-dark sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
               >
                 Registro
               </Link>
-              <Link
-                href="/login"
-                className="ml-0.5 flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brand/30 text-brand-dark hover:bg-brand/5 sm:hidden"
-                aria-label="Ingresar"
-              >
-                <IconUser className="h-5 w-5" />
-              </Link>
-            </>
+            </div>
           ) : isCustomer ? (
             <CustomerAccountMenu name={profileName} imageUrl={profileImage} />
           ) : null}

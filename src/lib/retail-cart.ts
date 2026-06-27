@@ -1,3 +1,4 @@
+import { MAX_QUANTITY_PER_LINE } from "@/lib/checkout-security";
 import { getCatalogPromoSettings } from "@/lib/catalog-promo";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 import { prisma } from "@/lib/prisma";
@@ -61,6 +62,12 @@ export async function resolveRetailCartLines(
     }
     if (input.quantity < 1) {
       return { ok: false, error: "Cantidad inválida." };
+    }
+    if (input.quantity > MAX_QUANTITY_PER_LINE) {
+      return {
+        ok: false,
+        error: `La cantidad máxima por producto es ${MAX_QUANTITY_PER_LINE} unidades.`,
+      };
     }
 
     const pricing = {

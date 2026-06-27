@@ -14,6 +14,7 @@ import { formatDisplayWords } from "@/lib/display-text";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { AddressFields } from "@/components/checkout/AddressFields";
 import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import type { ShippingQuote } from "@/lib/shipping-quote";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
@@ -30,9 +31,11 @@ type TransferInfo = {
 export function CheckoutClient({
   mercadoPagoEnabled,
   mercadoPagoSandbox = false,
+  turnstileSiteKey = null,
 }: {
   mercadoPagoEnabled: boolean;
   mercadoPagoSandbox?: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const router = useRouter();
   const settings = useStoreSettings();
@@ -63,6 +66,8 @@ export function CheckoutClient({
   } | null>(null);
   const [shippingQuote, setShippingQuote] = useState<ShippingQuote | null>(null);
   const [shippingQuoteLoading, setShippingQuoteLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const needsTurnstile = Boolean(turnstileSiteKey);
 
   const lineSummaries = useMemo(() => {
     return lines.map((line) => {
@@ -259,6 +264,11 @@ export function CheckoutClient({
     e.preventDefault();
     setError(null);
 
+    if (needsTurnstile && !turnstileToken) {
+      setError("Completá la verificación anti-bots.");
+      return;
+    }
+
     if (shippingMethod === "DELIVERY") {
       if (!shippingStreet.trim()) {
         setError("Indicá la calle de entrega.");
@@ -304,6 +314,7 @@ export function CheckoutClient({
           shippingPostalCode: shippingMethod === "DELIVERY" ? shippingPostalCode : undefined,
           shippingNotes: shippingMethod === "DELIVERY" ? shippingNotes : undefined,
           saveToProfile: shippingMethod === "DELIVERY" ? saveToProfile : false,
+          turnstileToken: turnstileToken ?? undefined,
           lines: lines.map((l) => ({
             variantId: l.variantId,
             productId: l.productId,
@@ -543,9 +554,13 @@ export function CheckoutClient({
 
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
 
+        {turnstileSiteKey ? (
+          <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+        ) : null}
+
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || (needsTurnstile && !turnstileToken)}
           className="w-full rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
         >
           {submitting

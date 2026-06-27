@@ -3,18 +3,21 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import {
   authDividerClass,
   authFieldClass,
   authPrimaryButtonClass,
 } from "@/components/auth/auth-styles";
 import { getOrCreateDeviceId } from "@/lib/get-device-id";
+import { HONEYPOT_FIELD_NAME } from "@/lib/honeypot";
 
 type Props = {
   googleReady: boolean;
+  turnstileSiteKey: string | null;
 };
 
-export function RegistroForm({ googleReady }: Props) {
+export function RegistroForm({ googleReady, turnstileSiteKey }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawCallback = searchParams.get("callbackUrl");
@@ -28,10 +31,13 @@ export function RegistroForm({ googleReady }: Props) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [password, setPassword] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const googleHint = !googleReady
     ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para activar el registro con Google."
     : undefined;
+
+  const needsTurnstile = Boolean(turnstileSiteKey);
 
   return (
     <>
@@ -57,6 +63,10 @@ export function RegistroForm({ googleReady }: Props) {
             return;
           }
           setPasswordMismatch(false);
+          if (needsTurnstile && !turnstileToken) {
+            setMensaje("Completá la verificación anti-bots.");
+            return;
+          }
           setLoading(true);
           setMensaje(null);
           setDevLink(null);
@@ -70,6 +80,8 @@ export function RegistroForm({ googleReady }: Props) {
               password,
               passwordConfirm,
               deviceId: getOrCreateDeviceId(),
+              turnstileToken: turnstileToken ?? undefined,
+              [HONEYPOT_FIELD_NAME]: fd.get(HONEYPOT_FIELD_NAME),
             }),
           });
           const data = await res.json().catch(() => ({}));
@@ -131,7 +143,22 @@ export function RegistroForm({ googleReady }: Props) {
         {passwordMismatch ? (
           <p className="text-sm text-rose-600">Las contraseñas no coinciden.</p>
         ) : null}
-        <button type="submit" disabled={loading} className={authPrimaryButtonClass}>
+        <input
+          type="text"
+          name={HONEYPOT_FIELD_NAME}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden
+          className="pointer-events-none absolute left-[-9999px] h-0 w-0 opacity-0"
+        />
+        {turnstileSiteKey ? (
+          <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+        ) : null}
+        <button
+          type="submit"
+          disabled={loading || (needsTurnstile && !turnstileToken)}
+          className={authPrimaryButtonClass}
+        >
           {loading ? "Registrando…" : "Crear cuenta con email"}
         </button>
       </form>

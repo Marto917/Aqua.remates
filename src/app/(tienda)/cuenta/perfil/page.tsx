@@ -1,13 +1,12 @@
 import { SignOutButton } from "@/components/SignOutButton";
+import { CustomerProfileAvatarForm } from "@/components/cuenta/CustomerProfileAvatarForm";
 import { CustomerShippingProfileForm } from "@/components/cuenta/CustomerShippingProfileForm";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import { updateProfileImageAction, updateShippingProfileAction } from "./actions";
+import { updateShippingProfileAction } from "./actions";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
-import { resolveUserAvatarUrl } from "@/lib/user-avatar";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -44,8 +43,6 @@ export default async function PerfilPage({ searchParams }: PageProps) {
     redirect("/login");
   }
 
-  const avatar = resolveUserAvatarUrl(user.imageUrl);
-
   return (
     <div className="mx-auto max-w-md space-y-6">
       <div>
@@ -54,39 +51,7 @@ export default async function PerfilPage({ searchParams }: PageProps) {
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col items-center gap-3">
-          <span className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-brand/30 bg-brand-muted">
-            <Image
-              src={avatar}
-              alt="Tu foto de perfil"
-              width={96}
-              height={96}
-              className="h-full w-full object-cover"
-              unoptimized={avatar.startsWith("http")}
-            />
-          </span>
-          <p className="text-lg font-semibold text-slate-900">{user.name}</p>
-        </div>
-
-        <form action={updateProfileImageAction} className="mt-6 space-y-3">
-          <label className="block text-sm font-medium text-slate-700" htmlFor="imageUrl">
-            URL de tu foto (opcional)
-          </label>
-          <input
-            id="imageUrl"
-            name="imageUrl"
-            type="url"
-            defaultValue={user.imageUrl?.startsWith("http") ? user.imageUrl : ""}
-            placeholder="https://..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Guardar foto
-          </button>
-        </form>
+        <CustomerProfileAvatarForm initialImageUrl={user.imageUrl} userName={user.name} />
 
         {phoneError ? (
           <p className="mt-3 text-sm text-rose-600">El teléfono debe tener al menos 8 caracteres.</p>

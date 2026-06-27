@@ -11,8 +11,14 @@ import {
   isGoogleAuthConfigured,
   resolveGoogleSignInUser,
 } from "@/lib/google-auth";
+import {
+  checkLoginRateLimit,
+  clearLoginRateLimit,
+  recordLoginFailure,
+} from "@/lib/login-rate-limit";
 import { prisma } from "@/lib/prisma";
 import { getPublicAppUrl } from "@/lib/app-url";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 /** Normaliza NEXTAUTH_URL (sin barra final, www canónico en producción). */
 function ensureNextAuthUrl(): void {
@@ -28,6 +34,7 @@ const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(6),
   loginMode: z.enum(["customer", "staff"]).default("customer"),
+  turnstileToken: z.string().optional(),
 });
 
 function normalizeEmail(email: string) {
@@ -58,6 +65,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
         loginMode: { label: "Modo", type: "text" },
+        turnstileToken: { label: "Turnstile", type: "text" },
       },
       async authorize(credentials) {
         await ensureDefaultStaffUsers();
@@ -68,6 +76,8 @@ export const authOptions: NextAuthOptions = {
             credentials?.loginMode === "staff" || credentials?.loginMode === "customer"
               ? credentials.loginMode
               : "customer",
+          turnstileToken:
+            typeof credentials?.turnstileToken === "string" ? credentials.turnstileToken : undefined,
         };
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) {
@@ -77,6 +87,16 @@ export const authOptions: NextAuthOptions = {
         const email = normalizeEmail(parsed.data.email);
         const password = parsed.data.password.trimEnd();
         const loginMode = parsed.data.loginMode;
+
+        const turnstile = await verifyTurnstileToken(parsed.data.turnstileToken);
+        if (!turnstile.ok) {
+          return null;
+        }
+
+        const loginLimit = await checkLoginRateLimit(email);
+        if (!loginLimit.allowed) {
+          return null;
+        }
 
         let user;
         try {
@@ -89,11 +109,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user) {
+          await recordLoginFailure(email);
           return null;
         }
 
         const isValidPassword = await bcrypt.compare(password, user.passwordHash);
         if (!isValidPassword) {
+          await recordLoginFailure(email);
           return null;
         }
 
@@ -102,8 +124,11 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         if (loginMode === "staff" && !isStaff) {
+          await recordLoginFailure(email);
           return null;
         }
+
+        await clearLoginRateLimit(email);
 
         await prisma.user.update({
           where: { id: user.id },

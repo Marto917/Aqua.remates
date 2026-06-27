@@ -3,9 +3,14 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { authFieldClass, authPrimaryButtonClass } from "@/components/auth/auth-styles";
 
-export function StaffLoginForm() {
+type Props = {
+  turnstileSiteKey?: string | null;
+};
+
+export function StaffLoginForm({ turnstileSiteKey = null }: Props) {
   const searchParams = useSearchParams();
   const rawCallback = searchParams.get("callbackUrl");
   const callbackUrl =
@@ -14,12 +19,18 @@ export function StaffLoginForm() {
       : "/admin";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const needsTurnstile = Boolean(turnstileSiteKey);
 
   return (
     <form
       className="space-y-4"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (needsTurnstile && !turnstileToken) {
+          setError("Completá la verificación anti-bots.");
+          return;
+        }
         setLoading(true);
         setError(null);
         const form = new FormData(event.currentTarget);
@@ -27,6 +38,7 @@ export function StaffLoginForm() {
           email: String(form.get("email") ?? "").trim(),
           password: String(form.get("password") ?? ""),
           loginMode: "staff",
+          turnstileToken: turnstileToken ?? "",
           callbackUrl,
           redirect: false,
         });
@@ -71,7 +83,14 @@ export function StaffLoginForm() {
           {error}
         </p>
       ) : null}
-      <button disabled={loading} type="submit" className={authPrimaryButtonClass}>
+      {turnstileSiteKey ? (
+        <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+      ) : null}
+      <button
+        disabled={loading || (needsTurnstile && !turnstileToken)}
+        type="submit"
+        className={authPrimaryButtonClass}
+      >
         {loading ? "Ingresando…" : "Ingresar al panel"}
       </button>
       <p className="text-center text-xs text-slate-500">

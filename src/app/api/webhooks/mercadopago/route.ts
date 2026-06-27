@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { confirmRetailOrderForCustomer } from "@/lib/confirm-retail-order";
 import { fetchMercadoPagoPayment, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { verifyMercadoPagoWebhookSignature } from "@/lib/mercadopago-webhook-signature";
 import { prisma } from "@/lib/prisma";
 
 /** IPN / Webhooks de Mercado Pago (topic=payment). */
@@ -25,6 +26,12 @@ export async function POST(req: Request) {
 
   if (topic !== "payment" || !id) {
     return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  const signature = verifyMercadoPagoWebhookSignature(req, id);
+  if (!signature.ok) {
+    console.warn("[MP webhook] Firma rechazada:", signature.reason);
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   try {

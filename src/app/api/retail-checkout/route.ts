@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
-import { BillingMode, UserRole } from "@prisma/client";
+import { BillingMode } from "@prisma/client";
 import { z } from "zod";
+import { getClientIp, hashIp } from "@/lib/client-ip";
+import {
+  buyerEmailMatchesSession,
+  checkPendingOrdersLimit,
+  requireVerifiedCustomerSession,
+  validateCheckoutQuantities,
+} from "@/lib/checkout-security";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
+import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
 import { computeShippingQuote } from "@/lib/shipping-quote";
 import { getStoreSettings } from "@/lib/store-settings";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const lineSchema = z.object({
   variantId: z.string().min(1),
@@ -31,6 +40,7 @@ const checkoutSchema = z
     shippingPostalCode: z.string().optional(),
     shippingNotes: z.string().optional(),
     saveToProfile: z.boolean().optional(),
+    turnstileToken: z.string().optional(),
     lines: z.array(lineSchema).min(1),
   })
   .superRefine((data, ctx) => {
@@ -65,6 +75,22 @@ const checkoutSchema = z
   });
 
 export async function POST(req: Request) {
+  const session = await getSafeSession();
+  const auth = requireVerifiedCustomerSession(session);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const clientIp = getClientIp(req);
+  const ipCheck = await checkRateLimit(RATE_LIMITS.checkoutIp(hashIp(clientIp)));
+  if (!ipCheck.allowed) {
+    return NextResponse.json({ error: ipCheck.message }, { status: 429 });
+  }
+  const userCheck = await checkRateLimit(RATE_LIMITS.checkoutUser(auth.userId));
+  if (!userCheck.allowed) {
+    return NextResponse.json({ error: userCheck.message }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -79,14 +105,35 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
+
+  const turnstile = await verifyTurnstileToken(data.turnstileToken, clientIp);
+  if (!turnstile.ok) {
+    return NextResponse.json({ error: turnstile.error }, { status: 400 });
+  }
+
+  if (!buyerEmailMatchesSession(data.buyerEmail, auth.email)) {
+    return NextResponse.json(
+      { error: "El email del pedido debe coincidir con el de tu cuenta." },
+      { status: 400 },
+    );
+  }
+
+  const qtyCheck = validateCheckoutQuantities(data.lines);
+  if (!qtyCheck.ok) {
+    return NextResponse.json({ error: qtyCheck.error }, { status: 400 });
+  }
+
+  const pendingCheck = await checkPendingOrdersLimit(auth.userId);
+  if (!pendingCheck.allowed) {
+    return NextResponse.json({ error: pendingCheck.message }, { status: 429 });
+  }
+
   const resolved = await resolveRetailCartLines(data.lines, data.paymentMethod);
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: 400 });
   }
 
-  const session = await getSafeSession();
-  const customerId =
-    session?.user?.id && session.user.role === UserRole.CUSTOMER ? session.user.id : null;
+  const customerId = auth.userId;
 
   const [settings, freeShipping] = await Promise.all([getStoreSettings(), getFreeShippingSettings()]);
   const { cart } = resolved;
@@ -171,6 +218,8 @@ export async function POST(req: Request) {
   }
 
   if (isTransfer) {
+    await recordRateLimitAttempt(RATE_LIMITS.checkoutUser(customerId));
+    await recordRateLimitAttempt(RATE_LIMITS.checkoutIp(hashIp(clientIp)));
     return NextResponse.json({
       orderId: order.id,
       paymentMethod: "BANK_TRANSFER",
@@ -200,6 +249,9 @@ export async function POST(req: Request) {
       where: { id: order.id },
       data: { mercadoPagoPreferenceId: preferenceId },
     });
+
+    await recordRateLimitAttempt(RATE_LIMITS.checkoutUser(customerId));
+    await recordRateLimitAttempt(RATE_LIMITS.checkoutIp(hashIp(clientIp)));
 
     return NextResponse.json({
       orderId: order.id,

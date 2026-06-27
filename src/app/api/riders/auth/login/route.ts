@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientIp, hashIp } from "@/lib/client-ip";
+import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { isRidersAppEnabled, ridersAppDisabledResponse } from "@/lib/riders-feature";
 import { signRiderToken } from "@/lib/rider-auth";
@@ -16,6 +18,13 @@ export async function POST(req: Request) {
     return ridersAppDisabledResponse();
   }
 
+  const clientIp = getClientIp(req);
+  const ipLimit = RATE_LIMITS.riderLoginIp(hashIp(clientIp));
+  const ipCheck = await checkRateLimit(ipLimit);
+  if (!ipCheck.allowed) {
+    return NextResponse.json({ error: "Demasiados intentos. Esperá unos minutos." }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
@@ -27,11 +36,13 @@ export async function POST(req: Request) {
   });
 
   if (!rider || !rider.isActive) {
+    await recordRateLimitAttempt(ipLimit);
     return NextResponse.json({ error: "Credenciales inválidas." }, { status: 401 });
   }
 
   const ok = await bcrypt.compare(parsed.data.password, rider.passwordHash);
   if (!ok) {
+    await recordRateLimitAttempt(ipLimit);
     return NextResponse.json({ error: "Credenciales inválidas." }, { status: 401 });
   }
 

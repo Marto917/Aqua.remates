@@ -3,9 +3,11 @@ import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { isGoogleAuthConfigured } from "@/lib/google-auth";
+import { getTurnstileSiteKey } from "@/lib/turnstile";
 
 export default function LoginPage() {
   const googleReady = isGoogleAuthConfigured();
+  const turnstileSiteKey = getTurnstileSiteKey();
 
   return (
     <AuthPageShell
@@ -21,7 +23,7 @@ export default function LoginPage() {
       }
     >
       <Suspense fallback={<p className="text-sm text-slate-500">Cargando…</p>}>
-        <LoginForm googleReady={googleReady} />
+        <LoginForm googleReady={googleReady} turnstileSiteKey={turnstileSiteKey} />
       </Suspense>
     </AuthPageShell>
   );

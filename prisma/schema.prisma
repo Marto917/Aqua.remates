@@ -165,6 +165,15 @@ model ProductReview {
   @@index([productId])
 }
 
+/// Rate limiting genérico (IP, email, usuario) para endpoints sensibles.
+model RateLimitBucket {
+  bucketKey    String    @id
+  attemptCount Int       @default(1)
+  windowStart  DateTime
+  blockedUntil DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
 /// Límite anti-bots: registros por dispositivo.
 model RegistrationDevice {
   id                 String   @id @default(cuid())

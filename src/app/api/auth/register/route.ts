@@ -2,7 +2,10 @@ import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientIp, hashIp } from "@/lib/client-ip";
+import { isHoneypotTriggered } from "@/lib/honeypot";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import {
   checkRegistrationDeviceLimit,
   recordRegistrationDevice,
@@ -13,6 +16,7 @@ import {
   deliverVerificationEmail,
 } from "@/lib/verification-email";
 import { recordVerificationEmailSent } from "@/lib/verification-resend-limit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const registerSchema = z
   .object({
@@ -21,6 +25,8 @@ const registerSchema = z
     password: z.string().min(6),
     passwordConfirm: z.string().min(6),
     deviceId: z.string().min(8).max(128).optional(),
+    turnstileToken: z.string().optional(),
+    website: z.string().optional(),
   })
   .refine((d) => d.password === d.passwordConfirm, {
     message: "Las contraseñas no coinciden.",
@@ -33,6 +39,22 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     const msg = parsed.error.issues[0]?.message ?? "Datos inválidos.";
     return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  if (isHoneypotTriggered(parsed.data.website)) {
+    return NextResponse.json({ error: "No se pudo registrar." }, { status: 400 });
+  }
+
+  const clientIp = getClientIp(req);
+  const ipLimit = RATE_LIMITS.registerIp(hashIp(clientIp));
+  const ipCheck = await checkRateLimit(ipLimit);
+  if (!ipCheck.allowed) {
+    return NextResponse.json({ error: ipCheck.message }, { status: 429 });
+  }
+
+  const turnstile = await verifyTurnstileToken(parsed.data.turnstileToken, clientIp);
+  if (!turnstile.ok) {
+    return NextResponse.json({ error: turnstile.error }, { status: 400 });
   }
 
   const deviceCheck = await checkRegistrationDeviceLimit(parsed.data.deviceId);
@@ -68,6 +90,7 @@ export async function POST(req: Request) {
   });
 
   await recordRegistrationDevice(parsed.data.deviceId);
+  await recordRateLimitAttempt(ipLimit);
 
   const emailResult = await deliverVerificationEmail({
     to: parsed.data.email,
