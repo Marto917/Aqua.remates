@@ -118,7 +118,7 @@ function ClickablePlacementPreview({
             <div className="h-1.5 flex-1 rounded bg-slate-200" />
           </div>
 
-          {uploadButton("aspect-[16/9] min-h-[4.5rem]", "banner celular")}
+          {uploadButton("aspect-[2/1] min-h-[4.5rem]", "banner celular")}
 
           <div className="h-4 rounded-md bg-white pointer-events-none" aria-hidden />
         </div>
@@ -261,7 +261,7 @@ export function AdminHeroPromoManager({ initial }: Props) {
         <h2 className="text-lg font-semibold text-slate-900">Banner principal del inicio</h2>
         <p className="mt-1 text-sm text-slate-600">
           La imagen ocupa <strong>todo el ancho</strong> arriba de la tienda, sin texto encima. Tocá la vista
-          previa para subir: una versión para PC (banner ancho 3:1) y otra para celular (16:9). Si subís solo
+          previa para subir: una versión para PC (banner ancho 3:1) y otra para celular (2:1). Si subís solo
           una, se usa en ambos dispositivos.
         </p>
       </div>

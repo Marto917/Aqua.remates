@@ -10,10 +10,10 @@ export function StoreNavToolbar() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <div className="relative flex items-center justify-end gap-0.5 sm:gap-1">
+    <div className="relative flex min-w-0 items-center justify-end gap-0 sm:gap-1">
       <Link
         href="/"
-        className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
+        className="hidden min-h-9 min-w-9 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:flex sm:min-h-10 sm:min-w-10"
         aria-label="Inicio"
       >
         <IconHome />
@@ -21,7 +21,7 @@ export function StoreNavToolbar() {
       <button
         type="button"
         onClick={() => setSearchOpen((v) => !v)}
-        className={`flex min-h-11 min-w-11 items-center justify-center rounded-lg active:bg-slate-100 sm:min-h-10 sm:min-w-10 ${
+        className={`flex min-h-9 min-w-9 items-center justify-center rounded-lg active:bg-slate-100 sm:min-h-10 sm:min-w-10 ${
           searchOpen ? "bg-brand-muted text-brand-dark" : "text-slate-700"
         }`}
         aria-label="Buscar productos"
@@ -31,7 +31,7 @@ export function StoreNavToolbar() {
       </button>
       <Link
         href="/catalog"
-        className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
+        className="flex min-h-9 min-w-9 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
         aria-label="Catálogo"
       >
         <IconCatalog />

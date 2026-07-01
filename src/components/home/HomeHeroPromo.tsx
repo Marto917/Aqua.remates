@@ -7,19 +7,23 @@ type Props = {
   hero: HeroPromoSettings;
 };
 
-/** Banner a ancho completo; altura más baja que la proporción original (3:1). */
+/** Banner a ancho completo; proporción 2:1 mobile, 3:1 desktop (alineado con admin). */
 function FullWidthHeroImage({
   src,
   alt,
+  variant,
   className,
 }: {
   src: string;
   alt: string;
+  variant: "mobile" | "desktop";
   className?: string;
 }) {
+  const aspectClass = variant === "mobile" ? "aspect-[2/1]" : "aspect-[3/1]";
+
   return (
     <div className={`relative w-full overflow-hidden ${className ?? ""}`}>
-      <div className="relative aspect-[4.5/1] w-full sm:aspect-[5/1] md:aspect-[5.5/1]">
+      <div className={`relative w-full ${aspectClass}`}>
         <Image
           src={resolveProductImageUrl(src)}
           alt={alt}
@@ -46,17 +50,27 @@ export function HomeHeroBanner({ hero }: Props) {
   }
 
   const desktop = desktopSrc ? (
-    <FullWidthHeroImage src={desktopSrc} alt="Promoción AQUA" className="hidden sm:block" />
+    <FullWidthHeroImage
+      src={desktopSrc}
+      alt="Promoción AQUA"
+      variant="desktop"
+      className="hidden sm:block"
+    />
   ) : null;
 
   const mobile = mobileSrc ? (
-    <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" className="sm:hidden" />
+    <FullWidthHeroImage
+      src={mobileSrc}
+      alt="Promoción AQUA"
+      variant="mobile"
+      className="sm:hidden"
+    />
   ) : null;
 
   const content = (
     <>
       {mobile}
-      {desktop ?? (mobileSrc ? <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" /> : null)}
+      {desktop ?? (mobileSrc ? <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" variant="desktop" /> : null)}
     </>
   );
 
@@ -70,8 +84,8 @@ export function HomeHeroBanner({ hero }: Props) {
 
   /** Sale del max-w-6xl del layout y ocupa todo el ancho de la pantalla. */
   return (
-    <div className="-mt-5 w-screen max-w-[100vw] ml-[calc(50%-50vw)] sm:-mt-8">
-      {inner}
+    <div className="-mt-5 w-full sm:-mt-8">
+      <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">{inner}</div>
     </div>
   );
 }

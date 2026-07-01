@@ -51,7 +51,7 @@ export function CartNavButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="relative flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
+        className="relative flex min-h-9 min-w-9 items-center justify-center rounded-lg text-slate-700 active:bg-slate-100 sm:min-h-10 sm:min-w-10"
         aria-label={`Carrito${totalItems > 0 ? `, ${totalItems} productos` : ""}`}
       >
         <IconCart />

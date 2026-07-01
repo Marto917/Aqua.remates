@@ -79,7 +79,7 @@ export function NavSearch({ onOpenChange }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="absolute inset-x-0 top-full z-50 border-b border-teal-100 bg-white px-3 py-3 shadow-md sm:px-4"
+      className="fixed inset-x-0 top-[var(--store-nav-height,3.25rem)] z-50 border-b border-teal-100 bg-white px-3 py-3 shadow-md sm:absolute sm:inset-x-0 sm:top-full sm:px-4"
     >
       <div className="relative mx-auto max-w-3xl">
         <form

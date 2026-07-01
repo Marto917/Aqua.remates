@@ -36,33 +36,33 @@ export async function StoreNav({ session, logoUrl }: Props) {
   const isLoggedIn = Boolean(session?.user);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90">
-      <nav className="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+    <header className="sticky top-0 z-40 overflow-x-clip border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 [--store-nav-height:3.25rem] sm:[--store-nav-height:3.75rem]">
+      <nav className="mx-auto grid max-w-6xl grid-cols-[minmax(0,auto)_minmax(0,1fr)] items-center gap-1 px-2 py-2 sm:grid-cols-[auto_1fr_auto] sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/"
-          className="flex shrink-0 items-center font-semibold text-brand-dark"
+          className="flex min-w-0 shrink-0 items-center font-semibold text-brand-dark"
           aria-label="Inicio AQUA"
         >
           <SiteLogo logoUrl={logoUrl} />
         </Link>
 
-        <div className="flex justify-center px-1">
+        <div className="hidden min-w-0 justify-center px-1 sm:flex">
           <WholesaleModeToggle />
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+        <div className="flex min-w-0 items-center justify-end gap-0 sm:gap-1">
           <StoreNavToolbar />
           {!isLoggedIn ? (
-            <div className="ml-0.5 flex shrink-0 items-center gap-1 sm:ml-1 sm:gap-1.5">
+            <div className="ml-0.5 flex shrink-0 items-center gap-0.5 sm:ml-1 sm:gap-1.5">
               <Link
                 href="/login"
-                className="inline-flex min-h-9 items-center justify-center rounded-full border border-brand px-2.5 py-1 text-[11px] font-semibold leading-none text-brand-dark hover:bg-brand/5 sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
+                className="inline-flex min-h-9 items-center justify-center rounded-full border border-brand px-2 py-1 text-[10px] font-semibold leading-none text-brand-dark hover:bg-brand/5 sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
               >
                 Ingresar
               </Link>
               <Link
                 href="/registro"
-                className="inline-flex min-h-9 items-center justify-center rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold leading-none text-white hover:bg-brand-dark sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
+                className="hidden min-h-9 items-center justify-center rounded-full bg-brand px-2.5 py-1 text-[10px] font-semibold leading-none text-white hover:bg-brand-dark min-[400px]:inline-flex sm:min-h-10 sm:px-3.5 sm:py-1.5 sm:text-xs"
               >
                 Registro
               </Link>

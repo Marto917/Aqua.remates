@@ -16,9 +16,9 @@ export const HERO_PROMO_SPECS = {
     label: "Celular",
     where: "Mismo banner a ancho completo en el inicio (versión mobile)",
     minWidth: 1080,
-    minHeight: 608,
-    aspect: "16:9",
-    recommended: "1080 × 608 px (16:9) — se muestra completa, sin recorte",
+    minHeight: 540,
+    aspect: "2:1",
+    recommended: "1080 × 540 px (2:1) — se muestra completa, sin recorte",
     formats: "JPG, PNG o WebP. Si no subís una, se usa la de PC.",
   },
 } as const;

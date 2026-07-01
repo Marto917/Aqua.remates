@@ -38,12 +38,12 @@ export function CustomerAccountMenu({ name, imageUrl }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2 shadow-sm transition hover:bg-slate-50 sm:pr-3"
+        className="flex min-h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-1.5 shadow-sm transition hover:bg-slate-50 sm:min-h-11 sm:gap-2 sm:pr-3"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Mi cuenta"
       >
-        <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-brand-muted">
+        <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-brand-muted sm:h-9 sm:w-9">
           <Image
             src={avatar}
             alt=""
@@ -61,7 +61,7 @@ export function CustomerAccountMenu({ name, imageUrl }: Props) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(13rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
         >
           <p className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
             Hola, <span className="font-semibold text-slate-800">{firstName}</span>
