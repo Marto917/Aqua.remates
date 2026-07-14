@@ -9,14 +9,13 @@ const nextAuthHandler = NextAuth(authOptions);
 type RouteContext = { params: Promise<{ nextauth: string[] }> };
 
 /**
- * Next.js 15 pasa `params` como Promise; NextAuth v4 espera un objeto sync.
+ * Next.js 15 pasa `params` como Promise; NextAuth v4 los espera ya resueltos.
  * Sin await, el callback de Google falla con error=OAuthCallback.
  */
 async function handleAuth(req: NextRequest, context: RouteContext) {
   syncNextAuthUrlFromRequest(req);
   const params = await context.params;
-  // @ts-expect-error NextAuth tipa params como sync; Next 15 los entrega async.
-  return nextAuthHandler(req, { params });
+  return nextAuthHandler(req, { params } as { params: { nextauth: string[] } });
 }
 
 export { handleAuth as GET, handleAuth as POST };
