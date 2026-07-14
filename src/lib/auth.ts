@@ -49,6 +49,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   providers: [
     ...(isGoogleAuthConfigured() && googleClientId
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: googleClientId,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!.trim(),
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),

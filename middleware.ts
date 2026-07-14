@@ -37,6 +37,15 @@ function staffAccessLevel(token: Record<string, unknown> | null): string {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
+  const host = req.headers.get("host")?.split(",")[0]?.trim().toLowerCase() ?? "";
+
+  // Apex → www: evita que Google OAuth y las cookies fallen por dominio distinto.
+  if (host === "aquaremates.com.ar") {
+    const url = req.nextUrl.clone();
+    url.host = "www.aquaremates.com.ar";
+    url.protocol = "https:";
+    return NextResponse.redirect(url, 308);
+  }
 
   if (isStaffArea(pathname)) {
     const preview = isBackofficePreview();

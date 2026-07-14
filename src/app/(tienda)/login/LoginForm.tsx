@@ -14,7 +14,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   Configuration: "Google no está bien configurado en el servidor.",
   OAuthSignin: "Error al iniciar sesión con Google. Intentá de nuevo.",
   OAuthCallback:
-    "Error al volver desde Google. En Google Cloud agregá https://www.aquaremates.com.ar/api/auth/callback/google y verificá NEXTAUTH_URL.",
+    "Error al volver desde Google. En Google Cloud Console → Credenciales → tu OAuth client, agregá exactamente: https://www.aquaremates.com.ar/api/auth/callback/google (URI de redirección) y https://www.aquaremates.com.ar (origen JS).",
+  OAuthAccountNotLinked:
+    "Ese email ya tiene cuenta con contraseña. Ingresá con email y contraseña, o pedí ayuda para vincular Google.",
+  Callback: "Error en el retorno de Google. Probá de nuevo desde www.aquaremates.com.ar/login.",
+  Default: "No se pudo completar el ingreso con Google.",
 };
 
 type Props = {
