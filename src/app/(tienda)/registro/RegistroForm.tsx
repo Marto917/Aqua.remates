@@ -34,7 +34,7 @@ export function RegistroForm({ googleReady, turnstileSiteKey }: Props) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const googleHint = !googleReady
-    ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para activar el registro con Google."
+    ? "El registro con Google no está disponible por ahora."
     : undefined;
 
   const needsTurnstile = Boolean(turnstileSiteKey);

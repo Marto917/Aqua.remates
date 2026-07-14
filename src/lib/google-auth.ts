@@ -24,7 +24,16 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-/** Login/registro con Google solo para clientes. Staff debe usar email + contraseña. */
+function isStaffRole(role: UserRole): boolean {
+  return role === UserRole.OWNER || role === UserRole.EMPLOYEE;
+}
+
+/**
+ * Login/registro con Google solo para clientes.
+ * Si ya existe una cuenta CUSTOMER con ese email (ej. registro con contraseña),
+ * se actualiza / vincula con los datos de Google (nombre, foto, email verificado).
+ * Staff (vendedor/owner) no se sobrescribe: debe usar login interno.
+ */
 export async function resolveGoogleSignInUser(params: {
   email: string;
   name?: string | null;
@@ -51,32 +60,36 @@ export async function resolveGoogleSignInUser(params: {
   });
 
   const googleImage = params.image?.trim() || null;
+  const googleName = params.name?.trim() || null;
 
   if (existing) {
-    if (existing.role === UserRole.OWNER || existing.role === UserRole.EMPLOYEE) {
+    if (isStaffRole(existing.role)) {
       return { ok: false, reason: "staff_account" };
     }
-    const updates: { emailVerified: Date; imageUrl?: string } = { emailVerified: new Date() };
-    if (googleImage) updates.imageUrl = googleImage;
-    if (!existing.emailVerified || googleImage) {
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: updates,
-      });
-    }
+
+    const updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        emailVerified: new Date(),
+        ...(googleName ? { name: googleName } : {}),
+        ...(googleImage ? { imageUrl: googleImage } : {}),
+        lastActiveAt: new Date(),
+      },
+    });
+
     return {
       ok: true,
-      id: existing.id,
-      name: existing.name,
-      email: existing.email,
-      role: existing.role,
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
       emailVerified: true,
-      imageUrl: googleImage ?? existing.imageUrl,
+      imageUrl: updated.imageUrl,
     };
   }
 
   const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
-  const name = params.name?.trim() || email.split("@")[0] || "Cliente";
+  const name = googleName || email.split("@")[0] || "Cliente";
 
   const created = await prisma.user.create({
     data: {
@@ -86,6 +99,7 @@ export async function resolveGoogleSignInUser(params: {
       role: UserRole.CUSTOMER,
       emailVerified: new Date(),
       imageUrl: googleImage,
+      lastActiveAt: new Date(),
     },
   });
 

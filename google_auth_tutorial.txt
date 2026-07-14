@@ -4,63 +4,60 @@
 
 1) CONSOLA DE GOOGLE CLOUD
    - https://console.cloud.google.com/
-   - Creá un proyecto (o usá uno existente).
-   - APIs y servicios → Pantalla de consentimiento de OAuth
-     * Tipo: Externo (o Interno si es solo tu organización)
-     * Completá nombre de app, email de soporte y dominios si tenés web pública.
-   - APIs y servicios → Credenciales → Crear credenciales → ID de cliente OAuth
-     * Tipo de aplicación: Aplicación web
+   - APIs y servicios → Credenciales → tu cliente OAuth (Aplicación web)
 
-2) URIs DE REDIRECCIÓN (obligatorio — si falta una letra, Google muestra redirect_uri_mismatch)
-   Google Cloud → Credenciales → tu cliente OAuth "Aplicación web"
-   → "URIs de redireccionamiento autorizados"
+2) URIs DE REDIRECCIÓN (obligatorio — tiene que coincidir letra por letra)
 
-   Copiá EXACTAMENTE esta línea para producción (sin espacios, sin barra al final):
+   URIs de redireccionamiento autorizados — agregá ESTA (producción):
+
+     https://www.aquaremates.com.ar/api/auth/callback/google
+
+   Orígenes de JavaScript autorizados:
+
+     https://www.aquaremates.com.ar
+
+   Opcional (solo si también probás por la URL de Railway):
 
      https://aquaremates-copy-production.up.railway.app/api/auth/callback/google
 
-   Para desarrollo local, agregá también:
+   Local:
 
      http://localhost:3000/api/auth/callback/google
 
-   NO uses solo el dominio (https://...railway.app) sin /api/auth/callback/google
-   NO agregues /login ni /registro
+   NO uses el apex sin www como callback principal.
+   NO pongas barra al final.
+   NO uses /login ni /registro como redirect URI.
 
-   Para ver qué URI usa el servidor en Railway, abrí:
-     https://aquaremates-copy-production.up.railway.app/api/health
-   y buscá el campo "googleOAuthCallbackUri". Esa misma URL debe estar en Google.
+   Para verificar qué URI usa el servidor ahora:
+     https://www.aquaremates.com.ar/api/health
+   → mirá "googleOAuthCallbackUri" (debe ser la de www).
 
-3) VARIABLES EN .env Y RAILWAY
+3) VARIABLES EN RAILWAY (servicio web)
 
-   GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
-   NEXT_PUBLIC_GOOGLE_CLIENT_ID="446203805357-pnguadtc1avvj3rikbio4i1ls1m97fu4.apps.googleusercontent.com"
-   GOOGLE_CLIENT_SECRET="GOCSPX-xxxxxxxx"
-   NEXTAUTH_URL="https://aquaremates-copy-production.up.railway.app"
-   NEXTAUTH_SECRET="..."                (ya deberías tenerlo)
+   NEXTAUTH_URL="https://www.aquaremates.com.ar"
+   PUBLIC_APP_URL="https://www.aquaremates.com.ar"
+   GOOGLE_CLIENT_ID="...(el mismo que en Google Cloud)"
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID="...(igual que GOOGLE_CLIENT_ID)"
+   GOOGLE_CLIENT_SECRET="...(el secreto del mismo cliente OAuth)"
+   NEXTAUTH_SECRET="...(ya deberías tenerlo)"
 
-   Reiniciá / redeployá el servicio después de guardar.
+   Importante: GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET deben ser del
+   MISMO cliente OAuth en Google Cloud.
+
+   Después de cambiar variables: Redeploy del servicio.
 
 4) COMPORTAMIENTO EN AQUA
 
-   - En /registro y /login siempre aparece el botón de Google.
-   - Con GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET activos, el login funciona.
-   - Cuentas staff: solo URL oculta /login-aquaremates_administracion (no Google).
+   - /login y /registro muestran "Continuar con Google".
+   - Si el email ya existe como cliente, se vincula / actualiza con Google.
+   - Staff (vendedor/owner): no puede entrar con Google.
 
-5) PROBAR EN LOCAL
+5) ERRORES FRECUENTES
 
-   - GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env
-   - NEXTAUTH_URL=http://localhost:3000
-   - npm run dev
-   - Ir a /registro → Registrarse con Google
-
-6) ERRORES FRECUENTES
-
-   - redirect_uri_mismatch
-     → La URI en Google debe coincidir con la URL donde abrís la tienda + /api/auth/callback/google
-     → Si entrás por https://aquaremates-copy-production.up.railway.app, esa URI completa va en Google
-     → Si entrás por https://aquaremates-production.up.railway.app (sin -copy), usá esa en Google
-     → Abrí /api/auth/providers en el navegador y copiá el callbackUrl de "google" a Google Console
-   - Configuration → faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET
-   - AccessDenied en /login → intentaste Google con un email de staff
+   - OAuthCallback / redirect_uri_mismatch
+     → En Google falta exactamente la URI de www de arriba
+     → O en Railway NEXTAUTH_URL sigue apuntando a *.up.railway.app
+   - Configuration → faltan ID o SECRET
+   - AccessDenied / StaffGoogle → ese email es cuenta interna
 
 ================================================================================

@@ -6,20 +6,7 @@ import { useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { authDividerClass, authFieldClass, authPrimaryButtonClass } from "@/components/auth/auth-styles";
-
-const ERROR_MESSAGES: Record<string, string> = {
-  AccessDenied: "No se pudo ingresar con Google. Probá con email o usá otra cuenta de cliente.",
-  StaffGoogle:
-    "Esa cuenta es del equipo interno. Ingresá con email y contraseña desde el acceso de staff.",
-  Configuration: "Google no está bien configurado en el servidor.",
-  OAuthSignin: "Error al iniciar sesión con Google. Intentá de nuevo.",
-  OAuthCallback:
-    "Error al volver desde Google. En Google Cloud Console → Credenciales → tu OAuth client, agregá exactamente: https://www.aquaremates.com.ar/api/auth/callback/google (URI de redirección) y https://www.aquaremates.com.ar (origen JS).",
-  OAuthAccountNotLinked:
-    "Ese email ya tiene cuenta con contraseña. Ingresá con email y contraseña, o pedí ayuda para vincular Google.",
-  Callback: "Error en el retorno de Google. Probá de nuevo desde www.aquaremates.com.ar/login.",
-  Default: "No se pudo completar el ingreso con Google.",
-};
+import { customerAuthErrorMessage } from "@/lib/auth-errors";
 
 type Props = {
   googleReady: boolean;
@@ -35,15 +22,11 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
       : "/";
   const oauthError = searchParams.get("error");
   const [error, setError] = useState<string | null>(
-    oauthError ? (ERROR_MESSAGES[oauthError] ?? "No se pudo ingresar con Google.") : null,
+    oauthError ? customerAuthErrorMessage(oauthError) : null,
   );
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const needsTurnstile = Boolean(turnstileSiteKey);
-
-  const googleHint = !googleReady
-    ? "Configurá NEXT_PUBLIC_GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Railway para activar Google."
-    : undefined;
 
   return (
     <div className="space-y-5">
@@ -51,8 +34,16 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
         callbackUrl={callbackUrl}
         label="Continuar con Google"
         disabled={!googleReady}
-        disabledHint={googleHint}
+        disabledHint={
+          googleReady ? undefined : "El ingreso con Google no está disponible por ahora."
+        }
       />
+
+      {error ? (
+        <p className="text-center text-sm text-slate-600" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <div className={authDividerClass}>
         <span className="h-px flex-1 bg-slate-200" />
@@ -65,7 +56,7 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
         onSubmit={async (event) => {
           event.preventDefault();
           if (needsTurnstile && !turnstileToken) {
-            setError("Completá la verificación anti-bots.");
+            setError("Completá la verificación para continuar.");
             return;
           }
           setLoading(true);
@@ -83,7 +74,7 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
           });
 
           if (result?.error) {
-            setError("Email o contraseña incorrectos. Si sos del equipo, usá el acceso interno que te compartieron.");
+            setError("Email o contraseña incorrectos. Revisá los datos e intentá de nuevo.");
             setLoading(false);
             return;
           }
@@ -119,11 +110,6 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
             className={authFieldClass}
           />
         </div>
-        {error ? (
-          <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
-            {error}
-          </p>
-        ) : null}
         {turnstileSiteKey ? (
           <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
         ) : null}

@@ -158,33 +158,38 @@ export const authOptions: NextAuthOptions = {
       }
       const email = user.email;
       if (!email) {
-        return false;
-      }
-      const resolved = await resolveGoogleSignInUser({
-        email,
-        name: user.name,
-        image: user.image,
-      });
-      if (!resolved.ok) {
-        if (resolved.reason === "staff_account") {
-          return "/login?error=StaffGoogle";
-        }
         return "/login?error=AccessDenied";
       }
-      const u = user as NextAuthUser & {
-        id?: string;
-        role?: UserRole;
-        emailVerified?: boolean;
-        staffAccessLevel?: null;
-      };
-      u.id = resolved.id;
-      u.name = resolved.name;
-      u.email = resolved.email;
-      u.role = resolved.role;
-      u.emailVerified = resolved.emailVerified;
-      u.staffAccessLevel = null;
-      (u as NextAuthUser & { image?: string }).image = resolved.imageUrl ?? undefined;
-      return true;
+      try {
+        const resolved = await resolveGoogleSignInUser({
+          email,
+          name: user.name,
+          image: user.image,
+        });
+        if (!resolved.ok) {
+          if (resolved.reason === "staff_account") {
+            return "/login?error=StaffGoogle";
+          }
+          return "/login?error=AccessDenied";
+        }
+        const u = user as NextAuthUser & {
+          id?: string;
+          role?: UserRole;
+          emailVerified?: boolean;
+          staffAccessLevel?: null;
+        };
+        u.id = resolved.id;
+        u.name = resolved.name;
+        u.email = resolved.email;
+        u.role = resolved.role;
+        u.emailVerified = resolved.emailVerified;
+        u.staffAccessLevel = null;
+        (u as NextAuthUser & { image?: string }).image = resolved.imageUrl ?? undefined;
+        return true;
+      } catch (e) {
+        console.error("[auth] Google signIn resolve error:", e);
+        return "/login?error=AccessDenied";
+      }
     },
     async jwt({ token, user, account }) {
       if (user) {
