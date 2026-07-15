@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Slide = {
@@ -37,6 +37,7 @@ const defaultSlides: Slide[] = [
 
 const FADE_MS = 700;
 const INTERVAL_MS = 5500;
+const SWIPE_THRESHOLD_PX = 48;
 
 function isRemoteSrc(src: string) {
   return src.startsWith("http://") || src.startsWith("https://");
@@ -51,18 +52,81 @@ function shouldShowTitle(title?: string | null) {
 
 export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const safeSlides = slides.length > 0 ? slides : defaultSlides;
   const allHaveImages = safeSlides.every((s) => Boolean(s.imageUrl?.trim()));
   const active = safeSlides[index];
   const activeLink = active.linkUrl?.trim() || null;
 
+  const dragRef = useRef<{
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    dragged: boolean;
+  }>({ pointerId: null, startX: 0, startY: 0, dragged: false });
+  const suppressClickRef = useRef(false);
+
   useEffect(() => {
-    if (safeSlides.length < 2) return;
+    if (safeSlides.length < 2 || paused) return;
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % safeSlides.length);
     }, INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [safeSlides.length]);
+  }, [safeSlides.length, paused]);
+
+  function goNext() {
+    setIndex((prev) => (prev + 1) % safeSlides.length);
+  }
+
+  function goPrev() {
+    setIndex((prev) => (prev - 1 + safeSlides.length) % safeSlides.length);
+  }
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (safeSlides.length < 2) return;
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      dragged: false,
+    };
+    setPaused(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (drag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      drag.dragged = true;
+    }
+  }
+
+  function finishDrag(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (drag.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - drag.startX;
+    if (drag.dragged && Math.abs(dx) >= SWIPE_THRESHOLD_PX) {
+      if (dx < 0) goNext();
+      else goPrev();
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 80);
+    }
+
+    dragRef.current = { pointerId: null, startX: 0, startY: 0, dragged: false };
+    setPaused(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
+  }
 
   const dots = (
     <div className="pointer-events-auto absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-2 px-4">
@@ -79,13 +143,24 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
             e.stopPropagation();
             setIndex(i);
           }}
+          onPointerDown={(e) => e.stopPropagation()}
         />
       ))}
     </div>
   );
 
+  const gestureHandlers = {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp: finishDrag,
+    onPointerCancel: finishDrag,
+  };
+
   const frame = allHaveImages ? (
-    <div className="relative aspect-[16/6] w-full bg-slate-100 sm:aspect-[21/7]">
+    <div
+      className="relative aspect-[16/6] w-full cursor-grab touch-pan-y select-none bg-slate-100 active:cursor-grabbing sm:aspect-[21/7]"
+      {...gestureHandlers}
+    >
       {safeSlides.map((slide, i) => {
         const src = resolveProductImageUrl(slide.imageUrl);
         const showTitle = shouldShowTitle(slide.title);
@@ -105,14 +180,15 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
               src={src}
               alt={showTitle ? slide.title! : "Promoción AQUA"}
               fill
-              className="object-cover object-center"
+              draggable={false}
+              className="pointer-events-none object-cover object-center"
               sizes="100vw"
               priority={i === 0}
               unoptimized={isRemoteSrc(src)}
             />
             {showTitle || slide.subtitle ? (
               <div
-                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pb-10 pt-16 text-center text-white transition-opacity ease-in-out"
+                className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pb-10 pt-16 text-center text-white transition-opacity ease-in-out"
                 style={{ opacity: visible ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
               >
                 {showTitle ? (
@@ -129,7 +205,10 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
       {dots}
     </div>
   ) : (
-    <div className="relative overflow-hidden">
+    <div
+      className="relative cursor-grab touch-pan-y select-none overflow-hidden active:cursor-grabbing"
+      {...gestureHandlers}
+    >
       {safeSlides.map((slide, i) => {
         const visible = i === index;
         return (
@@ -164,7 +243,14 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
   return (
     <section className="overflow-hidden rounded-2xl shadow-md">
       {activeLink ? (
-        <Link href={activeLink} className="relative block">
+        <Link
+          href={activeLink}
+          className="relative block"
+          draggable={false}
+          onClick={(e) => {
+            if (suppressClickRef.current) e.preventDefault();
+          }}
+        >
           {frame}
         </Link>
       ) : (
