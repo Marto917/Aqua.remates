@@ -24,7 +24,7 @@ export function CatalogToolbarClient({
   maxPrice,
 }: Props) {
   const router = useRouter();
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(Boolean(minPrice || maxPrice));
   const [localMin, setLocalMin] = useState(minPrice ?? "");
   const [localMax, setLocalMax] = useState(maxPrice ?? "");
 
@@ -42,27 +42,22 @@ export function CatalogToolbarClient({
     });
   }
 
-  function applyFilters(e: FormEvent) {
+  function applyPrice(e: FormEvent) {
     e.preventDefault();
     router.push(buildCatalogUrl());
-    setFiltersOpen(false);
   }
 
-  function clearFilters() {
+  function clearPrice() {
     setLocalMin("");
     setLocalMax("");
-    router.push(buildCatalogUrl({ category: undefined, min: "", max: "" }));
-    setFiltersOpen(false);
+    router.push(buildCatalogUrl({ min: "", max: "" }));
   }
 
-  const activeFilterCount =
-    (selectedCategory ? 1 : 0) + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0);
-
   return (
-    <div className="space-y-4 rounded-xl border bg-white p-4">
+    <div className="space-y-4">
       <form
         action="/catalog"
-        className="grid gap-2 sm:grid-cols-[1fr_auto_auto]"
+        className="grid gap-2 rounded-xl border bg-white p-4 sm:grid-cols-[1fr_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
@@ -75,55 +70,55 @@ export function CatalogToolbarClient({
           placeholder="Buscar por nombre, código o categoría…"
           onSubmitNavigate={(term) => router.push(buildCatalogUrl({ q: term }))}
         />
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className={`rounded-md border px-4 py-2 text-sm font-medium ${
-            filtersOpen || activeFilterCount > 0
-              ? "border-brand bg-brand-muted text-brand-dark"
-              : "border-slate-200 bg-white text-slate-700"
-          }`}
-        >
-          Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-        </button>
         <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white" type="submit">
           Buscar
         </button>
       </form>
 
-      {filtersOpen ? (
-        <form onSubmit={applyFilters} className="space-y-4 border-t border-slate-100 pt-4">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Categoría</p>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={buildCatalogUrl({ category: undefined })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  !selectedCategory ? "bg-brand text-white" : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                Todas
-              </Link>
-              {categories.map((category) => (
-                <Link
-                  key={category.slug}
-                  href={buildCatalogUrl({ category: category.slug })}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    selectedCategory === category.slug
-                      ? "bg-brand text-white"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {category.name}
-                </Link>
-              ))}
-            </div>
-          </div>
+      <section className="rounded-xl border-2 border-brand/30 bg-white p-4 shadow-sm">
+        <div className="mb-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">Paso 1</p>
+          <h2 className="text-lg font-bold text-slate-900">Elegí una categoría</h2>
+          <p className="text-sm text-slate-600">Así encontrás más rápido lo que necesitás</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={buildCatalogUrl({ category: undefined })}
+            className={`inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+              !selectedCategory
+                ? "bg-brand text-white shadow"
+                : "border-2 border-slate-200 bg-slate-50 text-slate-800 hover:border-brand"
+            }`}
+          >
+            Todas
+          </Link>
+          {categories.map((category) => (
+            <Link
+              key={category.slug}
+              href={buildCatalogUrl({ category: category.slug })}
+              className={`inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+                selectedCategory === category.slug
+                  ? "bg-brand text-white shadow"
+                  : "border-2 border-brand/25 bg-brand/5 text-brand-dark hover:border-brand hover:bg-brand hover:text-white"
+              }`}
+            >
+              {category.name}
+            </Link>
+          ))}
+        </div>
+      </section>
 
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Rango de precio (lista)
-            </p>
+      <div className="rounded-xl border bg-white p-4">
+        <button
+          type="button"
+          onClick={() => setPriceOpen((v) => !v)}
+          className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-800"
+        >
+          <span>Filtrar por precio {minPrice || maxPrice ? "(activo)" : ""}</span>
+          <span className="text-slate-400">{priceOpen ? "▲" : "▼"}</span>
+        </button>
+        {priceOpen ? (
+          <form onSubmit={applyPrice} className="mt-3 space-y-3 border-t border-slate-100 pt-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
@@ -145,25 +140,21 @@ export function CatalogToolbarClient({
                 className="w-32 rounded-md border px-3 py-2 text-sm"
               />
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white"
-            >
-              Aplicar filtros
-            </button>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-            >
-              Limpiar
-            </button>
-          </div>
-        </form>
-      ) : null}
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white">
+                Aplicar precio
+              </button>
+              <button
+                type="button"
+                onClick={clearPrice}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+              >
+                Limpiar
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </div>
     </div>
   );
 }

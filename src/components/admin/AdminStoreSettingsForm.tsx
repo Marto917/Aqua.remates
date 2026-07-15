@@ -3,7 +3,13 @@
 import { FormEvent, useState } from "react";
 import type { StoreSettingsData } from "@/lib/store-settings";
 
-export function AdminStoreSettingsForm({ initial }: { initial: StoreSettingsData }) {
+type Props = {
+  initial: StoreSettingsData;
+  /** Dueño o encargado: pueden editar datos bancarios. */
+  canEditBank: boolean;
+};
+
+export function AdminStoreSettingsForm({ initial, canEditBank }: Props) {
   const [form, setForm] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -17,7 +23,17 @@ export function AdminStoreSettingsForm({ initial }: { initial: StoreSettingsData
     const res = await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        ...(canEditBank
+          ? {}
+          : {
+              bankHolder: initial.bankHolder,
+              bankAlias: initial.bankAlias,
+              bankCbu: initial.bankCbu,
+              bankExtraNotes: initial.bankExtraNotes,
+            }),
+      }),
     });
     const data = (await res.json()) as { error?: string };
     setSaving(false);
@@ -28,37 +44,57 @@ export function AdminStoreSettingsForm({ initial }: { initial: StoreSettingsData
     setOk(true);
   }
 
+  const bankFieldClass = canEditBank
+    ? "w-full rounded-md border px-3 py-2"
+    : "w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600";
+
   return (
     <form onSubmit={onSubmit} className="space-y-8">
       <section className="space-y-4 rounded-xl border bg-white p-5">
-        <h2 className="font-semibold text-slate-900">Transferencia bancaria</h2>
+        <div>
+          <h2 className="font-semibold text-slate-900">Transferencia bancaria</h2>
+          {!canEditBank ? (
+            <p className="mt-1 text-sm text-amber-800">
+              Solo el encargado o el dueño puede editar CVU, razón social y alias. Podés verlos, pero no
+              modificarlos.
+            </p>
+          ) : null}
+        </div>
         <input
-          className="w-full rounded-md border px-3 py-2"
-          placeholder="Titular"
+          className={bankFieldClass}
+          placeholder="Titular / razón social"
           value={form.bankHolder}
           onChange={(e) => setForm({ ...form, bankHolder: e.target.value })}
           required
+          readOnly={!canEditBank}
+          disabled={!canEditBank}
         />
         <input
-          className="w-full rounded-md border px-3 py-2"
+          className={bankFieldClass}
           placeholder="Alias"
           value={form.bankAlias}
           onChange={(e) => setForm({ ...form, bankAlias: e.target.value })}
           required
+          readOnly={!canEditBank}
+          disabled={!canEditBank}
         />
         <input
-          className="w-full rounded-md border px-3 py-2"
-          placeholder="CBU"
+          className={bankFieldClass}
+          placeholder="CBU / CVU"
           value={form.bankCbu}
           onChange={(e) => setForm({ ...form, bankCbu: e.target.value })}
           required
+          readOnly={!canEditBank}
+          disabled={!canEditBank}
         />
         <textarea
-          className="w-full rounded-md border px-3 py-2"
+          className={bankFieldClass}
           placeholder="Notas extra (opcional)"
           rows={2}
           value={form.bankExtraNotes ?? ""}
           onChange={(e) => setForm({ ...form, bankExtraNotes: e.target.value })}
+          readOnly={!canEditBank}
+          disabled={!canEditBank}
         />
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
           Los precios de lista y transferencia se cargan en cada producto del catálogo.

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
-import { computeShippingQuote } from "@/lib/shipping-quote";
+import { resolveShippingQuote } from "@/lib/shipping-quote";
 
 const lineSchema = z.object({
   variantId: z.string().min(1),
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   const freeShipping = await getFreeShippingSettings();
   const cartCategoryIds = [...new Set(resolved.cart.lines.map((l) => l.categoryId))];
 
-  const quote = computeShippingQuote({
+  const quote = await resolveShippingQuote({
     shippingMethod: parsed.data.shippingMethod,
     postalCode: parsed.data.shippingPostalCode,
     province: parsed.data.shippingProvince,

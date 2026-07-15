@@ -7,23 +7,28 @@ export function CategoryStrip({ categories }: { categories: Cat[] }) {
   if (categories.length === 0) return null;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-100/80 bg-gradient-to-br from-white to-brand-muted/30 p-1 shadow-sm">
-      <div className="rounded-xl bg-white/80 px-4 py-4 backdrop-blur-sm sm:px-5 sm:py-5">
-        <h2 className="mb-3 flex items-center justify-center gap-2 px-0.5 text-sm font-semibold uppercase tracking-wide text-slate-500 sm:justify-start">
-          <span className="h-1 w-1 rounded-full bg-brand" aria-hidden />
-          Comprá por categoría
-        </h2>
-        <div className="flex gap-2.5 overflow-x-auto pb-1 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/catalog?category=${encodeURIComponent(c.slug)}&priceMode=retail`}
-              className="shrink-0 rounded-full border border-slate-200/90 bg-slate-50/90 px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/60 hover:bg-white hover:shadow-md hover:shadow-brand/5"
-            >
+    <section className="rounded-2xl border-2 border-brand/25 bg-white p-4 shadow-md sm:p-5">
+      <div className="mb-3 text-center sm:text-left">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">¿Qué estás buscando?</p>
+        <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">Elegí una categoría</h2>
+        <p className="mt-1 text-sm text-slate-600">Tocá una para ver solo esos productos</p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2.5 sm:justify-start">
+        <Link
+          href="/catalog"
+          className="inline-flex min-h-11 items-center rounded-full border-2 border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:border-brand hover:bg-brand/5 hover:text-brand-dark"
+        >
+          Ver todas
+        </Link>
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            href={`/catalog?category=${encodeURIComponent(c.slug)}&priceMode=retail`}
+            className="inline-flex min-h-11 items-center rounded-full border-2 border-brand/30 bg-brand/10 px-4 py-2 text-sm font-semibold text-brand-dark transition hover:border-brand hover:bg-brand hover:text-white"
+          >
             {formatDisplayWords(c.name)}
           </Link>
-          ))}
-        </div>
+        ))}
       </div>
     </section>
   );

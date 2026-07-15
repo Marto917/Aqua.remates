@@ -2,33 +2,32 @@ import Image from "next/image";
 import Link from "next/link";
 import { type Prisma as PrismaTypes } from "@prisma/client";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
-import { HomeHeroBanner } from "@/components/home/HomeHeroPromo";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
+import { HomePromoRibbon } from "@/components/home/HomePromoRibbon";
 import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
-import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
-import { resolveProductImageUrl } from "@/lib/product-images";
 
 type HomeProduct = PrismaTypes.ProductGetPayload<{
   include: { category: true; variants: true };
 }>;
 
+const FIRST_ROW = 5;
+
 export default async function HomePage() {
   let homeProducts: HomeProduct[] = [];
   let categories: { name: string; slug: string }[] = [];
   let carouselBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
-  let promoBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
-  let heroPromo = { desktopImageUrl: null as string | null, mobileImageUrl: null as string | null, linkUrl: null as string | null };
+  let ribbon: { imageUrl: string | null; linkUrl: string | null } = { imageUrl: null, linkUrl: null };
 
   try {
-    [categories, homeProducts, carouselBanners, promoBanners, heroPromo] = await Promise.all([
+    const [cats, products, carousel, settings] = await Promise.all([
       prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
       prisma.product.findMany({
         where: { isActive: true, ...catalogVisibilityWhere("retail") },
         orderBy: { updatedAt: "desc" },
-        take: 12,
+        take: 17,
         include: {
           category: true,
           variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
@@ -40,26 +39,27 @@ export default async function HomePage() {
         take: 3,
         select: { id: true, title: true, imageUrl: true, linkUrl: true },
       }),
-      prisma.banner.findMany({
-        where: { isActive: true, sortOrder: { gte: 1000 } },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        take: 4,
-        select: { id: true, title: true, imageUrl: true, linkUrl: true },
+      prisma.storeSettings.findUnique({
+        where: { id: "default" },
+        select: { homeRibbonImageUrl: true, homeRibbonLinkUrl: true },
       }),
-      getHeroPromoSettings(),
     ]);
+    categories = cats;
+    homeProducts = products;
+    carouselBanners = carousel;
+    ribbon = {
+      imageUrl: settings?.homeRibbonImageUrl ?? null,
+      linkUrl: settings?.homeRibbonLinkUrl ?? null,
+    };
   } catch (error) {
     console.error("No se pudieron cargar datos del home:", error);
   }
 
+  const firstRow = homeProducts.slice(0, FIRST_ROW);
+  const rest = homeProducts.slice(FIRST_ROW);
+
   return (
     <div className="space-y-8 sm:space-y-10">
-      <HomeHeroBanner hero={heroPromo} />
-
-      <section id="buscar" className="scroll-mt-28 rounded-2xl border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5">
-        <HomeHeroSearch />
-      </section>
-
       {carouselBanners.length > 0 ? (
         <PromoCarousel
           slides={carouselBanners.map((b) => ({
@@ -70,6 +70,12 @@ export default async function HomePage() {
           }))}
         />
       ) : null}
+
+      <section id="buscar" className="scroll-mt-28 rounded-2xl border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5">
+        <HomeHeroSearch />
+      </section>
+
+      <CategoryStrip categories={categories} />
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
@@ -89,9 +95,10 @@ export default async function HomePage() {
             </span>
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {homeProducts.length > 0 ? (
-            homeProducts.map((product) => <ProductCard key={product.id} product={product} />)
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {firstRow.length > 0 ? (
+            firstRow.map((product) => <ProductCard key={product.id} product={product} />)
           ) : (
             <p className="col-span-full rounded-2xl border border-dashed border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 px-6 py-12 text-center text-slate-600">
               Próximamente vas a ver novedades acá. Volvé a visitarnos en unos días.
@@ -99,6 +106,21 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {ribbon.imageUrl ? (
+        <HomePromoRibbon imageUrl={ribbon.imageUrl} linkUrl={ribbon.linkUrl} />
+      ) : null}
+
+      {rest.length > 0 ? (
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">Más destacados</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {rest.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-3xl border border-slate-100/80 bg-gradient-to-b from-white to-brand-muted/30 p-5 shadow-sm sm:p-6">
         <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-2.5 text-xs text-slate-600 sm:text-sm">
@@ -122,48 +144,6 @@ export default async function HomePage() {
           </span>
         </div>
       </section>
-
-      {promoBanners.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-end justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Promos destacadas</h3>
-            <p className="text-xs text-slate-500">Sección promocional del home</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {promoBanners.map((banner) => {
-              const card = (
-                <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                  <div className="relative h-24 w-full sm:h-28">
-                    <Image
-                      src={resolveProductImageUrl(banner.imageUrl)}
-                      alt={banner.title ?? "Promo"}
-                      fill
-                      className="object-cover"
-                      unoptimized={banner.imageUrl.startsWith("http")}
-                    />
-                  </div>
-                  {banner.title ? (
-                    <p className="px-2 py-2 text-center text-xs font-medium text-slate-700">
-                      {banner.title}
-                    </p>
-                  ) : null}
-                </article>
-              );
-
-              if (banner.linkUrl) {
-                return (
-                  <Link key={banner.id} href={banner.linkUrl} className="block">
-                    {card}
-                  </Link>
-                );
-              }
-              return <div key={banner.id}>{card}</div>;
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      <CategoryStrip categories={categories} />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-muted/40 p-6 text-center shadow-sm transition hover:shadow-md sm:text-left">

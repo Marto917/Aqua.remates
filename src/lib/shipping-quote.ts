@@ -6,7 +6,9 @@ import {
 import {
   detectShippingZone,
   getShippingRateForZone,
+  getShippingRates,
   SHIPPING_ZONE_LABELS,
+  type ShippingRates,
   type ShippingZone,
 } from "@/lib/shipping-zones";
 
@@ -17,6 +19,8 @@ export type ShippingQuoteInput = {
   subtotalAmount: number;
   cartCategoryIds: string[];
   freeShipping?: FreeShippingSettings;
+  /** Si no se pasa, se usan los defaults (sync). Preferir resolveShippingQuote async. */
+  rates?: ShippingRates;
 };
 
 export type ShippingQuote = {
@@ -67,7 +71,7 @@ export function computeShippingQuote(input: ShippingQuoteInput): ShippingQuote {
     };
   }
 
-  const baseShippingAmount = getShippingRateForZone(zone);
+  const baseShippingAmount = getShippingRateForZone(zone, input.rates);
   const { free, reason } = qualifiesForFreeShipping(
     freeShipping,
     subtotalAmount,
@@ -87,4 +91,12 @@ export function computeShippingQuote(input: ShippingQuoteInput): ShippingQuote {
     totalAmount: subtotalAmount + shippingAmount,
     error: null,
   };
+}
+
+/** Quote con tarifas cargadas desde la config de la tienda. */
+export async function resolveShippingQuote(
+  input: Omit<ShippingQuoteInput, "rates">,
+): Promise<ShippingQuote> {
+  const rates = await getShippingRates();
+  return computeShippingQuote({ ...input, rates });
 }

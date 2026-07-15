@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canStaffAccess, getStaffContext } from "@/lib/staff-auth";
+import { canManageUsers, canStaffAccess, getStaffContext } from "@/lib/staff-auth";
 import { prisma } from "@/lib/prisma";
 import { ensureStoreSettings } from "@/lib/store-settings";
 
@@ -51,10 +51,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  const data = { ...parsed.data };
+  if (!canManageUsers(ctx)) {
+    const current = await prisma.storeSettings.findUnique({ where: { id: "default" } });
+    data.bankHolder = current?.bankHolder ?? data.bankHolder;
+    data.bankAlias = current?.bankAlias ?? data.bankAlias;
+    data.bankCbu = current?.bankCbu ?? data.bankCbu;
+    data.bankExtraNotes = current?.bankExtraNotes ?? data.bankExtraNotes;
+  }
+
   await prisma.storeSettings.upsert({
     where: { id: "default" },
-    update: parsed.data,
-    create: { id: "default", ...parsed.data },
+    update: data,
+    create: { id: "default", ...data },
   });
 
   return NextResponse.json({ ok: true });

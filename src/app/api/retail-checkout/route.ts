@@ -16,7 +16,7 @@ import { initialDeliveryStatus } from "@/lib/delivery-dispatch";
 import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/address-validation";
 import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
-import { computeShippingQuote } from "@/lib/shipping-quote";
+import { resolveShippingQuote } from "@/lib/shipping-quote";
 import { getStoreSettings } from "@/lib/store-settings";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
   const { cart } = resolved;
   const cartCategoryIds = [...new Set(cart.lines.map((l) => l.categoryId))];
 
-  const quote = computeShippingQuote({
+  const quote = await resolveShippingQuote({
     shippingMethod: data.shippingMethod,
     postalCode: data.shippingPostalCode,
     province: data.shippingProvince,

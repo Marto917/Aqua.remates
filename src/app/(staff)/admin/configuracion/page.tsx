@@ -1,6 +1,7 @@
 import { AdminBrandSettingsForm } from "@/components/admin/AdminBrandSettingsForm";
 import { AdminFooterImageForm } from "@/components/admin/AdminFooterImageForm";
 import { AdminStoreSettingsForm } from "@/components/admin/AdminStoreSettingsForm";
+import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
 import { getStoreSettings, ensureStoreSettings } from "@/lib/store-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -8,6 +9,8 @@ export default async function AdminConfiguracionPage() {
   await ensureStoreSettings();
   const settings = await getStoreSettings();
   const row = await prisma.storeSettings.findUnique({ where: { id: "default" } });
+  const ctx = await getStaffContext();
+  const canEditBank = canManageUsers(ctx);
 
   return (
     <section className="mx-auto max-w-2xl space-y-6 px-4">
@@ -26,7 +29,7 @@ export default async function AdminConfiguracionPage() {
           storeAddress: settings.storeAddress,
         }}
       />
-      <AdminStoreSettingsForm initial={settings} />
+      <AdminStoreSettingsForm initial={settings} canEditBank={canEditBank} />
       <AdminFooterImageForm currentUrl={row?.footerImageUrl ?? null} />
     </section>
   );

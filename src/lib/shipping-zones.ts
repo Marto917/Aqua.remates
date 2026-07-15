@@ -1,10 +1,17 @@
-export const SHIPPING_RATES_ARS = {
+import { prisma } from "@/lib/prisma";
+
+export const DEFAULT_SHIPPING_RATES_ARS = {
   CABA: 6000,
   PBA: 10_000,
   OUTSIDE: 20_000,
 } as const;
 
-export type ShippingZone = keyof typeof SHIPPING_RATES_ARS;
+/** @deprecated Usar DEFAULT_SHIPPING_RATES_ARS / getShippingRates */
+export const SHIPPING_RATES_ARS = DEFAULT_SHIPPING_RATES_ARS;
+
+export type ShippingZone = keyof typeof DEFAULT_SHIPPING_RATES_ARS;
+
+export type ShippingRates = Record<ShippingZone, number>;
 
 export const SHIPPING_ZONE_LABELS: Record<ShippingZone, string> = {
   CABA: "Capital Federal",
@@ -99,6 +106,27 @@ export function detectShippingZone(
   return null;
 }
 
-export function getShippingRateForZone(zone: ShippingZone): number {
-  return SHIPPING_RATES_ARS[zone];
+export async function getShippingRates(): Promise<ShippingRates> {
+  try {
+    const row = await prisma.storeSettings.findUnique({
+      where: { id: "default" },
+      select: {
+        shippingRateCaba: true,
+        shippingRatePba: true,
+        shippingRateOutside: true,
+      },
+    });
+    return {
+      CABA: row?.shippingRateCaba ?? DEFAULT_SHIPPING_RATES_ARS.CABA,
+      PBA: row?.shippingRatePba ?? DEFAULT_SHIPPING_RATES_ARS.PBA,
+      OUTSIDE: row?.shippingRateOutside ?? DEFAULT_SHIPPING_RATES_ARS.OUTSIDE,
+    };
+  } catch {
+    return { ...DEFAULT_SHIPPING_RATES_ARS };
+  }
+}
+
+export function getShippingRateForZone(zone: ShippingZone, rates?: ShippingRates): number {
+  const table = rates ?? DEFAULT_SHIPPING_RATES_ARS;
+  return table[zone];
 }

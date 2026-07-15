@@ -490,6 +490,13 @@ model StoreSettings {
   catalogPromoRules        Json?
   /// Envío gratis: monto mínimo y/o categorías.
   freeShippingRules        Json?
+  /// Tarifas de envío a domicilio (ARS) por zona.
+  shippingRateCaba         Int      @default(6000)
+  shippingRatePba          Int      @default(10000)
+  shippingRateOutside      Int      @default(20000)
+  /// Cinta divisora promocional del home (debajo de la primera fila de productos).
+  homeRibbonImageUrl       String?
+  homeRibbonLinkUrl        String?
   /// App de repartidores (QR, código, asignación). Desactivado = envíos propios del cliente.
   ridersAppEnabled         Boolean  @default(false)
   brandLogoUrl             String?
