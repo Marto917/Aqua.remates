@@ -35,90 +35,141 @@ const defaultSlides: Slide[] = [
   },
 ];
 
+const FADE_MS = 700;
+const INTERVAL_MS = 5500;
+
 function isRemoteSrc(src: string) {
   return src.startsWith("http://") || src.startsWith("https://");
+}
+
+function shouldShowTitle(title?: string | null) {
+  const t = title?.trim();
+  if (!t) return false;
+  const lower = t.toLowerCase();
+  return lower !== "promoción" && lower !== "promocion";
 }
 
 export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) {
   const [index, setIndex] = useState(0);
   const safeSlides = slides.length > 0 ? slides : defaultSlides;
-  const s = safeSlides[index];
-  const imageSrc = s.imageUrl?.trim() ? resolveProductImageUrl(s.imageUrl) : null;
-  const hasImage = Boolean(imageSrc);
-  const showTitle =
-    Boolean(s.title?.trim()) &&
-    s.title!.trim().toLowerCase() !== "promoción" &&
-    s.title!.trim().toLowerCase() !== "promocion";
+  const allHaveImages = safeSlides.every((s) => Boolean(s.imageUrl?.trim()));
+  const active = safeSlides[index];
+  const activeLink = active.linkUrl?.trim() || null;
 
   useEffect(() => {
+    if (safeSlides.length < 2) return;
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % safeSlides.length);
-    }, 5000);
+    }, INTERVAL_MS);
     return () => clearInterval(timer);
   }, [safeSlides.length]);
 
   const dots = (
-    <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-2 px-4">
+    <div className="pointer-events-auto absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-2 px-4">
       {safeSlides.map((slide, i) => (
         <button
           key={slide.id || i}
           type="button"
           aria-label={`Slide ${i + 1}`}
-          className={`h-2 rounded-full transition-all ${
-            i === index ? "w-8 bg-white shadow" : "w-2 bg-white/50"
+          className={`h-2 rounded-full transition-all duration-300 ${
+            i === index ? "w-8 bg-white shadow" : "w-2 bg-white/50 hover:bg-white/70"
           }`}
-          onClick={() => setIndex(i)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIndex(i);
+          }}
         />
       ))}
     </div>
   );
 
-  const content = hasImage ? (
-    <div className="relative aspect-[16/6] w-full sm:aspect-[21/7]">
-      <Image
-        src={imageSrc!}
-        alt={showTitle ? s.title! : "Promoción AQUA"}
-        fill
-        className="object-cover object-center"
-        sizes="100vw"
-        priority={index === 0}
-        unoptimized={isRemoteSrc(imageSrc!)}
-      />
-      {showTitle || s.subtitle ? (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pb-10 pt-16 text-center text-white">
-          {showTitle ? (
-            <h2 className="text-lg font-bold leading-tight sm:text-2xl">{s.title}</h2>
-          ) : null}
-          {s.subtitle ? <p className="mt-1 text-sm text-white/90 sm:text-base">{s.subtitle}</p> : null}
-        </div>
-      ) : null}
+  const frame = allHaveImages ? (
+    <div className="relative aspect-[16/6] w-full bg-slate-100 sm:aspect-[21/7]">
+      {safeSlides.map((slide, i) => {
+        const src = resolveProductImageUrl(slide.imageUrl);
+        const showTitle = shouldShowTitle(slide.title);
+        const visible = i === index;
+        return (
+          <div
+            key={slide.id || i}
+            className="absolute inset-0 transition-opacity ease-in-out"
+            style={{
+              opacity: visible ? 1 : 0,
+              transitionDuration: `${FADE_MS}ms`,
+              zIndex: visible ? 1 : 0,
+            }}
+            aria-hidden={!visible}
+          >
+            <Image
+              src={src}
+              alt={showTitle ? slide.title! : "Promoción AQUA"}
+              fill
+              className="object-cover object-center"
+              sizes="100vw"
+              priority={i === 0}
+              unoptimized={isRemoteSrc(src)}
+            />
+            {showTitle || slide.subtitle ? (
+              <div
+                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pb-10 pt-16 text-center text-white transition-opacity ease-in-out"
+                style={{ opacity: visible ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
+              >
+                {showTitle ? (
+                  <h2 className="text-lg font-bold leading-tight sm:text-2xl">{slide.title}</h2>
+                ) : null}
+                {slide.subtitle ? (
+                  <p className="mt-1 text-sm text-white/90 sm:text-base">{slide.subtitle}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
       {dots}
     </div>
   ) : (
-    <div
-      className={`relative overflow-hidden bg-gradient-to-br px-6 py-10 text-center text-white sm:py-14 ${
-        s.gradient ?? "from-teal-600 via-teal-500 to-cyan-500"
-      }`}
-    >
-      <div className="relative mx-auto max-w-2xl">
-        <h2 className="text-2xl font-bold leading-tight sm:text-3xl">
-          {s.title || "Nueva promoción"}
-        </h2>
-        {s.subtitle ? <p className="mt-2 text-base text-white/90">{s.subtitle}</p> : null}
-      </div>
+    <div className="relative overflow-hidden">
+      {safeSlides.map((slide, i) => {
+        const visible = i === index;
+        return (
+          <div
+            key={slide.id || i}
+            className={`absolute inset-0 bg-gradient-to-br px-6 py-10 text-center text-white transition-opacity ease-in-out sm:py-14 ${
+              slide.gradient ?? "from-teal-600 via-teal-500 to-cyan-500"
+            }`}
+            style={{
+              opacity: visible ? 1 : 0,
+              transitionDuration: `${FADE_MS}ms`,
+              zIndex: visible ? 1 : 0,
+              position: i === 0 ? "relative" : "absolute",
+            }}
+            aria-hidden={!visible}
+          >
+            <div className="relative mx-auto max-w-2xl">
+              <h2 className="text-2xl font-bold leading-tight sm:text-3xl">
+                {slide.title || "Nueva promoción"}
+              </h2>
+              {slide.subtitle ? (
+                <p className="mt-2 text-base text-white/90">{slide.subtitle}</p>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
       {dots}
     </div>
   );
 
-  if (s.linkUrl?.trim()) {
-    return (
-      <section className="overflow-hidden rounded-2xl shadow-md">
-        <Link href={s.linkUrl.trim()} className="block">
-          {content}
+  return (
+    <section className="overflow-hidden rounded-2xl shadow-md">
+      {activeLink ? (
+        <Link href={activeLink} className="relative block">
+          {frame}
         </Link>
-      </section>
-    );
-  }
-
-  return <section className="overflow-hidden rounded-2xl shadow-md">{content}</section>;
+      ) : (
+        <div className="relative">{frame}</div>
+      )}
+    </section>
+  );
 }
