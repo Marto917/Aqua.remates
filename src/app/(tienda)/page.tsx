@@ -64,7 +64,7 @@ export default async function HomePage() {
         <PromoCarousel
           slides={carouselBanners.map((b) => ({
             id: b.id,
-            title: b.title ?? "Promoción",
+            title: b.title,
             imageUrl: b.imageUrl,
             linkUrl: b.linkUrl,
           }))}
@@ -139,6 +139,7 @@ export default async function HomePage() {
                       alt={banner.title ?? "Promo"}
                       fill
                       className="object-cover"
+                      unoptimized={banner.imageUrl.startsWith("http")}
                     />
                   </div>
                   {banner.title ? (
