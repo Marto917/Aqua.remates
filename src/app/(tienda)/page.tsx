@@ -1,7 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
 import { type Prisma as PrismaTypes } from "@prisma/client";
-import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
 import { HomePromoRibbon } from "@/components/home/HomePromoRibbon";
 import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
@@ -14,20 +12,19 @@ type HomeProduct = PrismaTypes.ProductGetPayload<{
 }>;
 
 const FIRST_ROW = 5;
+const REST_COUNT = 20;
 
 export default async function HomePage() {
   let homeProducts: HomeProduct[] = [];
-  let categories: { name: string; slug: string }[] = [];
   let carouselBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
   let ribbon: { imageUrl: string | null; linkUrl: string | null } = { imageUrl: null, linkUrl: null };
 
   try {
-    const [cats, products, carousel, settings] = await Promise.all([
-      prisma.category.findMany({ orderBy: { name: "asc" }, take: 12 }),
+    const [products, carousel, settings] = await Promise.all([
       prisma.product.findMany({
         where: { isActive: true, ...catalogVisibilityWhere("retail") },
         orderBy: { updatedAt: "desc" },
-        take: 17,
+        take: FIRST_ROW + REST_COUNT,
         include: {
           category: true,
           variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
@@ -44,7 +41,6 @@ export default async function HomePage() {
         select: { homeRibbonImageUrl: true, homeRibbonLinkUrl: true },
       }),
     ]);
-    categories = cats;
     homeProducts = products;
     carouselBanners = carousel;
     ribbon = {
@@ -74,8 +70,6 @@ export default async function HomePage() {
       <section id="buscar" className="scroll-mt-28 rounded-2xl border border-slate-100 bg-white px-4 py-4 shadow-sm sm:px-5">
         <HomeHeroSearch />
       </section>
-
-      <CategoryStrip categories={categories} />
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
