@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminProductEditDetails } from "@/components/admin/AdminProductEditDetails";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
+import { VariantColorGalleryEditor } from "@/components/admin/VariantColorGalleryEditor";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { prisma } from "@/lib/prisma";
 
@@ -99,9 +100,15 @@ export default async function AdminProductoImagenesPage({
         </label>
 
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-            Imágenes por color
-          </h2>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+              Imágenes por color
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Cada color tiene una foto principal y podés sumar varias fotos extras (galería) que se
+              muestran en la ficha del producto.
+            </p>
+          </div>
           {product.variants.length === 0 ? (
             <p className="text-sm text-slate-600">Este producto no tiene variantes.</p>
           ) : (
@@ -116,32 +123,15 @@ export default async function AdminProductoImagenesPage({
                   currentPosition={variant.imagePosition ?? product.imagePosition}
                   currentScale={variant.imageScale ?? product.imageScale}
                 />
-                {variant.images.length > 0 ? (
-                  <ul className="space-y-1 text-sm text-slate-600">
-                    {variant.images.map((img) => (
-                      <li key={img.id} className="flex items-center gap-2">
-                        <label className="flex items-center gap-2">
-                          <input type="checkbox" name="removeGalleryImage" value={img.id} />
-                          Quitar foto extra
-                        </label>
-                        <span className="truncate text-xs text-slate-400">{img.imageUrl}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {[0, 1, 2].map((idx) => (
-                    <label key={idx} className="text-xs text-slate-600">
-                      Foto galería {idx + 1}
-                      <input
-                        type="file"
-                        name={`variantGallery_${variant.id}_${idx}`}
-                        accept="image/jpeg,image/png,image/webp"
-                        className="mt-1 block w-full text-xs"
-                      />
-                    </label>
-                  ))}
-                </div>
+                <VariantColorGalleryEditor
+                  variantId={variant.id}
+                  colorLabel={variant.colorLabel}
+                  existing={variant.images.map((img) => ({
+                    id: img.id,
+                    imageUrl: img.imageUrl,
+                  }))}
+                  maxExtra={8}
+                />
               </div>
             ))
           )}
@@ -149,11 +139,10 @@ export default async function AdminProductoImagenesPage({
 
         <button
           type="submit"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark"
-          aria-label="Guardar imágenes"
-          title="Guardar imágenes"
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
         >
           <IconCamera className="h-5 w-5" />
+          Guardar imágenes
         </button>
       </form>
     </section>

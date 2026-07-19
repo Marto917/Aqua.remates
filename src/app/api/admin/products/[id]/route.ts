@@ -145,25 +145,16 @@ export async function POST(
       key.startsWith("variantGallery_"),
     );
 
+    const galleryByVariant = new Map<string, File[]>();
     for (const [key, value] of galleryEntries) {
       if (!(value instanceof File) || value.size === 0) continue;
-      const parts = key.replace("variantGallery_", "").split("_");
-      const variantId = parts[0];
-      const sortOrder = Number(parts[1] ?? "0");
-      try {
-        const buffer = Buffer.from(await value.arrayBuffer());
-        const imageUrl = await saveCompressedProductImage(buffer);
-        await prisma.productVariantImage.create({
-          data: { variantId, imageUrl, sortOrder },
-        });
-      } catch (error) {
-        const url = new URL(`/admin/productos/${id}`, req.url);
-        url.searchParams.set(
-          "error",
-          error instanceof Error ? error.message : "No se pudo guardar una foto de galería.",
-        );
-        return NextResponse.redirect(url);
-      }
+      const rest = key.replace("variantGallery_", "");
+      const lastUnderscore = rest.lastIndexOf("_");
+      const variantId = lastUnderscore >= 0 ? rest.slice(0, lastUnderscore) : rest;
+      if (!variantId) continue;
+      const list = galleryByVariant.get(variantId) ?? [];
+      list.push(value);
+      galleryByVariant.set(variantId, list);
     }
 
     const removeGalleryIds = formData.getAll("removeGalleryImage").map(String);
@@ -171,6 +162,31 @@ export async function POST(
       await prisma.productVariantImage.deleteMany({
         where: { id: { in: removeGalleryIds } },
       });
+    }
+
+    const MAX_GALLERY = 8;
+    for (const [variantId, files] of galleryByVariant) {
+      const currentCount = await prisma.productVariantImage.count({ where: { variantId } });
+      const room = Math.max(0, MAX_GALLERY - currentCount);
+      const toSave = files.slice(0, room);
+      let sortOrder = currentCount;
+      for (const file of toSave) {
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const imageUrl = await saveCompressedProductImage(buffer);
+          await prisma.productVariantImage.create({
+            data: { variantId, imageUrl, sortOrder },
+          });
+          sortOrder += 1;
+        } catch (error) {
+          const url = new URL(`/admin/productos/${id}`, req.url);
+          url.searchParams.set(
+            "error",
+            error instanceof Error ? error.message : "No se pudo guardar una foto de galería.",
+          );
+          return NextResponse.redirect(url);
+        }
+      }
     }
 
     return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
