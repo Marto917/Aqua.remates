@@ -34,7 +34,10 @@ export function VariantColorGalleryEditor({
   const [removeIds, setRemoveIds] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingFile[]>([]);
   const pendingRef = useRef(pending);
-  pendingRef.current = pending;
+
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
 
   useEffect(() => {
     return () => {
