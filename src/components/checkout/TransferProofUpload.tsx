@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatArs } from "@/lib/currency";
@@ -95,6 +96,13 @@ export function TransferProofUpload({ orderId, totalAmount, transfer }: Props) {
         <h2 className="text-lg font-semibold">Pedido registrado</h2>
         <p className="mt-2 text-sm">
           Número: <span className="font-mono text-xs">{orderId}</span>
+        </p>
+        <p className="mt-2 text-sm">
+          Si cerrás esta página, podés volver a subir el comprobante desde{" "}
+          <Link href="/cuenta/mis-compras" className="font-semibold underline">
+            Mis compras
+          </Link>
+          .
         </p>
       </div>
 

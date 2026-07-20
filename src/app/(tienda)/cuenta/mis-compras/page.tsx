@@ -105,6 +105,25 @@ export default async function MisComprasPage() {
                   />
                 </div>
               ) : null}
+              {order.paymentMethod === "BANK_TRANSFER" &&
+              (order.status === "PENDING_TRANSFER" || order.status === "TRANSFER_REPORTED") ? (
+                <div className="mt-3">
+                  <Link
+                    href={`/cuenta/mis-compras/${order.id}/comprobante`}
+                    className="inline-flex rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                  >
+                    {order.status === "PENDING_TRANSFER"
+                      ? "Subir comprobante"
+                      : "Reemplazar comprobante"}
+                  </Link>
+                  {order.status === "PENDING_TRANSFER" ? (
+                    <p className="mt-2 text-xs text-amber-800">
+                      Tu pedido está esperando la transferencia. Subí el comprobante cuando hayas
+                      pagado.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

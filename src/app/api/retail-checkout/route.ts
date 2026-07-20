@@ -17,6 +17,7 @@ import { shippingAddressHasStreetNumber, SHIPPING_ADDRESS_HINT } from "@/lib/add
 import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-limit";
 import { resolveRetailCartLines } from "@/lib/retail-cart";
 import { resolveShippingQuote } from "@/lib/shipping-quote";
+import { sendPendingTransferEmail } from "@/lib/order-transaction-emails";
 import { getStoreSettings } from "@/lib/store-settings";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -218,17 +219,23 @@ export async function POST(req: Request) {
   }
 
   if (isTransfer) {
+    const transfer = {
+      holder: settings.bankHolder,
+      alias: settings.bankAlias,
+      cbu: settings.bankCbu,
+      notes: settings.bankExtraNotes,
+    };
+    try {
+      await sendPendingTransferEmail(order, transfer);
+    } catch (e) {
+      console.error("Email pendiente de transferencia:", e);
+    }
     await recordRateLimitAttempt(RATE_LIMITS.checkoutUser(customerId));
     await recordRateLimitAttempt(RATE_LIMITS.checkoutIp(hashIp(clientIp)));
     return NextResponse.json({
       orderId: order.id,
       paymentMethod: "BANK_TRANSFER",
-      transfer: {
-        holder: settings.bankHolder,
-        alias: settings.bankAlias,
-        cbu: settings.bankCbu,
-        notes: settings.bankExtraNotes,
-      },
+      transfer,
       subtotalAmount: cart.subtotalAmount,
       shippingAmount: quote.shippingAmount,
       totalAmount: quote.totalAmount,
