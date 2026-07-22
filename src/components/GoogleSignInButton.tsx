@@ -21,7 +21,7 @@ export function GoogleSignInButton({
         type="button"
         disabled={disabled}
         onClick={() => {
-          if (!disabled) signIn("google", { callbackUrl });
+          if (!disabled) void signIn("google", { callbackUrl });
         }}
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-55"
       >

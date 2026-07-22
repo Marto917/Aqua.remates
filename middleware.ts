@@ -107,6 +107,7 @@ export const config = {
     "/vendedor/:path*",
     "/checkout",
     "/checkout/:path*",
-    "/((?!_next/static|_next/image|favicon.ico|api/auth|.*\\.(?:svg|png|webp|jpg|jpeg|gif|ico)$).*)",
+    // Incluye /api/auth para que apex→www también aplique al callback de Google.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|webp|jpg|jpeg|gif|ico)$).*)",
   ],
 };

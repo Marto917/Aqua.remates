@@ -12,6 +12,8 @@ type Props = {
   currentPosition?: string | null;
   currentScale?: unknown;
   previewMode?: "card" | "detail";
+  /** Vista previa más chica (edición de variantes con varias fotos). */
+  compact?: boolean;
 };
 
 export function ImageUploadPreview({
@@ -23,6 +25,7 @@ export function ImageUploadPreview({
   currentPosition,
   currentScale,
   previewMode = "card",
+  compact = false,
 }: Props) {
   const initial = parseObjectPosition(currentPosition ?? "50% 50%");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -42,7 +45,11 @@ export function ImageUploadPreview({
 
   const displayUrl = previewUrl ?? currentUrl ?? null;
   const objectPosition = `${posX}% ${posY}%`;
-  const aspectClass = previewMode === "detail" ? "aspect-[3/4] max-w-md" : "aspect-[3/4]";
+  const aspectClass = compact
+    ? "aspect-[3/4] max-w-[140px]"
+    : previewMode === "detail"
+      ? "aspect-[3/4] max-w-md"
+      : "aspect-[3/4] max-w-xs";
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -66,10 +73,14 @@ export function ImageUploadPreview({
             alt="Vista previa"
             position={objectPosition}
             scale={scale}
-            sizes="400px"
+            sizes={compact ? "140px" : "400px"}
           />
         ) : (
-          <div className="flex h-full min-h-[160px] items-center justify-center text-sm text-slate-500">
+          <div
+            className={`flex h-full items-center justify-center text-sm text-slate-500 ${
+              compact ? "min-h-[100px] text-xs" : "min-h-[160px]"
+            }`}
+          >
             Sin imagen
           </div>
         )}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AdminProductEditDetails } from "@/components/admin/AdminProductEditDetails";
 import { ImageUploadPreview } from "@/components/admin/ImageUploadPreview";
 import { VariantColorGalleryEditor } from "@/components/admin/VariantColorGalleryEditor";
+import { colorLabelToDisplayName } from "@/lib/color-display";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { prisma } from "@/lib/prisma";
 
@@ -118,10 +119,11 @@ export default async function AdminProductoImagenesPage({
                   name={`variantImage_${variant.id}`}
                   positionName={`variantImagePosition_${variant.id}`}
                   scaleName={`variantImageScale_${variant.id}`}
-                  label={`Color: ${variant.colorLabel} (foto principal)`}
+                  label={`Color: ${colorLabelToDisplayName(variant.colorLabel)} (foto principal)`}
                   currentUrl={variant.imageUrl || product.imageUrl}
                   currentPosition={variant.imagePosition ?? product.imagePosition}
                   currentScale={variant.imageScale ?? product.imageScale}
+                  compact
                 />
                 <VariantColorGalleryEditor
                   variantId={variant.id}

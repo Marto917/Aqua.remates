@@ -40,7 +40,10 @@ export function LoginForm({ googleReady, turnstileSiteKey }: Props) {
       />
 
       {error ? (
-        <p className="text-center text-sm text-slate-600" role="alert">
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-center text-sm text-rose-800"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}

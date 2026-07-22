@@ -1,7 +1,6 @@
 import { StaffAccessLevel, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
-import type { User as NextAuthUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
@@ -41,7 +40,22 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function googleProfilePicture(
+  profile: unknown,
+): string | null {
+  if (!profile || typeof profile !== "object") return null;
+  const picture = (profile as { picture?: unknown }).picture;
+  return typeof picture === "string" && picture.trim() ? picture.trim() : null;
+}
+
 const googleClientId = getGoogleClientId();
+const isProd = process.env.NODE_ENV === "production";
+/** Comparte la cookie de sesión entre apex y www (evita “login fantasma”). */
+const cookieDomain =
+  process.env.NEXTAUTH_COOKIE_DOMAIN?.trim() ||
+  (isProd && getPublicAppUrl().includes("aquaremates.com.ar")
+    ? ".aquaremates.com.ar"
+    : undefined);
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -51,6 +65,22 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
+  ...(cookieDomain
+    ? {
+        cookies: {
+          sessionToken: {
+            name: `${isProd ? "__Secure-" : ""}next-auth.session-token`,
+            options: {
+              httpOnly: true,
+              sameSite: "lax" as const,
+              path: "/",
+              secure: isProd,
+              domain: cookieDomain,
+            },
+          },
+        },
+      }
+    : {}),
   providers: [
     ...(isGoogleAuthConfigured() && googleClientId
       ? [
@@ -172,35 +202,85 @@ export const authOptions: NextAuthOptions = {
           }
           return "/login?error=AccessDenied";
         }
-        const u = user as NextAuthUser & {
-          id?: string;
-          role?: UserRole;
-          emailVerified?: boolean;
-          staffAccessLevel?: null;
-        };
-        u.id = resolved.id;
-        u.name = resolved.name;
-        u.email = resolved.email;
-        u.role = resolved.role;
-        u.emailVerified = resolved.emailVerified;
-        u.staffAccessLevel = null;
-        (u as NextAuthUser & { image?: string }).image = resolved.imageUrl ?? undefined;
         return true;
       } catch (e) {
         console.error("[auth] Google signIn resolve error:", e);
         return "/login?error=AccessDenied";
       }
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, profile }) {
+      // Google: persistir el usuario de nuestra DB en el JWT (no confiar solo en mutar `user` en signIn).
+      if (account?.provider === "google") {
+        const email =
+          (typeof user?.email === "string" && user.email) ||
+          (typeof profile?.email === "string" && profile.email) ||
+          (typeof token.email === "string" && token.email) ||
+          null;
+        if (!email) {
+          return token;
+        }
+        try {
+          const resolved = await resolveGoogleSignInUser({
+            email,
+            name: user?.name ?? (typeof profile?.name === "string" ? profile.name : null),
+            image: user?.image ?? googleProfilePicture(profile),
+          });
+          if (resolved.ok) {
+            token.id = resolved.id;
+            token.role = resolved.role;
+            token.staffAccessLevel = null;
+            token.emailVerified = true;
+            token.email = resolved.email;
+            token.name = resolved.name;
+            if (resolved.imageUrl) {
+              token.picture = resolved.imageUrl;
+            }
+          }
+        } catch (e) {
+          console.error("[auth] Google jwt resolve error:", e);
+        }
+        return token;
+      }
+
       if (user) {
         token.id = user.id;
         token.role = user.role as UserRole;
         token.staffAccessLevel = user.staffAccessLevel ?? null;
         token.emailVerified = Boolean(user.emailVerified);
-        if (account?.provider === "google" && user.image) {
+        if (user.image) {
           token.picture = user.image;
         }
       }
+
+      // Si el JWT quedó sin rol (p. ej. sesión vieja), rehidratar desde DB.
+      if (token.id && !token.role) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: String(token.id) },
+            select: {
+              role: true,
+              staffAccessLevel: true,
+              emailVerified: true,
+              name: true,
+              email: true,
+              imageUrl: true,
+            },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.staffAccessLevel =
+              dbUser.staffAccessLevel ??
+              (dbUser.role === UserRole.OWNER ? StaffAccessLevel.MANAGER : null);
+            token.emailVerified = Boolean(dbUser.emailVerified);
+            token.name = dbUser.name;
+            token.email = dbUser.email;
+            if (dbUser.imageUrl) token.picture = dbUser.imageUrl;
+          }
+        } catch (e) {
+          console.error("[auth] jwt rehydrate error:", e);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -209,23 +289,40 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role;
         session.user.staffAccessLevel = token.staffAccessLevel ?? null;
         session.user.emailVerified = Boolean(token.emailVerified);
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { imageUrl: true, name: true },
-        });
-        if (dbUser?.name) {
-          session.user.name = dbUser.name;
-        }
-        const fromToken = typeof token.picture === "string" ? token.picture : null;
-        session.user.image = dbUser?.imageUrl?.trim() || fromToken || null;
-        void prisma.user
-          .update({
+        if (typeof token.email === "string") session.user.email = token.email;
+        if (typeof token.name === "string") session.user.name = token.name;
+        try {
+          const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            data: { lastActiveAt: new Date() },
-          })
-          .catch(() => undefined);
+            select: { imageUrl: true, name: true },
+          });
+          if (dbUser?.name) {
+            session.user.name = dbUser.name;
+          }
+          const fromToken = typeof token.picture === "string" ? token.picture : null;
+          session.user.image = dbUser?.imageUrl?.trim() || fromToken || null;
+          void prisma.user
+            .update({
+              where: { id: token.id as string },
+              data: { lastActiveAt: new Date() },
+            })
+            .catch(() => undefined);
+        } catch (e) {
+          console.error("[auth] session lookup error:", e);
+          const fromToken = typeof token.picture === "string" ? token.picture : null;
+          session.user.image = fromToken;
+        }
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        /* ignore */
+      }
+      return baseUrl;
     },
   },
 };
