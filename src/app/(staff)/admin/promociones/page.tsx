@@ -6,6 +6,7 @@ import { AdminFreeShippingManager } from "@/components/admin/AdminFreeShippingMa
 import { AdminHeroPromoManager } from "@/components/admin/AdminHeroPromoManager";
 import { AdminHomeRibbonForm } from "@/components/admin/AdminHomeRibbonForm";
 import { AdminShippingRatesForm } from "@/components/admin/AdminShippingRatesForm";
+import { AdminStorePromosManager } from "@/components/admin/AdminStorePromosManager";
 import { getCatalogPromoSettings } from "@/lib/catalog-promo";
 import { getFreeShippingSettings } from "@/lib/free-shipping";
 import { getHeroPromoSettings } from "@/lib/hero-promo";
@@ -30,7 +31,7 @@ export default async function AdminPromocionesPage() {
     );
   }
 
-  const [banners, heroPromo, catalogPromo, freeShipping, categories, shippingRates, ribbon] =
+  const [banners, heroPromo, catalogPromo, freeShipping, categories, shippingRates, ribbon, storePromos] =
     await Promise.all([
       prisma.banner.findMany({
         orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -43,6 +44,9 @@ export default async function AdminPromocionesPage() {
       prisma.storeSettings.findUnique({
         where: { id: "default" },
         select: { homeRibbonImageUrl: true, homeRibbonLinkUrl: true },
+      }),
+      prisma.storePromo.findMany({
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       }),
     ]);
 
@@ -62,11 +66,23 @@ export default async function AdminPromocionesPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Promociones e imágenes</h1>
           <p className="text-sm text-slate-600">
-            Carrusel, cinta del home, promos, envío gratis y costos de envío por zona.
+            Promos públicas, carrusel, cinta del home, descuentos, envío gratis y costos por zona.
           </p>
         </div>
         <StaffBackLink href="/admin" label="Panel" />
       </div>
+      <AdminStorePromosManager
+        initial={storePromos.map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          summary: p.summary,
+          body: p.body,
+          logoUrl: p.logoUrl,
+          sortOrder: p.sortOrder,
+          published: p.published,
+        }))}
+      />
       <AdminShippingRatesForm initial={shippingRates} />
       <AdminCatalogPromoManager initial={catalogPromo} categories={categories} />
       <AdminFreeShippingManager initial={freeShipping} categories={categories} />

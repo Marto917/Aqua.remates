@@ -2,6 +2,7 @@ import { MobileCartBar } from "@/components/MobileCartBar";
 import { StoreNav } from "@/components/nav/StoreNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StoreThemeStyles } from "@/components/store/StoreThemeStyles";
+import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { StoreSettingsProvider } from "@/contexts/store-settings-context";
 import { getSafeSession } from "@/lib/get-session";
 import { getStoreSettings } from "@/lib/store-settings";
@@ -34,6 +35,7 @@ export default async function TiendaLayout({
         storeAddress={settings.storeAddress}
       />
       <MobileCartBar />
+      <WhatsAppFab phone={settings.storePhone} />
     </StoreSettingsProvider>
   );
 }

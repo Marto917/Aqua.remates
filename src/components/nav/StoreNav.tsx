@@ -2,8 +2,8 @@ import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import { CustomerAccountMenu } from "@/components/nav/CustomerAccountMenu";
 import { SiteLogo } from "@/components/SiteLogo";
+import { StoreNavLinks } from "@/components/nav/StoreNavLinks";
 import { StoreNavToolbar } from "@/components/nav/StoreNavToolbar";
-import { WholesaleModeToggle } from "@/components/nav/WholesaleModeToggle";
 import { prisma } from "@/lib/prisma";
 import type { Session } from "next-auth";
 
@@ -48,12 +48,9 @@ export async function StoreNav({ session, logoUrl }: Props) {
           <SiteLogo logoUrl={logoUrl} />
         </Link>
 
-        <div className="hidden min-w-0 flex-1 justify-center sm:flex">
-          <WholesaleModeToggle />
-        </div>
+        <StoreNavLinks />
 
-        {/* Empuja acciones a la derecha en mobile (sin el toggle mayorista). */}
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0 sm:gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <StoreNavToolbar />
           {!isLoggedIn ? (
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">

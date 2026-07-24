@@ -79,35 +79,35 @@ export function NavSearch({ onOpenChange }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="fixed inset-x-0 top-[var(--store-nav-height,3.25rem)] z-50 border-b border-teal-100 bg-white px-3 py-3 shadow-md sm:absolute sm:inset-x-0 sm:top-full sm:px-4"
+      className="fixed inset-x-0 top-[var(--store-nav-height,3.25rem)] z-50 border-b border-teal-100 bg-white px-3 py-3 shadow-md sm:absolute sm:right-0 sm:left-auto sm:top-full sm:w-[min(100vw-1.5rem,28rem)] sm:border sm:border-slate-200 sm:px-3 sm:py-3 sm:rounded-xl md:w-[min(92vw,36rem)]"
     >
-      <div className="relative mx-auto max-w-3xl">
+      <div className="relative mx-auto w-full">
         <form
           action="/catalog"
-          className="flex items-center overflow-hidden rounded-md border border-slate-200 bg-white"
+          className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white"
           onSubmit={() => onOpenChange(false)}
         >
           <input
             ref={inputRef}
             name="q"
-          value={q}
-          onChange={(e) => {
-            const v = e.target.value;
-            setQ(v);
-            if (v.trim().length < 2) {
-              setSuggestions([]);
-              setTotalHint(null);
-              setDropdownOpen(false);
-            }
-          }}
-          onFocus={() => setDropdownOpen(suggestions.length > 0 || q.trim().length >= 2)}
+            value={q}
+            onChange={(e) => {
+              const v = e.target.value;
+              setQ(v);
+              if (v.trim().length < 2) {
+                setSuggestions([]);
+                setTotalHint(null);
+                setDropdownOpen(false);
+              }
+            }}
+            onFocus={() => setDropdownOpen(suggestions.length > 0 || q.trim().length >= 2)}
             placeholder="Buscar productos…"
-            className="min-h-11 w-full flex-1 border-0 px-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+            className="min-h-12 w-full flex-1 border-0 px-4 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
             autoComplete="off"
           />
           <button
             type="submit"
-            className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-500 hover:text-brand-dark"
+            className="flex h-12 w-12 shrink-0 items-center justify-center text-slate-500 hover:text-brand-dark"
             aria-label="Buscar"
           >
             <IconSearch className="h-5 w-5" />
@@ -115,7 +115,7 @@ export function NavSearch({ onOpenChange }: Props) {
         </form>
 
         {dropdownOpen && q.trim().length >= 2 ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-10 max-h-[min(70vh,420px)] overflow-y-auto rounded-md border border-slate-200 bg-white shadow-xl">
+          <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-10 max-h-[min(70vh,480px)] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl">
             {suggestions.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-slate-500">Sin resultados</p>
             ) : (
@@ -125,7 +125,7 @@ export function NavSearch({ onOpenChange }: Props) {
                     <Link
                       href={`/product/${item.slug}`}
                       onClick={() => onOpenChange(false)}
-                      className="flex items-center gap-3 border-b border-slate-100 px-3 py-2.5 hover:bg-slate-50 last:border-b-0"
+                      className="flex items-center gap-3 border-b border-slate-100 px-3 py-3 hover:bg-slate-50 last:border-b-0"
                     >
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded bg-slate-100">
                         <Image
@@ -138,10 +138,10 @@ export function NavSearch({ onOpenChange }: Props) {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold uppercase tracking-wide text-slate-900">
+                        <p className="line-clamp-2 text-sm font-bold uppercase tracking-wide text-slate-900">
                           {formatDisplayWords(item.name)}
                         </p>
-                        <p className="truncate text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-slate-500">
                           {item.category ? formatDisplayWords(item.category) : "Producto"}
                         </p>
                       </div>

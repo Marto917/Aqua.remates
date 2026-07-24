@@ -22,10 +22,12 @@ function SocialIconTiktok({ className }: { className?: string }) {
 
 const navLinks = [
   { href: "/", label: "Inicio" },
-  { href: "/catalog?priceMode=retail", label: "Catálogo" },
+  { href: "/catalog", label: "Catálogo" },
+  { href: "/promociones", label: "Promociones" },
+  { href: "/locales", label: "Locales" },
+  { href: "/contacto", label: "Contacto" },
   { href: "/carrito", label: "Carrito" },
-  { href: "/login", label: "Ingresar" },
-  { href: "/registro", label: "Registrarte" },
+  { href: "/libro-de-quejas", label: "Libro de quejas online" },
 ] as const;
 
 type Props = {
@@ -92,10 +94,6 @@ export function SiteFooter({
             </Link>
           ))}
         </nav>
-        <div className="mx-auto mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-white/30 bg-white/10 px-4 text-xs font-bold uppercase tracking-[0.16em] text-white/80">
-          Próximamente: mayorista
-        </div>
-
         <div className="mx-auto mt-8 w-full max-w-sm rounded-xl border border-white/25 bg-white/5 px-5 py-4 text-center backdrop-blur-sm sm:max-w-md sm:px-6">
           <p className="text-xs font-medium uppercase tracking-wider text-white/70">Contacto</p>
           <p className="mt-3 text-sm leading-relaxed text-white/90">

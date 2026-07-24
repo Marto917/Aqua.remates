@@ -8,7 +8,10 @@ import { PromoCarousel } from "@/components/PromoCarousel";
 import { prisma } from "@/lib/prisma";
 
 type HomeProduct = PrismaTypes.ProductGetPayload<{
-  include: { category: true; variants: true };
+  include: {
+    category: true;
+    variants: { include: { images: true } };
+  };
 }>;
 
 const FIRST_ROW = 5;
@@ -27,7 +30,11 @@ export default async function HomePage() {
         take: FIRST_ROW + REST_COUNT,
         include: {
           category: true,
-          variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+          variants: {
+            where: { isActive: true },
+            orderBy: { sortOrder: "asc" },
+            include: { images: { orderBy: { sortOrder: "asc" }, take: 8 } },
+          },
         },
       }),
       prisma.banner.findMany({

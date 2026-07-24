@@ -83,6 +83,7 @@ export async function getCatalogData(filters: CatalogFilters) {
       variants: {
         where: { isActive: true },
         orderBy: { sortOrder: "asc" },
+        include: { images: { orderBy: { sortOrder: "asc" }, take: 8 } },
       },
     },
     orderBy: { updatedAt: "desc" },

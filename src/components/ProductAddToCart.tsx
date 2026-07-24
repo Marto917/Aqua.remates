@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { FreeShippingBadge } from "@/components/FreeShippingBadge";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
+import { ProductShareMenu } from "@/components/ProductShareMenu";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreSettings } from "@/contexts/store-settings-context";
 import { swatchColorForLabel } from "@/lib/color-swatch";
 import { formatDisplayWords } from "@/lib/display-text";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import { getProductFreeShippingDisplay } from "@/lib/free-shipping";
+import { getProductPromoDisplay } from "@/lib/product-promo";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
 
 type VariantImage = {
@@ -71,10 +73,10 @@ export function ProductAddToCart({
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const { addLine, hydrated } = useCart();
-  const storeSettings = useStoreSettings();
+  const settings = useStoreSettings();
   const freeShipping = getProductFreeShippingDisplay(
     product.categoryId,
-    storeSettings.freeShipping,
+    settings.freeShipping,
   );
 
   const selected = variants.find((v) => v.id === variantId) ?? variants[0];
@@ -102,13 +104,15 @@ export function ProductAddToCart({
   const imagePosition = activeImage?.imagePosition ?? product.imagePosition;
   const imageScale = Number(activeImage?.imageScale ?? product.imageScale ?? 1);
 
-  const settings = useStoreSettings();
-
   const pricing = useMemo(
     () => ({
       listPrice: getListPrice(product),
       transferPrice: getTransferPrice(product, settings.catalogPromo),
     }),
+    [product, settings.catalogPromo],
+  );
+  const promo = useMemo(
+    () => getProductPromoDisplay(product, settings.catalogPromo),
     [product, settings.catalogPromo],
   );
 
@@ -122,6 +126,10 @@ export function ProductAddToCart({
   }
 
   function handleAdd() {
+    const discountPercent =
+      promo.showPromoPrice && pricing.listPrice > 0
+        ? Math.round((1 - pricing.transferPrice / pricing.listPrice) * 100)
+        : promo.badgePercent ?? 0;
     addLine({
       variantId: selected.id,
       productId: product.id,
@@ -131,12 +139,20 @@ export function ProductAddToCart({
       categoryId: product.categoryId,
       listPrice: pricing.listPrice,
       transferPrice: pricing.transferPrice,
-      discountPercent: 0,
+      discountPercent,
       quantity: qty,
     });
     setAdded(true);
     setQty(1);
     setTimeout(() => setAdded(false), 2500);
+  }
+
+  function prevImage() {
+    setGalleryIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length);
+  }
+
+  function nextImage() {
+    setGalleryIndex((i) => (i + 1) % galleryImages.length);
   }
 
   return (
@@ -151,6 +167,34 @@ export function ProductAddToCart({
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
+          <div className="absolute right-3 top-3">
+            <ProductShareMenu title={title} />
+          </div>
+          {promo.showBadge && promo.badgePercent ? (
+            <div className="absolute left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-rose-600 text-sm font-bold text-white shadow-md">
+              -{promo.badgePercent}%
+            </div>
+          ) : null}
+          {galleryImages.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-xl text-slate-800 shadow hover:bg-white"
+                aria-label="Foto anterior"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-xl text-slate-800 shadow hover:bg-white"
+                aria-label="Foto siguiente"
+              >
+                ›
+              </button>
+            </>
+          ) : null}
         </div>
         {galleryImages.length > 1 ? (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">

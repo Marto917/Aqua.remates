@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { BackToCatalogLink } from "@/components/BackToCatalogLink";
 import { ProductAddToCart } from "@/components/ProductAddToCart";
 import { ProductReviews } from "@/components/ProductReviews";
+import { SimilarProducts } from "@/components/SimilarProducts";
 import { formatDisplayWords } from "@/lib/display-text";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
-import { isProductVisibleToAudience } from "@/lib/catalog-visibility";
+import { isProductVisibleToAudience, catalogVisibilityWhere } from "@/lib/catalog-visibility";
 import { canCustomerReview, reviewEligibilityMessage } from "@/lib/review-eligibility";
 import { UserRole } from "@prisma/client";
 
@@ -93,6 +94,24 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
     }
   }
 
+  const similarProducts = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      categoryId: product.categoryId,
+      id: { not: product.id },
+      ...catalogVisibilityWhere(audience),
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 8,
+    include: {
+      variants: {
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+        include: { images: { orderBy: { sortOrder: "asc" }, take: 8 } },
+      },
+    },
+  });
+
   return (
     <div className="space-y-10">
       <BackToCatalogLink />
@@ -130,6 +149,29 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
         <h2 className="text-lg font-semibold uppercase tracking-wide text-slate-900">Descripción</h2>
         <p className="mt-3 whitespace-pre-wrap leading-relaxed text-slate-600">{desc}</p>
       </section>
+
+      <SimilarProducts
+        categoryName={product.category.name}
+        products={similarProducts.map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          name: p.name,
+          description: p.description,
+          imageUrl: p.imageUrl,
+          imagePosition: p.imagePosition,
+          imageScale: p.imageScale,
+          listPrice: p.listPrice,
+          categoryId: p.categoryId,
+          variants: p.variants.map((v) => ({
+            id: v.id,
+            colorLabel: v.colorLabel,
+            imageUrl: v.imageUrl,
+            imagePosition: v.imagePosition,
+            imageScale: v.imageScale,
+            images: v.images,
+          })),
+        }))}
+      />
 
       <ProductReviews
         productId={product.id}
