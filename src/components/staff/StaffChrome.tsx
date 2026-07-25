@@ -79,24 +79,13 @@ export function StaffChrome({
         }`}
         aria-hidden={!sidebarOpen}
       >
-        <div className="flex items-start justify-between gap-2 border-b border-slate-100 px-4 py-4">
-          <div className="min-w-0">
-            <Link href={homeHref} className="inline-flex font-semibold text-brand-dark">
-              <SiteLogo logoUrl={logoUrl} />
-            </Link>
-            <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Panel {area === "admin" ? "admin" : "vendedor"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => writeSidebarOpen(false)}
-            className="mt-0.5 shrink-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            title="Ocultar menú"
-            aria-label="Ocultar menú"
-          >
-            «
-          </button>
+        <div className="border-b border-slate-100 px-4 py-4">
+          <Link href={homeHref} className="inline-flex font-semibold text-brand-dark">
+            <SiteLogo logoUrl={logoUrl} />
+          </Link>
+          <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            Panel {area === "admin" ? "admin" : "vendedor"}
+          </p>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Menú staff">
           <ul className="space-y-0.5">
@@ -131,18 +120,19 @@ export function StaffChrome({
         </div>
       </aside>
 
-      {/* Botón para reabrir menú cuando está oculto */}
-      {!sidebarOpen ? (
-        <button
-          type="button"
-          onClick={() => writeSidebarOpen(true)}
-          className="fixed left-3 top-3 z-40 hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 lg:inline-flex"
-          aria-label="Mostrar menú"
-        >
-          <span aria-hidden>»</span>
-          Menú
-        </button>
-      ) : null}
+      {/* Pestana para abrir/cerrar menú (desktop) */}
+      <button
+        type="button"
+        onClick={() => writeSidebarOpen(!sidebarOpen)}
+        className={`fixed top-1/2 z-50 hidden h-12 w-6 -translate-y-1/2 items-center justify-center rounded-r-lg bg-slate-500 text-base font-bold text-white shadow-sm transition-[left] duration-200 ease-out hover:bg-slate-600 lg:inline-flex ${
+          sidebarOpen ? "left-60" : "left-0"
+        }`}
+        title={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
+        aria-label={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
+        aria-expanded={sidebarOpen}
+      >
+        {sidebarOpen ? "<" : ">"}
+      </button>
 
       {/* Barra superior mobile */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm lg:hidden">
@@ -161,8 +151,8 @@ export function StaffChrome({
       </header>
 
       <div
-        className={`mx-auto flex-1 px-4 pb-8 transition-[max-width,padding] duration-200 ${
-          sidebarOpen ? "max-w-6xl pt-4" : "max-w-7xl pt-4 lg:pt-14"
+        className={`mx-auto flex-1 px-4 pb-8 pt-4 transition-[max-width] duration-200 ${
+          sidebarOpen ? "max-w-6xl" : "max-w-7xl"
         }`}
       >
         {children}
