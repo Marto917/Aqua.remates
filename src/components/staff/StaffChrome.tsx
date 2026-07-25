@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
 import { StaffMobileNav } from "@/components/staff/StaffMobileNav";
 
 const STORAGE_KEY = "aqua-staff-sidebar-open";
+const CHANGE_EVENT = "aqua-staff-sidebar";
 
 export type StaffNavLink = {
   href: string;
@@ -25,6 +26,33 @@ type Props = {
   children: React.ReactNode;
 };
 
+function readSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function subscribeSidebar(onStoreChange: () => void) {
+  const handler = () => onStoreChange();
+  window.addEventListener("storage", handler);
+  window.addEventListener(CHANGE_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(CHANGE_EVENT, handler);
+  };
+}
+
+function writeSidebarOpen(open: boolean) {
+  try {
+    localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export function StaffChrome({
   area,
   homeHref,
@@ -36,27 +64,7 @@ export function StaffChrome({
   signedIn,
   children,
 }: Props) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === "0") setSidebarOpen(false);
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, sidebarOpen ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  }, [sidebarOpen, hydrated]);
+  const sidebarOpen = useSyncExternalStore(subscribeSidebar, readSidebarOpen, () => true);
 
   return (
     <div
@@ -82,7 +90,7 @@ export function StaffChrome({
           </div>
           <button
             type="button"
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => writeSidebarOpen(false)}
             className="mt-0.5 shrink-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             title="Ocultar menú"
             aria-label="Ocultar menú"
@@ -127,7 +135,7 @@ export function StaffChrome({
       {!sidebarOpen ? (
         <button
           type="button"
-          onClick={() => setSidebarOpen(true)}
+          onClick={() => writeSidebarOpen(true)}
           className="fixed left-3 top-3 z-40 hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 lg:inline-flex"
           aria-label="Mostrar menú"
         >
