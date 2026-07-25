@@ -124,14 +124,29 @@ export function StaffChrome({
       <button
         type="button"
         onClick={() => writeSidebarOpen(!sidebarOpen)}
-        className={`fixed top-1/2 z-50 hidden h-12 w-6 -translate-y-1/2 items-center justify-center rounded-r-lg bg-slate-500 text-base font-bold text-white shadow-sm transition-[left] duration-200 ease-out hover:bg-slate-600 lg:inline-flex ${
+        className={`fixed top-1/2 z-50 hidden h-16 w-5 -translate-y-1/2 items-center justify-center rounded-r-lg bg-slate-500 text-white shadow-sm transition-[left] duration-200 ease-out hover:bg-slate-600 lg:inline-flex ${
           sidebarOpen ? "left-60" : "left-0"
         }`}
         title={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
         aria-label={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
         aria-expanded={sidebarOpen}
       >
-        {sidebarOpen ? "<" : ">"}
+        <svg
+          viewBox="0 0 16 16"
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          {sidebarOpen ? (
+            <path d="M10 3.5 5.5 8 10 12.5" />
+          ) : (
+            <path d="M6 3.5 10.5 8 6 12.5" />
+          )}
+        </svg>
       </button>
 
       {/* Barra superior mobile */}
