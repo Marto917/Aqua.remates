@@ -96,6 +96,14 @@ export function CheckoutClient({
   const [shippingQuoteLoading, setShippingQuoteLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const needsTurnstile = Boolean(turnstileSiteKey);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discountAmount: number;
+    message: string;
+  } | null>(null);
 
   const lineSummaries = useMemo(() => {
     return lines.map((line) => {
@@ -121,17 +129,31 @@ export function CheckoutClient({
     [lineSummaries],
   );
 
-  const totalDisplay = useMemo(() => {
-    const total =
+  const promoDiscount = appliedPromo?.discountAmount ?? 0;
+
+  const totalAmountPreview = useMemo(() => {
+    const base =
       shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
         ? shippingQuote.totalAmount
         : subtotalAmount;
-    return total.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  }, [shippingMethod, shippingQuote, subtotalAmount]);
+    return Math.max(0, base - promoDiscount);
+  }, [shippingMethod, shippingQuote, subtotalAmount, promoDiscount]);
+
+  const totalDisplay = useMemo(
+    () =>
+      totalAmountPreview.toLocaleString("es-AR", { style: "currency", currency: "ARS" }),
+    [totalAmountPreview],
+  );
 
   const subtotalDisplay = useMemo(
     () => subtotalAmount.toLocaleString("es-AR", { style: "currency", currency: "ARS" }),
     [subtotalAmount],
+  );
+
+  const promoDiscountDisplay = useMemo(
+    () =>
+      promoDiscount.toLocaleString("es-AR", { style: "currency", currency: "ARS" }),
+    [promoDiscount],
   );
 
   const mpSubtotal = useMemo(
@@ -144,8 +166,16 @@ export function CheckoutClient({
       shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
         ? shippingQuote.shippingAmount
         : 0;
-    return (mpSubtotal + shipping).toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  }, [mpSubtotal, shippingMethod, shippingQuote]);
+    return Math.max(0, mpSubtotal + shipping - promoDiscount).toLocaleString("es-AR", {
+      style: "currency",
+      currency: "ARS",
+    });
+  }, [mpSubtotal, shippingMethod, shippingQuote, promoDiscount]);
+
+  useEffect(() => {
+    setAppliedPromo(null);
+    setPromoError(null);
+  }, [paymentMethod, lines]);
 
   useEffect(() => {
     if (paymentMethod === "MERCADO_PAGO" && !mercadoPagoEnabled) {
@@ -288,6 +318,52 @@ export function CheckoutClient({
     );
   }
 
+  async function applyPromoCode() {
+    setPromoError(null);
+    const code = promoInput.trim();
+    if (!code) {
+      setPromoError("Ingresá un código.");
+      return;
+    }
+    setPromoApplying(true);
+    try {
+      const res = await fetch("/api/promo-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          lines: lineSummaries.map((l) => ({
+            productId: l.productId,
+            categoryId: l.categoryId,
+            lineTotal: l.lineTotal,
+          })),
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        code?: string;
+        discountAmount?: number;
+        message?: string;
+      };
+      if (!res.ok || typeof data.discountAmount !== "number" || !data.code) {
+        setAppliedPromo(null);
+        setPromoError(data.error ?? "Código inválido.");
+        return;
+      }
+      setAppliedPromo({
+        code: data.code,
+        discountAmount: data.discountAmount,
+        message: data.message ?? "Código aplicado.",
+      });
+      setPromoInput(data.code);
+    } catch {
+      setAppliedPromo(null);
+      setPromoError("No se pudo validar el código. Intentá de nuevo.");
+    } finally {
+      setPromoApplying(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -343,6 +419,7 @@ export function CheckoutClient({
           shippingNotes: shippingMethod === "DELIVERY" ? shippingNotes : undefined,
           saveToProfile: shippingMethod === "DELIVERY" ? effectiveSaveToProfile : false,
           turnstileToken: turnstileToken ?? undefined,
+          promoCode: appliedPromo?.code,
           lines: lines.map((l) => ({
             variantId: l.variantId,
             productId: l.productId,
@@ -686,6 +763,35 @@ export function CheckoutClient({
             </li>
           ))}
         </ul>
+        <div className="mt-4 space-y-3 border-t pt-4">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Código de descuento
+            </label>
+            <div className="mt-1.5 flex gap-2">
+              <input
+                type="text"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                placeholder="Ej: AQUA"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase tracking-wide text-slate-900"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => void applyPromoCode()}
+                disabled={promoApplying}
+                className="shrink-0 rounded-lg border border-brand bg-brand-muted px-3 py-2 text-sm font-semibold text-brand-dark hover:bg-brand/10 disabled:opacity-60"
+              >
+                {promoApplying ? "…" : "Aplicar"}
+              </button>
+            </div>
+            {promoError ? <p className="mt-1.5 text-xs text-rose-700">{promoError}</p> : null}
+            {appliedPromo ? (
+              <p className="mt-1.5 text-xs text-emerald-700">{appliedPromo.message}</p>
+            ) : null}
+          </div>
+        </div>
         <div className="mt-4 space-y-2 border-t pt-4 text-sm">
           <div className="flex justify-between text-slate-600">
             <span>Subtotal productos</span>
@@ -702,6 +808,12 @@ export function CheckoutClient({
                       currency: "ARS",
                     })}
               </span>
+            </div>
+          ) : null}
+          {appliedPromo && promoDiscount > 0 ? (
+            <div className="flex justify-between text-emerald-700">
+              <span>Código {appliedPromo.code}</span>
+              <span>−{promoDiscountDisplay}</span>
             </div>
           ) : null}
           <div className="flex justify-between pt-1">

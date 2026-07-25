@@ -124,6 +124,9 @@ export function CarritoClient() {
               <span className="text-brand-dark">{subtotalTransfer}</span>
             </div>
             <p className="mt-1 text-xs text-slate-500">Precio transferencia</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Si tenés un código de descuento, lo podés aplicar en el checkout.
+            </p>
           </div>
           <Link
             href="/checkout"

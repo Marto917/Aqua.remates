@@ -21,6 +21,17 @@ enum StaffAccessLevel {
   SELLER
 }
 
+enum PromoCodeRewardType {
+  PERCENT
+  FIXED_AMOUNT
+}
+
+enum PromoCodeScopeType {
+  ALL
+  CATEGORIES
+  PRODUCTS
+}
+
 enum RetailOrderStatus {
   PENDING_PAYMENT
   PENDING_TRANSFER
@@ -363,6 +374,9 @@ model RetailOrder {
   subtotalAmount          Decimal?              @db.Decimal(10, 2)
   shippingAmount          Decimal               @default(0) @db.Decimal(10, 2)
   shippingZone            String?
+  /// Descuento por código promo / regalo.
+  promoCode               String?
+  promoDiscountAmount     Decimal               @default(0) @db.Decimal(10, 2)
   totalAmount             Decimal               @db.Decimal(10, 2)
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
   transferAlias           String?
@@ -495,6 +509,30 @@ model StorePromo {
   endsAt      DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+/// Códigos de descuento / regalo (ej. AQUA → 5% en electrodomésticos).
+model PromoCode {
+  id           String              @id @default(cuid())
+  /// Palabra del código (se guarda en mayúsculas).
+  code         String              @unique
+  title        String?
+  description  String?
+  rewardType   PromoCodeRewardType
+  /// % (1–99) o monto fijo en ARS según rewardType.
+  rewardValue  Decimal             @db.Decimal(10, 2)
+  scopeType    PromoCodeScopeType  @default(ALL)
+  /// categoryId[] cuando scopeType = CATEGORIES
+  categoryIds  Json?
+  /// productId[] cuando scopeType = PRODUCTS
+  productIds   Json?
+  isActive     Boolean             @default(true)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  maxUses      Int?
+  usedCount    Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 /// Configuración global de la tienda (datos bancarios, recargos, textos).

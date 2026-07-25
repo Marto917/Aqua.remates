@@ -149,6 +149,14 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
                 </div>
               </>
             ) : null}
+            {order.promoCode && Number(order.promoDiscountAmount) > 0 ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Código {order.promoCode}</dt>
+                <dd className="text-right text-emerald-700">
+                  −{formatArs(Number(order.promoDiscountAmount))}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500">Total</dt>
               <dd className="text-right text-lg font-semibold text-brand-dark">

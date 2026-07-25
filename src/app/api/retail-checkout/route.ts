@@ -19,6 +19,7 @@ import { resolveRetailCartLines } from "@/lib/retail-cart";
 import { resolveShippingQuote } from "@/lib/shipping-quote";
 import { sendPendingTransferEmail } from "@/lib/order-transaction-emails";
 import { trySaveCustomerAddress } from "@/lib/customer-addresses";
+import { evaluatePromoCode, incrementPromoCodeUse } from "@/lib/promo-codes";
 import { getStoreSettings } from "@/lib/store-settings";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -42,6 +43,7 @@ const checkoutSchema = z
     shippingPostalCode: z.string().optional(),
     shippingNotes: z.string().optional(),
     saveToProfile: z.boolean().optional(),
+    promoCode: z.string().optional(),
     turnstileToken: z.string().optional(),
     lines: z.array(lineSchema).min(1),
   })
@@ -154,6 +156,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: quote.error }, { status: 400 });
   }
 
+  let promoCode: string | null = null;
+  let promoDiscountAmount = 0;
+  if (data.promoCode?.trim()) {
+    const promo = await evaluatePromoCode(
+      data.promoCode,
+      cart.lines.map((l) => ({
+        productId: l.productId,
+        categoryId: l.categoryId,
+        lineTotal: l.subtotal,
+      })),
+    );
+    if (!promo.ok) {
+      return NextResponse.json({ error: promo.error }, { status: 400 });
+    }
+    promoCode = promo.code;
+    promoDiscountAmount = promo.discountAmount;
+  }
+
+  const totalAmount = Math.max(0, quote.totalAmount - promoDiscountAmount);
+
   const isTransfer = data.paymentMethod === "BANK_TRANSFER";
   const status = isTransfer ? "PENDING_TRANSFER" : "PENDING_PAYMENT";
   const billingMode: BillingMode = isTransfer ? "NEGRO" : "BLANCO";
@@ -177,7 +199,9 @@ export async function POST(req: Request) {
       subtotalAmount: cart.subtotalAmount,
       shippingAmount: quote.shippingAmount,
       shippingZone: quote.zone,
-      totalAmount: quote.totalAmount,
+      promoCode,
+      promoDiscountAmount,
+      totalAmount,
       status,
       transferAlias: isTransfer ? settings.bankAlias : null,
       transferCbu: isTransfer ? settings.bankCbu : null,
@@ -195,6 +219,10 @@ export async function POST(req: Request) {
     },
     include: { items: true },
   });
+
+  if (promoCode) {
+    await incrementPromoCodeUse(promoCode);
+  }
 
   if (customerId && data.saveToProfile && data.shippingMethod === "DELIVERY") {
     await prisma.user.update({
@@ -237,7 +265,9 @@ export async function POST(req: Request) {
       transfer,
       subtotalAmount: cart.subtotalAmount,
       shippingAmount: quote.shippingAmount,
-      totalAmount: quote.totalAmount,
+      promoDiscountAmount,
+      promoCode,
+      totalAmount,
     });
   }
 
@@ -248,7 +278,7 @@ export async function POST(req: Request) {
       buyerName: order.buyerName,
       lines: cart.lines,
       shippingAmount: quote.shippingAmount,
-      totalAmount: quote.totalAmount,
+      totalAmount,
     });
 
     await prisma.retailOrder.update({
@@ -265,7 +295,9 @@ export async function POST(req: Request) {
       initPoint,
       subtotalAmount: cart.subtotalAmount,
       shippingAmount: quote.shippingAmount,
-      totalAmount: quote.totalAmount,
+      promoDiscountAmount,
+      promoCode,
+      totalAmount,
     });
   } catch (e) {
     console.error("Mercado Pago preference error:", e);
