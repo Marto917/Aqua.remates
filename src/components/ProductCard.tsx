@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FreeShippingBadge } from "@/components/FreeShippingBadge";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductPriceBlock } from "@/components/ProductPriceBlock";
@@ -69,13 +69,11 @@ export function ProductCard({ product }: ProductCardProps) {
     });
   }, [selectedVariant, product]);
 
-  useEffect(() => {
-    setGalleryIndex(0);
-  }, [selectedVariantId]);
-
   const displayName = useMemo(() => formatDisplayWords(product.name), [product.name]);
   const shortDesc = useMemo(() => formatDisplayWords(product.description), [product.description]);
-  const active = galleryImages[galleryIndex] ?? galleryImages[0];
+  const safeGalleryIndex =
+    galleryImages.length === 0 ? 0 : Math.min(galleryIndex, galleryImages.length - 1);
+  const active = galleryImages[safeGalleryIndex] ?? galleryImages[0];
   const imagePosition = active?.imagePosition ?? product.imagePosition;
   const imageScale = Number(active?.imageScale ?? product.imageScale ?? 1);
   const promo = getProductPromoDisplay(product, settings.catalogPromo);
@@ -95,6 +93,11 @@ export function ProductCard({ product }: ProductCardProps) {
   function next(e: React.MouseEvent) {
     stop(e);
     setGalleryIndex((i) => (i + 1) % galleryImages.length);
+  }
+
+  function selectVariant(id: string) {
+    setSelectedVariantId(id);
+    setGalleryIndex(0);
   }
 
   return (
@@ -144,7 +147,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 <span
                   key={idx}
                   className={`h-1.5 w-1.5 rounded-full ${
-                    idx === galleryIndex ? "bg-white" : "bg-white/50"
+                    idx === safeGalleryIndex ? "bg-white" : "bg-white/50"
                   }`}
                 />
               ))}
@@ -164,7 +167,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 aria-label={`Color ${formatDisplayWords(v.colorLabel)}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  setSelectedVariantId(v.id);
+                  selectVariant(v.id);
                 }}
                 className={`h-5 w-5 rounded-full border-2 shadow-sm transition ${
                   selectedVariant?.id === v.id
