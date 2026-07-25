@@ -18,6 +18,7 @@ import { checkRateLimit, RATE_LIMITS, recordRateLimitAttempt } from "@/lib/rate-
 import { resolveRetailCartLines } from "@/lib/retail-cart";
 import { resolveShippingQuote } from "@/lib/shipping-quote";
 import { sendPendingTransferEmail } from "@/lib/order-transaction-emails";
+import { trySaveCustomerAddress } from "@/lib/customer-addresses";
 import { getStoreSettings } from "@/lib/store-settings";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -195,21 +196,19 @@ export async function POST(req: Request) {
     include: { items: true },
   });
 
-  if (customerId && data.saveToProfile) {
+  if (customerId && data.saveToProfile && data.shippingMethod === "DELIVERY") {
     await prisma.user.update({
       where: { id: customerId },
-      data: {
-        phone: data.buyerPhone.trim(),
-        ...(data.shippingMethod === "DELIVERY"
-          ? {
-              defaultShippingAddress: data.shippingAddress?.trim() || null,
-              defaultShippingCity: data.shippingCity?.trim() || null,
-              defaultShippingProvince: data.shippingProvince?.trim() || null,
-              defaultShippingPostalCode: data.shippingPostalCode?.trim() || null,
-              defaultShippingNotes: data.shippingNotes?.trim() || null,
-            }
-          : {}),
-      },
+      data: { phone: data.buyerPhone.trim() },
+    });
+    // Si ya hay 5 direcciones, el pedido usa esta igual pero no se guarda.
+    await trySaveCustomerAddress(customerId, {
+      address: data.shippingAddress?.trim() || "",
+      city: data.shippingCity?.trim() || "",
+      province: data.shippingProvince?.trim() || "",
+      postalCode: data.shippingPostalCode?.trim() || "",
+      notes: data.shippingNotes?.trim() || null,
+      isDefault: false,
     });
   } else if (customerId) {
     await prisma.user.update({

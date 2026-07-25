@@ -143,6 +143,25 @@ model User {
   approvalRequestsResolved ApprovalRequest[]         @relation("ApprovalResolver")
   productReviews           ProductReview[]
   wishlistItems            WishlistItem[]
+  shippingAddresses        CustomerAddress[]
+}
+
+/// Direcciones de envío guardadas del cliente (máximo 5 en aplicación).
+model CustomerAddress {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String?
+  address      String
+  city         String
+  province     String
+  postalCode   String
+  notes        String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /// Valoración y comentario de clientes sobre un producto.

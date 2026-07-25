@@ -17,6 +17,7 @@ import { TransferProofUpload } from "@/components/checkout/TransferProofUpload";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import type { ShippingQuote } from "@/lib/shipping-quote";
 import { getListPrice, getTransferPrice } from "@/lib/store-pricing";
+import { MAX_CUSTOMER_ADDRESSES, type CustomerAddressDTO } from "@/lib/customer-address-types";
 
 type PaymentChoice = "BANK_TRANSFER" | "MERCADO_PAGO";
 type ShippingChoice = "PICKUP" | "DELIVERY" | "SHIPPING_TO_COORDINATE";
@@ -27,6 +28,32 @@ type TransferInfo = {
   cbu: string;
   notes?: string | null;
 };
+
+function applyAddressToForm(
+  addr: CustomerAddressDTO,
+  setters: {
+    setStreet: (v: string) => void;
+    setNumber: (v: string) => void;
+    setCity: (v: string) => void;
+    setProvince: (v: string) => void;
+    setPostal: (v: string) => void;
+    setNotes: (v: string) => void;
+  },
+) {
+  const full = addr.address.trim();
+  const match = full.match(/^(.+?)\s+(\d+[a-zA-Z]?)$/);
+  if (match) {
+    setters.setStreet(match[1]);
+    setters.setNumber(match[2]);
+  } else {
+    setters.setStreet(full);
+    setters.setNumber("");
+  }
+  setters.setCity(addr.city);
+  setters.setProvince(addr.province);
+  setters.setPostal(addr.postalCode);
+  setters.setNotes(addr.notes ?? "");
+}
 
 export function CheckoutClient({
   mercadoPagoEnabled,
@@ -56,7 +83,8 @@ export function CheckoutClient({
   const [shippingNotes, setShippingNotes] = useState("");
   const [useOtherAddress, setUseOtherAddress] = useState(false);
   const [saveToProfile, setSaveToProfile] = useState(true);
-  const [hasSavedAddress, setHasSavedAddress] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<CustomerAddressDTO[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transferDone, setTransferDone] = useState<{
@@ -180,6 +208,10 @@ export function CheckoutClient({
     lines,
   ]);
 
+  const atAddressLimit = savedAddresses.length >= MAX_CUSTOMER_ADDRESSES;
+  const canSaveNewAddress = !atAddressLimit;
+  const effectiveSaveToProfile = useOtherAddress && saveToProfile && canSaveNewAddress;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -190,38 +222,34 @@ export function CheckoutClient({
             name?: string;
             email?: string;
             phone?: string | null;
-            shippingAddress?: string | null;
-            shippingCity?: string | null;
-            shippingProvince?: string | null;
-            shippingPostalCode?: string | null;
-            shippingNotes?: string | null;
           } | null;
+          addresses?: CustomerAddressDTO[];
         };
         if (cancelled || !data.profile) return;
         const p = data.profile;
         if (!buyerName && p.name) setBuyerName(p.name);
         if (!buyerEmail && p.email) setBuyerEmail(p.email);
         if (!buyerPhone && p.phone) setBuyerPhone(p.phone);
-        const saved =
-          Boolean(p.shippingAddress?.trim()) &&
-          Boolean(p.shippingCity?.trim()) &&
-          Boolean(p.shippingProvince?.trim()) &&
-          Boolean(p.shippingPostalCode?.trim());
-        setHasSavedAddress(saved);
-        if (saved) {
-          const full = (p.shippingAddress ?? "").trim();
-          const match = full.match(/^(.+?)\s+(\d+[a-zA-Z]?)$/);
-          if (match) {
-            setShippingStreet(match[1]);
-            setShippingStreetNumber(match[2]);
-          } else {
-            setShippingStreet(full);
-            setShippingStreetNumber("");
-          }
-          setShippingCity(p.shippingCity ?? "");
-          setShippingProvince(p.shippingProvince ?? "");
-          setShippingPostalCode(p.shippingPostalCode ?? "");
-          setShippingNotes(p.shippingNotes ?? "");
+
+        const list = data.addresses ?? [];
+        setSavedAddresses(list);
+        const def = list.find((a) => a.isDefault) ?? list[0] ?? null;
+        if (def) {
+          setSelectedAddressId(def.id);
+          applyAddressToForm(def, {
+            setStreet: setShippingStreet,
+            setNumber: setShippingStreetNumber,
+            setCity: setShippingCity,
+            setProvince: setShippingProvince,
+            setPostal: setShippingPostalCode,
+            setNotes: setShippingNotes,
+          });
+          setUseOtherAddress(false);
+        } else {
+          setUseOtherAddress(true);
+        }
+        if (list.length >= MAX_CUSTOMER_ADDRESSES) {
+          setSaveToProfile(false);
         }
       } catch {
         /* sin sesión */
@@ -313,7 +341,7 @@ export function CheckoutClient({
           shippingProvince: shippingMethod === "DELIVERY" ? shippingProvince : undefined,
           shippingPostalCode: shippingMethod === "DELIVERY" ? shippingPostalCode : undefined,
           shippingNotes: shippingMethod === "DELIVERY" ? shippingNotes : undefined,
-          saveToProfile: shippingMethod === "DELIVERY" ? saveToProfile : false,
+          saveToProfile: shippingMethod === "DELIVERY" ? effectiveSaveToProfile : false,
           turnstileToken: turnstileToken ?? undefined,
           lines: lines.map((l) => ({
             variantId: l.variantId,
@@ -417,31 +445,90 @@ export function CheckoutClient({
           </div>
           {shippingMethod === "DELIVERY" && (
             <div className="mt-4 space-y-3">
-              {hasSavedAddress && !useOtherAddress ? (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                  <p className="font-medium text-slate-900">Dirección guardada en tu perfil</p>
-                  <p className="mt-1">
-                    {buildShippingAddressLine(shippingStreet, shippingStreetNumber)}, {shippingCity} (
-                    {shippingProvince}) — CP {shippingPostalCode}
-                  </p>
-                  {shippingNotes ? <p className="mt-1 text-xs text-slate-500">{shippingNotes}</p> : null}
+              {savedAddresses.length > 0 && !useOtherAddress ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-800">Elegí una dirección guardada</p>
+                  {savedAddresses.map((addr) => (
+                    <label
+                      key={addr.id}
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5"
+                    >
+                      <input
+                        type="radio"
+                        name="savedAddress"
+                        checked={selectedAddressId === addr.id}
+                        onChange={() => {
+                          setSelectedAddressId(addr.id);
+                          applyAddressToForm(addr, {
+                            setStreet: setShippingStreet,
+                            setNumber: setShippingStreetNumber,
+                            setCity: setShippingCity,
+                            setProvince: setShippingProvince,
+                            setPostal: setShippingPostalCode,
+                            setNotes: setShippingNotes,
+                          });
+                        }}
+                        className="mt-1"
+                      />
+                      <span className="text-sm text-slate-700">
+                        <span className="font-medium text-slate-900">
+                          {addr.label || "Dirección"}
+                          {addr.isDefault ? " · principal" : ""}
+                        </span>
+                        <br />
+                        {addr.address}, {addr.city} ({addr.province}) — CP {addr.postalCode}
+                        {addr.notes ? (
+                          <>
+                            <br />
+                            <span className="text-xs text-slate-500">{addr.notes}</span>
+                          </>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
                   <button
                     type="button"
-                    className="mt-2 text-sm font-medium text-brand-dark underline"
-                    onClick={() => setUseOtherAddress(true)}
+                    className="text-sm font-medium text-brand-dark underline"
+                    onClick={() => {
+                      setUseOtherAddress(true);
+                      setSelectedAddressId(null);
+                      setShippingStreet("");
+                      setShippingStreetNumber("");
+                      setShippingCity("");
+                      setShippingProvince("");
+                      setShippingPostalCode("");
+                      setShippingNotes("");
+                    }}
                   >
                     Enviar a otra dirección
                   </button>
                 </div>
               ) : (
                 <>
-                  {hasSavedAddress ? (
+                  {savedAddresses.length > 0 ? (
                     <button
                       type="button"
                       className="text-sm font-medium text-brand-dark underline"
-                      onClick={() => setUseOtherAddress(false)}
+                      onClick={() => {
+                        setUseOtherAddress(false);
+                        const def =
+                          savedAddresses.find((a) => a.id === selectedAddressId) ||
+                          savedAddresses.find((a) => a.isDefault) ||
+                          savedAddresses[0];
+                        if (def) {
+                          setSelectedAddressId(def.id);
+                          applyAddressToForm(def, {
+                            setStreet: setShippingStreet,
+                            setNumber: setShippingStreetNumber,
+                            setCity: setShippingCity,
+                            setProvince: setShippingProvince,
+                            setPostal: setShippingPostalCode,
+                            setNotes: setShippingNotes,
+                          });
+                        }
+                      }}
                     >
-                      Usar dirección guardada
+                      Usar una dirección guardada
                     </button>
                   ) : null}
                   <AddressFields
@@ -458,16 +545,24 @@ export function CheckoutClient({
                     onPostalCodeChange={setShippingPostalCode}
                     onNotesChange={setShippingNotes}
                   />
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={saveToProfile}
-                      onChange={(e) => setSaveToProfile(e.target.checked)}
-                    />
-                    Guardar esta dirección en mi perfil
-                  </label>
+                  {canSaveNewAddress ? (
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={saveToProfile}
+                        onChange={(e) => setSaveToProfile(e.target.checked)}
+                      />
+                      Guardar esta dirección en mi perfil ({savedAddresses.length}/
+                      {MAX_CUSTOMER_ADDRESSES})
+                    </label>
+                  ) : (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      Ya tenés {MAX_CUSTOMER_ADDRESSES} direcciones guardadas. Esta se usará solo para
+                      este pedido y no se guardará en tu perfil.
+                    </p>
+                  )}
                   <p className="text-xs text-slate-500">
-                    También podés editar tus datos en{" "}
+                    También podés gestionar tus direcciones en{" "}
                     <Link href="/cuenta/perfil" className="text-brand-dark underline">
                       Mi perfil
                     </Link>

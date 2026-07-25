@@ -1,10 +1,11 @@
 import { SignOutButton } from "@/components/SignOutButton";
 import { CustomerProfileAvatarForm } from "@/components/cuenta/CustomerProfileAvatarForm";
-import { CustomerShippingProfileForm } from "@/components/cuenta/CustomerShippingProfileForm";
+import { CustomerAddressesManager } from "@/components/cuenta/CustomerAddressesManager";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import { updateShippingProfileAction } from "./actions";
+import { updatePhoneAction } from "./actions";
+import { listCustomerAddresses } from "@/lib/customer-addresses";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
@@ -31,17 +32,14 @@ export default async function PerfilPage({ searchParams }: PageProps) {
       email: true,
       imageUrl: true,
       phone: true,
-      defaultShippingAddress: true,
-      defaultShippingCity: true,
-      defaultShippingProvince: true,
-      defaultShippingPostalCode: true,
-      defaultShippingNotes: true,
     },
   });
 
   if (!user) {
     redirect("/login");
   }
+
+  const addresses = await listCustomerAddresses(session.user.id);
 
   return (
     <div className="mx-auto max-w-md space-y-6">
@@ -57,16 +55,10 @@ export default async function PerfilPage({ searchParams }: PageProps) {
           <p className="mt-3 text-sm text-rose-600">El teléfono debe tener al menos 8 caracteres.</p>
         ) : null}
 
-        <CustomerShippingProfileForm
-          action={updateShippingProfileAction}
-          initial={{
-            phone: user.phone ?? "",
-            shippingAddress: user.defaultShippingAddress ?? "",
-            shippingCity: user.defaultShippingCity ?? "",
-            shippingProvince: user.defaultShippingProvince ?? "",
-            shippingPostalCode: user.defaultShippingPostalCode ?? "",
-            shippingNotes: user.defaultShippingNotes ?? "",
-          }}
+        <CustomerAddressesManager
+          phone={user.phone ?? ""}
+          initialAddresses={addresses}
+          updatePhoneAction={updatePhoneAction}
         />
       </section>
 
@@ -74,13 +66,6 @@ export default async function PerfilPage({ searchParams }: PageProps) {
         <Link href="/cuenta/mis-compras" className="font-medium text-brand-dark underline">
           Mis compras
         </Link>
-        <button
-          type="button"
-          disabled
-          className="cursor-not-allowed rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-500"
-        >
-          Próximamente: mayorista
-        </button>
       </div>
 
       <SignOutButton
