@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { UserRole } from "@prisma/client";
 import { CustomerAccountMenu } from "@/components/nav/CustomerAccountMenu";
 import { SiteLogo } from "@/components/SiteLogo";
 import { StoreNavLinks } from "@/components/nav/StoreNavLinks";
@@ -16,26 +15,28 @@ export async function StoreNav({ session, logoUrl }: Props) {
   let profileImage: string | null = null;
   let profileName = session?.user?.name ?? "";
 
-  const isCustomer =
-    session?.user?.role === UserRole.CUSTOMER ||
-    (Boolean(session?.user?.id) &&
-      session?.user?.role !== UserRole.OWNER &&
-      session?.user?.role !== UserRole.EMPLOYEE);
+  // Solo contamos sesión “real” si hay id de usuario en el JWT (si no, el menú no aparecía).
+  const userId = session?.user?.id?.trim() || null;
+  const showAccountMenu = Boolean(userId);
 
-  if (session?.user?.id && isCustomer) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, imageUrl: true },
-    });
-    if (dbUser) {
-      profileName = dbUser.name;
-      profileImage = dbUser.imageUrl;
-    } else if (session.user.image) {
-      profileImage = session.user.image;
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, imageUrl: true },
+      });
+      if (dbUser) {
+        profileName = dbUser.name;
+        profileImage = dbUser.imageUrl;
+      } else if (session?.user?.image) {
+        profileImage = session.user.image;
+      }
+    } catch {
+      if (session?.user?.image) profileImage = session.user.image;
     }
+  } else if (session?.user?.image) {
+    profileImage = session.user.image;
   }
-
-  const isLoggedIn = Boolean(session?.user);
 
   return (
     <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 [--store-nav-height:3.5rem] sm:[--store-nav-height:4rem]">
@@ -52,7 +53,9 @@ export async function StoreNav({ session, logoUrl }: Props) {
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <StoreNavToolbar />
-          {!isLoggedIn ? (
+          {showAccountMenu ? (
+            <CustomerAccountMenu name={profileName || "Cuenta"} imageUrl={profileImage} />
+          ) : (
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
               <Link
                 href="/login"
@@ -67,9 +70,7 @@ export async function StoreNav({ session, logoUrl }: Props) {
                 Registro
               </Link>
             </div>
-          ) : isCustomer ? (
-            <CustomerAccountMenu name={profileName} imageUrl={profileImage} />
-          ) : null}
+          )}
         </div>
       </nav>
     </header>

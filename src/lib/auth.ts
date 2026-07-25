@@ -252,21 +252,40 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Si el JWT quedó sin rol (p. ej. sesión vieja), rehidratar desde DB.
-      if (token.id && !token.role) {
+      // Si el JWT quedó sin id/rol (sesión vieja o OAuth incompleto), rehidratar desde DB.
+      if ((!token.id || !token.role) && (token.email || token.sub)) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: String(token.id) },
-            select: {
-              role: true,
-              staffAccessLevel: true,
-              emailVerified: true,
-              name: true,
-              email: true,
-              imageUrl: true,
-            },
-          });
+          const email =
+            typeof token.email === "string" ? token.email.trim().toLowerCase() : null;
+          const dbUser = token.id
+            ? await prisma.user.findUnique({
+                where: { id: String(token.id) },
+                select: {
+                  id: true,
+                  role: true,
+                  staffAccessLevel: true,
+                  emailVerified: true,
+                  name: true,
+                  email: true,
+                  imageUrl: true,
+                },
+              })
+            : email
+              ? await prisma.user.findFirst({
+                  where: { email: { equals: email, mode: "insensitive" } },
+                  select: {
+                    id: true,
+                    role: true,
+                    staffAccessLevel: true,
+                    emailVerified: true,
+                    name: true,
+                    email: true,
+                    imageUrl: true,
+                  },
+                })
+              : null;
           if (dbUser) {
+            token.id = dbUser.id;
             token.role = dbUser.role;
             token.staffAccessLevel =
               dbUser.staffAccessLevel ??
@@ -286,7 +305,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
-        session.user.role = token.role;
+        session.user.role = (token.role as UserRole) ?? UserRole.CUSTOMER;
         session.user.staffAccessLevel = token.staffAccessLevel ?? null;
         session.user.emailVerified = Boolean(token.emailVerified);
         if (typeof token.email === "string") session.user.email = token.email;
@@ -294,10 +313,13 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { imageUrl: true, name: true },
+            select: { imageUrl: true, name: true, role: true },
           });
           if (dbUser?.name) {
             session.user.name = dbUser.name;
+          }
+          if (dbUser?.role) {
+            session.user.role = dbUser.role;
           }
           const fromToken = typeof token.picture === "string" ? token.picture : null;
           session.user.image = dbUser?.imageUrl?.trim() || fromToken || null;
