@@ -12,9 +12,9 @@ type SeedUserInput = {
   staffAccessLevel?: StaffAccessLevel;
 };
 
-function envOr(defaultValue: string, envName: string): string {
-  const v = process.env[envName]?.trim();
-  return v && v.length > 0 ? v : defaultValue;
+function requiredEnv(name: string): string | null {
+  const v = process.env[name]?.trim();
+  return v && v.length > 0 ? v : null;
 }
 
 async function ensureUser(input: SeedUserInput) {
@@ -34,46 +34,43 @@ async function ensureUser(input: SeedUserInput) {
   });
 }
 
-/** Cuenta admin principal: crea o actualiza rol y contraseña. */
+/**
+ * Crea la cuenta owner solo si faltan las variables de entorno y el usuario aún no existe.
+ * No hay valores por defecto en código: las credenciales viven solo en el entorno.
+ */
 async function ensurePrimaryOwner() {
-  const email = envOr("tokeapp.help@gmail.com", "DEFAULT_OWNER_EMAIL").toLowerCase();
-  const password = envOr("Leaparedes05.", "DEFAULT_OWNER_PASSWORD");
-  const passwordHash = await bcrypt.hash(password, 10);
-  const name = envOr("Administrador", "DEFAULT_OWNER_NAME");
+  const email = requiredEnv("DEFAULT_OWNER_EMAIL")?.toLowerCase();
+  const password = requiredEnv("DEFAULT_OWNER_PASSWORD");
+  if (!email || !password) return;
 
-  await prisma.user.upsert({
-    where: { email },
-    update: {
-      name,
-      passwordHash,
-      role: UserRole.OWNER,
-      staffAccessLevel: StaffAccessLevel.MANAGER,
-      emailVerified: new Date(),
-    },
-    create: {
-      name,
-      email,
-      passwordHash,
-      role: UserRole.OWNER,
-      staffAccessLevel: StaffAccessLevel.MANAGER,
-      emailVerified: new Date(),
-    },
+  const name = requiredEnv("DEFAULT_OWNER_NAME") ?? "Administrador";
+  await ensureUser({
+    name,
+    email,
+    password,
+    role: UserRole.OWNER,
+    staffAccessLevel: StaffAccessLevel.MANAGER,
   });
 }
 
-/** Crea cuentas staff por defecto solo si no existen. */
+/** Crea cuentas staff por defecto solo si existen las env y el usuario no está en la DB. */
 export async function ensureDefaultStaffUsers() {
   if (attempted) return;
   attempted = true;
   try {
     await ensurePrimaryOwner();
-    await ensureUser({
-      name: envOr("Vendedor", "DEFAULT_SELLER_NAME"),
-      email: envOr("vendedor@aqua.local", "DEFAULT_SELLER_EMAIL"),
-      password: envOr("Vendedor123!", "DEFAULT_SELLER_PASSWORD"),
-      role: UserRole.EMPLOYEE,
-      staffAccessLevel: StaffAccessLevel.SELLER,
-    });
+
+    const sellerEmail = requiredEnv("DEFAULT_SELLER_EMAIL");
+    const sellerPassword = requiredEnv("DEFAULT_SELLER_PASSWORD");
+    if (sellerEmail && sellerPassword) {
+      await ensureUser({
+        name: requiredEnv("DEFAULT_SELLER_NAME") ?? "Vendedor",
+        email: sellerEmail,
+        password: sellerPassword,
+        role: UserRole.EMPLOYEE,
+        staffAccessLevel: StaffAccessLevel.SELLER,
+      });
+    }
   } catch (error) {
     console.error("[bootstrap] No se pudieron asegurar usuarios staff por defecto:", error);
   }

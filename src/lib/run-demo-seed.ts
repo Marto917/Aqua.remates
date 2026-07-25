@@ -1,6 +1,4 @@
-import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
-import { Prisma, UserRole } from "@prisma/client";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
 
 const bazarCategories = [
@@ -12,60 +10,11 @@ const bazarCategories = [
 ];
 
 /**
- * Datos demo: usuarios staff/cliente + categorías + 4 productos con variantes.
- * Idempotente (upsert). Usado por `npm run db:seed` y por POST /api/setup-demo.
+ * Datos demo de catálogo: categorías + productos con variantes.
+ * Idempotente (upsert). No crea usuarios ni credenciales.
+ * Usado por `npm run db:seed` y por POST /api/setup-demo.
  */
 export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
-  const ownerPassword = await bcrypt.hash("Owner1234", 10);
-  const employeePassword = await bcrypt.hash("Empleado1234", 10);
-  const verifiedAt = new Date();
-
-  await prisma.user.upsert({
-    where: { email: "owner@aqua.local" },
-    update: {
-      emailVerified: verifiedAt,
-      passwordHash: ownerPassword,
-    },
-    create: {
-      name: "Duenio Aqua",
-      email: "owner@aqua.local",
-      passwordHash: ownerPassword,
-      role: UserRole.OWNER,
-      emailVerified: verifiedAt,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "empleado@aqua.local" },
-    update: {
-      emailVerified: verifiedAt,
-      passwordHash: employeePassword,
-    },
-    create: {
-      name: "Empleado Aqua",
-      email: "empleado@aqua.local",
-      passwordHash: employeePassword,
-      role: UserRole.EMPLOYEE,
-      emailVerified: verifiedAt,
-    },
-  });
-
-  const customerPassword = await bcrypt.hash("Cliente1234", 10);
-  await prisma.user.upsert({
-    where: { email: "cliente@aqua.local" },
-    update: {
-      emailVerified: verifiedAt,
-      passwordHash: customerPassword,
-    },
-    create: {
-      name: "Cliente demo",
-      email: "cliente@aqua.local",
-      passwordHash: customerPassword,
-      role: UserRole.CUSTOMER,
-      emailVerified: verifiedAt,
-    },
-  });
-
   for (const c of bazarCategories) {
     await prisma.category.upsert({
       where: { slug: c.slug },
@@ -176,82 +125,5 @@ export async function runDemoSeed(prisma: PrismaClient): Promise<void> {
         sortOrder: i,
       })),
     });
-  }
-
-  const demoCustomer = await prisma.user.findUnique({
-    where: { email: "cliente@aqua.local" },
-  });
-  const demoEmployee = await prisma.user.findUnique({
-    where: { email: "empleado@aqua.local" },
-  });
-  const demoProduct = await prisma.product.findUnique({
-    where: { slug: "botella-termica-pro" },
-  });
-
-  if (demoCustomer && demoEmployee && demoProduct) {
-    const leadCount = await prisma.wholesaleLead.count();
-    if (leadCount === 0) {
-      await prisma.wholesaleLead.create({
-        data: {
-          companyName: "Mayorista Sur (lead)",
-          contactName: "Lucía Gómez",
-          email: "compras@mayoristasur.demo",
-          phone: "+54 11 5555-0000",
-          taxId: "30-71000000-1",
-          estimatedVolume: "10-20 unidades / mes",
-          message: "Hola, necesitamos cotización para revender en zona sur. Gracias.",
-        },
-      });
-    }
-
-    const existingWr = await prisma.wholesaleRequest.findFirst({
-      where: { companyName: "Distribuidora Demo SA" },
-    });
-
-    if (!existingWr) {
-      const variant = await prisma.productVariant.findFirst({
-        where: { productId: demoProduct.id },
-      });
-      if (variant) {
-        const qty = 24;
-        const unit = Number(demoProduct.wholesalePrice);
-        const sub = unit * qty;
-        const wr = await prisma.wholesaleRequest.create({
-          data: {
-            customerId: demoCustomer.id,
-            companyName: "Distribuidora Demo SA",
-            cuit: "30-12345678-9",
-            contactName: "Martín Paz",
-            email: "compras@distribuidorademo.ar",
-            phone: "+54 11 4321-0000",
-            items: {
-              create: [
-                {
-                  productId: demoProduct.id,
-                  variantId: variant.id,
-                  productNameSnapshot: demoProduct.name,
-                  colorLabelSnapshot: variant.colorLabel,
-                  unitPrice: new Prisma.Decimal(unit),
-                  quantity: qty,
-                  subtotal: new Prisma.Decimal(sub),
-                },
-              ],
-            },
-            events: {
-              create: [{ userId: demoEmployee.id, action: "CREATED", payload: { source: "seed" } }],
-            },
-          },
-        });
-
-        await prisma.approvalRequest.create({
-          data: {
-            wholesaleRequestId: wr.id,
-            requestedById: demoEmployee.id,
-            type: "PRECIO_ESPECIAL",
-            note: "Cliente pide 3% adicional por volumen (referencia demo).",
-          },
-        });
-      }
-    }
   }
 }

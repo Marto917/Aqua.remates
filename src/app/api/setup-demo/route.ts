@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { runDemoSeed } from "@/lib/run-demo-seed";
 
 /**
- * Carga usuarios y productos demo en la base actual.
- * - Producción: body JSON `{ "secret": "<SETUP_SECRET>" }` (misma variable en Vercel).
+ * Carga catálogo demo (categorías/productos) en la base actual.
+ * - Producción: body JSON `{ "secret": "<SETUP_SECRET>" }` (misma variable en el hosting).
  * - Desarrollo local: si no hay SETUP_SECRET, se acepta sin clave (solo para poblar tu DB).
  */
 export async function POST(req: Request) {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "SETUP_SECRET no está definido en el servidor. Agregalo en el hosting (Vercel → Environment Variables) y volvé a desplegar.",
+          "SETUP_SECRET no está definido en el servidor. Agregalo en el hosting y volvé a desplegar.",
       },
       { status: 503 },
     );
@@ -44,8 +44,7 @@ export async function POST(req: Request) {
     await runDemoSeed(prisma);
     return NextResponse.json({
       ok: true,
-      message:
-        "Datos demo cargados. Podés iniciar sesión con owner@aqua.local / Owner1234.",
+      message: "Catálogo demo cargado. No se crearon usuarios ni contraseñas.",
     });
   } catch (e) {
     console.error("[setup-demo]", e);

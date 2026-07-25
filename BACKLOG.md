@@ -1,4 +1,4 @@
-# Aqua — backlog ordenado (ir de arriba hacia abajo)
+﻿# Aqua — backlog ordenado (ir de arriba hacia abajo)
 
 Marcá cada ítem cuando quede cerrado. El orden prioriza **que la tienda funcione de punta a punta** y después el pulido.
 
@@ -6,8 +6,8 @@ Marcá cada ítem cuando quede cerrado. El orden prioriza **que la tienda funcio
 
 1. [ ] **Variables en el hosting (Vercel u otro):** `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (URL pública exacta, `https://…`).
 2. [ ] **Comprobar deploy:** abrir `/api/health` y verificar `ok: true` (DB alcanzable y secret presente).
-3. [ ] **Poblar datos demo** en la misma base que usa el deploy: `npm run db:seed` local con `DATABASE_URL` de Neon **o** `/setup-demo` en producción (con `SETUP_SECRET` definido).
-4. [ ] **Probar login** `owner@aqua.local` / `Owner1234` y acceso a `/admin`.
+3. [ ] **Poblar catálogo demo** (opcional): `npm run db:seed` o `/setup-demo` (solo productos/categorías; no crea usuarios).
+4. [ ] **Probar login staff** con las variables `DEFAULT_OWNER_*` del hosting y acceso a `/admin`.
 
 ## 2. Catálogo y carrito
 
@@ -51,3 +51,4 @@ Marcá cada ítem cuando quede cerrado. El orden prioriza **que la tienda funcio
 ---
 
 *Última actualización: checklist vivo para el proyecto Aqua.*
+

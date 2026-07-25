@@ -39,8 +39,8 @@ export function SetupDemoForm({ needsSecret }: { needsSecret: boolean }) {
     <form onSubmit={onSubmit} className="mx-auto max-w-md space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h1 className="text-lg font-semibold text-slate-900">Cargar datos de demostración</h1>
       <p className="text-sm text-slate-600">
-        Inserta en la base usuarios de prueba (owner, empleado, cliente) y cuatro productos con variantes.
-        Podés usarlo en Vercel si no corriste <code className="rounded bg-slate-100 px-1">npm run db:seed</code> contra
+        Inserta categorías y productos de ejemplo en la base. No crea usuarios ni contraseñas.
+        Podés usarlo si no corriste <code className="rounded bg-slate-100 px-1">npm run db:seed</code> contra
         esa base.
       </p>
       {needsSecret ? (
@@ -72,8 +72,8 @@ export function SetupDemoForm({ needsSecret }: { needsSecret: boolean }) {
       ) : null}
       {status === "ok" ? (
         <p className="text-sm text-slate-600">
-          Luego entrá a <a className="font-medium text-brand underline" href="/login">/login</a> con{" "}
-          <strong>owner@aqua.local</strong> / <strong>Owner1234</strong>.
+          Catálogo de ejemplo cargado. El acceso al panel se configura con las variables de entorno del servidor
+          (no se publican credenciales aquí).
         </p>
       ) : null}
     </form>
