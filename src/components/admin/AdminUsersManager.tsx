@@ -1,7 +1,7 @@
 "use client";
 
 import { StaffAccessLevel, UserRole } from "@prisma/client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 type UserItem = {
   id: string;
@@ -11,6 +11,8 @@ type UserItem = {
   staffAccessLevel: StaffAccessLevel | null;
 };
 
+type RoleFilter = "ALL" | "CUSTOMERS" | "STAFF";
+
 export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +21,28 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
+  const [search, setSearch] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      if (roleFilter === "CUSTOMERS" && u.role !== "CUSTOMER") return false;
+      if (roleFilter === "STAFF" && u.role === "CUSTOMER") return false;
+      if (!q) return true;
+      return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    });
+  }, [users, roleFilter, search]);
+
+  const counts = useMemo(() => {
+    let customers = 0;
+    let staff = 0;
+    for (const u of users) {
+      if (u.role === "CUSTOMER") customers += 1;
+      else staff += 1;
+    }
+    return { all: users.length, customers, staff };
+  }, [users]);
 
   async function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +142,25 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
     setUsers((list) => list.filter((u) => u.id !== userId));
   }
 
+  const filterBtn = (id: RoleFilter, label: string, count: number) => {
+    const active = roleFilter === id;
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => setRoleFilter(id)}
+        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+          active
+            ? "bg-brand text-white"
+            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+        }`}
+      >
+        {label}{" "}
+        <span className={active ? "text-white/80" : "text-slate-400"}>({count})</span>
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <form onSubmit={createUser} className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
@@ -151,6 +194,21 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
         </button>
       </form>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {filterBtn("ALL", "Todos", counts.all)}
+          {filterBtn("CUSTOMERS", "Clientes", counts.customers)}
+          {filterBtn("STAFF", "Empleados", counts.staff)}
+        </div>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por nombre o email…"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm sm:max-w-xs"
+        />
+      </div>
+
       <div className="overflow-x-auto rounded-xl border bg-white">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-slate-100">
@@ -163,105 +221,113 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-t align-top">
-                <td className="px-3 py-2">
-                  {editingId === u.id ? (
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="w-full rounded border px-2 py-1"
-                    />
-                  ) : (
-                    u.name
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {editingId === u.id ? (
-                    <input
-                      type="email"
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      className="w-full rounded border px-2 py-1"
-                    />
-                  ) : (
-                    u.email
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <select
-                    className="rounded border px-2 py-1"
-                    value={u.role}
-                    onChange={(e) => updateRole(u.id, e.target.value as UserRole, u.staffAccessLevel)}
-                  >
-                    <option value="CUSTOMER">Cliente</option>
-                    <option value="EMPLOYEE">Empleado</option>
-                    <option value="OWNER">Admin principal</option>
-                  </select>
-                </td>
-                <td className="px-3 py-2">
-                  <select
-                    className="rounded border px-2 py-1"
-                    value={u.staffAccessLevel ?? "SELLER"}
-                    onChange={(e) =>
-                      updateRole(u.id, u.role, e.target.value as StaffAccessLevel)
-                    }
-                    disabled={u.role === "CUSTOMER"}
-                  >
-                    <option value="SELLER">Vendedor</option>
-                    <option value="MANAGER">Encargado</option>
-                  </select>
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {editingId === u.id ? (
-                    <div className="flex flex-col items-end gap-2">
-                      <input
-                        type="password"
-                        value={editPassword}
-                        onChange={(e) => setEditPassword(e.target.value)}
-                        placeholder="Nueva contraseña (opcional)"
-                        minLength={6}
-                        className="w-full max-w-[200px] rounded border px-2 py-1 text-xs"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => saveEdit(u.id)}
-                          disabled={saving}
-                          className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white"
-                        >
-                          Guardar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingId(null)}
-                          className="rounded border px-2 py-1 text-xs"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(u)}
-                        className="rounded border border-brand/40 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteUser(u.id, u.name)}
-                        className="rounded border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                      >
-                        Borrar
-                      </button>
-                    </div>
-                  )}
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                  No hay usuarios con ese filtro.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredUsers.map((u) => (
+                <tr key={u.id} className="border-t align-top">
+                  <td className="px-3 py-2">
+                    {editingId === u.id ? (
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full rounded border px-2 py-1"
+                      />
+                    ) : (
+                      u.name
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {editingId === u.id ? (
+                      <input
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="w-full rounded border px-2 py-1"
+                      />
+                    ) : (
+                      u.email
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <select
+                      className="rounded border px-2 py-1"
+                      value={u.role}
+                      onChange={(e) => updateRole(u.id, e.target.value as UserRole, u.staffAccessLevel)}
+                    >
+                      <option value="CUSTOMER">Cliente</option>
+                      <option value="EMPLOYEE">Empleado</option>
+                      <option value="OWNER">Admin principal</option>
+                    </select>
+                  </td>
+                  <td className="px-3 py-2">
+                    <select
+                      className="rounded border px-2 py-1"
+                      value={u.staffAccessLevel ?? "SELLER"}
+                      onChange={(e) =>
+                        updateRole(u.id, u.role, e.target.value as StaffAccessLevel)
+                      }
+                      disabled={u.role === "CUSTOMER"}
+                    >
+                      <option value="SELLER">Vendedor</option>
+                      <option value="MANAGER">Encargado</option>
+                    </select>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {editingId === u.id ? (
+                      <div className="flex flex-col items-end gap-2">
+                        <input
+                          type="password"
+                          value={editPassword}
+                          onChange={(e) => setEditPassword(e.target.value)}
+                          placeholder="Nueva contraseña (opcional)"
+                          minLength={6}
+                          className="w-full max-w-[200px] rounded border px-2 py-1 text-xs"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => saveEdit(u.id)}
+                            disabled={saving}
+                            className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            className="rounded border px-2 py-1 text-xs"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(u)}
+                          className="rounded border border-brand/40 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteUser(u.id, u.name)}
+                          className="rounded border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                        >
+                          Borrar
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
