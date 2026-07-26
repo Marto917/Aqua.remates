@@ -5,7 +5,7 @@ import type { StoreSettingsData } from "@/lib/store-settings";
 
 type Props = {
   initial: StoreSettingsData;
-  /** Dueño o encargado: pueden editar datos bancarios. */
+  /** Solo el dueño puede editar datos bancarios. */
   canEditBank: boolean;
 };
 
@@ -55,7 +55,7 @@ export function AdminStoreSettingsForm({ initial, canEditBank }: Props) {
           <h2 className="font-semibold text-slate-900">Transferencia bancaria</h2>
           {!canEditBank ? (
             <p className="mt-1 text-sm text-amber-800">
-              Solo el encargado o el dueño puede editar CVU, razón social y alias. Podés verlos, pero no
+              Solo el dueño puede editar CVU, razón social y alias. Podés verlos, pero no
               modificarlos.
             </p>
           ) : null}

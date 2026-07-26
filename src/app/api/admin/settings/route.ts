@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canManageUsers, canStaffAccess, getStaffContext } from "@/lib/staff-auth";
+import { canStaffAccess, getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { prisma } from "@/lib/prisma";
 import { ensureStoreSettings } from "@/lib/store-settings";
 
@@ -52,7 +52,8 @@ export async function POST(req: Request) {
   }
 
   const data = { ...parsed.data };
-  if (!canManageUsers(ctx)) {
+  // Empleados / encargados no pueden cambiar datos bancarios (solo dueño)
+  if (!isOwnerAccess(ctx)) {
     const current = await prisma.storeSettings.findUnique({ where: { id: "default" } });
     data.bankHolder = current?.bankHolder ?? data.bankHolder;
     data.bankAlias = current?.bankAlias ?? data.bankAlias;

@@ -1,7 +1,7 @@
 import { AdminBrandSettingsForm } from "@/components/admin/AdminBrandSettingsForm";
 import { AdminFooterImageForm } from "@/components/admin/AdminFooterImageForm";
 import { AdminStoreSettingsForm } from "@/components/admin/AdminStoreSettingsForm";
-import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
+import { getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { getStoreSettings, ensureStoreSettings } from "@/lib/store-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -10,7 +10,8 @@ export default async function AdminConfiguracionPage() {
   const settings = await getStoreSettings();
   const row = await prisma.storeSettings.findUnique({ where: { id: "default" } });
   const ctx = await getStaffContext();
-  const canEditBank = canManageUsers(ctx);
+  // Solo el dueño puede editar alias / CVU / datos bancarios
+  const canEditBank = isOwnerAccess(ctx);
 
   return (
     <section className="mx-auto max-w-2xl space-y-6 px-4">
