@@ -30,7 +30,16 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
       where: { id },
       include: {
         items: { include: { product: true, variant: true } },
-        customer: { select: { email: true, name: true } },
+        customer: {
+          select: {
+            email: true,
+            name: true,
+            transferProofRejectCount: true,
+            accountWarning: true,
+            bannedUntil: true,
+            banReason: true,
+          },
+        },
       },
     });
   } catch (e) {
@@ -115,10 +124,36 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
               </div>
             ) : null}
             {order.customer ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-slate-500">Cuenta</dt>
-                <dd className="text-right text-slate-800">{order.customer.email}</dd>
-              </div>
+              <>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-500">Cuenta</dt>
+                  <dd className="text-right text-slate-800">{order.customer.email}</dd>
+                </div>
+                {order.customer.transferProofRejectCount > 0 ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-500">Comprobantes rechazados</dt>
+                    <dd className="text-right font-medium text-amber-800">
+                      {order.customer.transferProofRejectCount}
+                    </dd>
+                  </div>
+                ) : null}
+                {order.customer.accountWarning ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                    Esta cuenta tiene historial de problemas (comprobantes / suspensión).
+                  </div>
+                ) : null}
+                {order.customer.bannedUntil &&
+                order.customer.bannedUntil.getTime() > Date.now() ? (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs text-rose-900">
+                    Suspendida hasta{" "}
+                    {order.customer.bannedUntil.toLocaleString("es-AR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                    {order.customer.banReason ? ` — ${order.customer.banReason}` : ""}
+                  </div>
+                ) : null}
+              </>
             ) : null}
           </dl>
         </section>
@@ -274,7 +309,13 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
             Si el pago está acreditado, aceptá el pedido para pasarlo a envíos. Si no, decliná.
           </p>
           <div className="mt-4">
-            <TransferReviewButtons orderId={order.id} />
+            <TransferReviewButtons
+              orderId={order.id}
+              hasCustomer={Boolean(order.customerId && order.customer)}
+              rejectCount={order.customer?.transferProofRejectCount ?? 0}
+              accountWarning={Boolean(order.customer?.accountWarning)}
+              bannedUntil={order.customer?.bannedUntil?.toISOString() ?? null}
+            />
           </div>
         </section>
       ) : null}

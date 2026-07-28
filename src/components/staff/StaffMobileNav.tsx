@@ -15,9 +15,17 @@ type Props = {
   profileLine: string;
   staffLogin: string;
   signedIn: boolean;
+  pendingPackCount?: number;
 };
 
-export function StaffMobileNav({ links, preview, profileLine, staffLogin, signedIn }: Props) {
+export function StaffMobileNav({
+  links,
+  preview,
+  profileLine,
+  staffLogin,
+  signedIn,
+  pendingPackCount = 0,
+}: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -30,6 +38,11 @@ export function StaffMobileNav({ links, preview, profileLine, staffLogin, signed
         aria-label="Abrir menú"
       >
         Menú
+        {pendingPackCount > 0 ? (
+          <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {pendingPackCount > 99 ? "99+" : pendingPackCount}
+          </span>
+        ) : null}
       </button>
       {open ? (
         <>
@@ -41,16 +54,24 @@ export function StaffMobileNav({ links, preview, profileLine, staffLogin, signed
           />
           <div className="absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
             <nav className="max-h-[70vh] overflow-y-auto py-1">
-              {links.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="block px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {links.map((item) => {
+                const isEnvios = item.href === "/vendedor/envios";
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                  >
+                    <span>{item.label}</span>
+                    {isEnvios && pendingPackCount > 0 ? (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        {pendingPackCount > 99 ? "99+" : pendingPackCount}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
             </nav>
             <div className="border-t border-slate-100 px-4 py-3">
               {preview ? (

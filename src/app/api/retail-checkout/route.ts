@@ -5,7 +5,7 @@ import { getClientIp, hashIp } from "@/lib/client-ip";
 import {
   buyerEmailMatchesSession,
   checkPendingOrdersLimit,
-  requireVerifiedCustomerSession,
+  requireVerifiedCustomerNotBanned,
   validateCheckoutQuantities,
 } from "@/lib/checkout-security";
 import { createCheckoutPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
@@ -80,7 +80,7 @@ const checkoutSchema = z
 
 export async function POST(req: Request) {
   const session = await getSafeSession();
-  const auth = requireVerifiedCustomerSession(session);
+  const auth = await requireVerifiedCustomerNotBanned(session);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

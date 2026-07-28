@@ -2,6 +2,7 @@ import { StaffAccessLevel, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { banCustomer, unbanCustomer } from "@/lib/customer-moderation";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
@@ -21,6 +22,9 @@ const updateSchema = z.object({
   password: z.string().min(6).optional(),
   role: z.enum(["OWNER", "EMPLOYEE", "CUSTOMER"]).optional(),
   staffAccessLevel: z.enum(["MANAGER", "SELLER"]).nullable().optional(),
+  banDays: z.number().int().min(1).max(365).optional(),
+  banReason: z.string().trim().max(300).nullable().optional(),
+  unban: z.boolean().optional(),
 });
 
 async function assertCanManage() {
@@ -82,6 +86,26 @@ export async function PATCH(req: Request) {
   const existing = await prisma.user.findUnique({ where: { id: parsed.data.userId } });
   if (!existing) {
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
+  }
+
+  if (parsed.data.unban) {
+    if (existing.role !== UserRole.CUSTOMER) {
+      return NextResponse.json({ error: "Solo se pueden desbanear clientes." }, { status: 400 });
+    }
+    await unbanCustomer(existing.id);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (parsed.data.banDays) {
+    if (existing.role !== UserRole.CUSTOMER) {
+      return NextResponse.json({ error: "Solo se pueden suspender clientes." }, { status: 400 });
+    }
+    const { bannedUntil } = await banCustomer({
+      userId: existing.id,
+      days: parsed.data.banDays,
+      reason: parsed.data.banReason,
+    });
+    return NextResponse.json({ ok: true, bannedUntil: bannedUntil.toISOString() });
   }
 
   if (parsed.data.email && parsed.data.email !== existing.email) {

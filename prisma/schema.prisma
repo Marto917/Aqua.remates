@@ -142,6 +142,13 @@ model User {
   defaultShippingPostalCode String?
   defaultShippingNotes     String?
   lastActiveAt             DateTime?
+  /// Bloqueo temporal de compras (p. ej. comprobantes falsos reiterados).
+  bannedUntil              DateTime?
+  banReason                String?
+  /// Cantidad de comprobantes de transferencia rechazados.
+  transferProofRejectCount Int      @default(0)
+  /// Advertencia persistente: la cuenta tuvo problemas / ban previo.
+  accountWarning           Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

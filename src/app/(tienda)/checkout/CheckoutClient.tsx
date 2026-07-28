@@ -66,7 +66,7 @@ export function CheckoutClient({
 }) {
   const router = useRouter();
   const settings = useStoreSettings();
-  const { lines, subtotalTransfer, subtotalTransferAmount, clearLines } = useCart();
+  const { lines, clearLines } = useCart();
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
@@ -131,13 +131,19 @@ export function CheckoutClient({
 
   const promoDiscount = appliedPromo?.discountAmount ?? 0;
 
+  const shippingAmountPreview = useMemo(() => {
+    if (shippingMethod !== "DELIVERY" || !shippingQuote || shippingQuote.error) return 0;
+    return shippingQuote.shippingAmount;
+  }, [shippingMethod, shippingQuote]);
+
+  const transferSubtotal = useMemo(
+    () => lineSummaries.reduce((a, l) => a + l.transferUnit * l.quantity, 0),
+    [lineSummaries],
+  );
+
   const totalAmountPreview = useMemo(() => {
-    const base =
-      shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
-        ? shippingQuote.totalAmount
-        : subtotalAmount;
-    return Math.max(0, base - promoDiscount);
-  }, [shippingMethod, shippingQuote, subtotalAmount, promoDiscount]);
+    return Math.max(0, subtotalAmount + shippingAmountPreview - promoDiscount);
+  }, [subtotalAmount, shippingAmountPreview, promoDiscount]);
 
   const totalDisplay = useMemo(
     () =>
@@ -156,21 +162,26 @@ export function CheckoutClient({
     [promoDiscount],
   );
 
+  const transferTotalDisplay = useMemo(() => {
+    const discount = paymentMethod === "BANK_TRANSFER" ? promoDiscount : 0;
+    return Math.max(0, transferSubtotal + shippingAmountPreview - discount).toLocaleString(
+      "es-AR",
+      { style: "currency", currency: "ARS" },
+    );
+  }, [transferSubtotal, shippingAmountPreview, paymentMethod, promoDiscount]);
+
   const mpSubtotal = useMemo(
     () => lineSummaries.reduce((a, l) => a + l.mpUnit * l.quantity, 0),
     [lineSummaries],
   );
 
   const mpTotal = useMemo(() => {
-    const shipping =
-      shippingMethod === "DELIVERY" && shippingQuote && !shippingQuote.error
-        ? shippingQuote.shippingAmount
-        : 0;
-    return Math.max(0, mpSubtotal + shipping - promoDiscount).toLocaleString("es-AR", {
+    const discount = paymentMethod === "MERCADO_PAGO" ? promoDiscount : 0;
+    return Math.max(0, mpSubtotal + shippingAmountPreview - discount).toLocaleString("es-AR", {
       style: "currency",
       currency: "ARS",
     });
-  }, [mpSubtotal, shippingMethod, shippingQuote, promoDiscount]);
+  }, [mpSubtotal, shippingAmountPreview, paymentMethod, promoDiscount]);
 
   useEffect(() => {
     setAppliedPromo(null);
@@ -697,7 +708,7 @@ export function CheckoutClient({
                 />
                 <span className="font-medium">Transferencia bancaria</span>
               </span>
-              <span className="pl-7 text-sm text-brand-dark">Total: {subtotalTransfer}</span>
+              <span className="pl-7 text-sm text-brand-dark">Total: {transferTotalDisplay}</span>
             </label>
             {mercadoPagoEnabled && (
               <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-slate-200 p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5">

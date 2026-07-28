@@ -1,5 +1,6 @@
 import { UserRole } from "@prisma/client";
 import type { Session } from "next-auth";
+import { assertCustomerNotBanned } from "@/lib/customer-moderation";
 import { prisma } from "@/lib/prisma";
 
 export const MAX_CHECKOUT_LINES = 30;
@@ -44,6 +45,19 @@ export function requireVerifiedCustomerSession(
     return { ok: false, error: "Tu cuenta no tiene email válido.", status: 403 };
   }
   return { ok: true, userId: session.user.id, email };
+}
+
+export async function requireVerifiedCustomerNotBanned(
+  session: Session | null,
+): Promise<
+  | { ok: true; userId: string; email: string }
+  | { ok: false; error: string; status: number }
+> {
+  const auth = requireVerifiedCustomerSession(session);
+  if (!auth.ok) return auth;
+  const ban = await assertCustomerNotBanned(auth.userId);
+  if (!ban.ok) return ban;
+  return auth;
 }
 
 export function buyerEmailMatchesSession(

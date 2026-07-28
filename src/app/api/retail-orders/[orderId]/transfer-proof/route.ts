@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertCustomerNotBanned } from "@/lib/customer-moderation";
 import { getSafeSession } from "@/lib/get-session";
 import { canCustomerAccessOrder } from "@/lib/order-access";
 import { sendOrderReceivedEmail } from "@/lib/order-transaction-emails";
@@ -25,6 +26,12 @@ export async function POST(
   }
   if (!canCustomerAccessOrder(order, session)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+  if (session?.user?.id) {
+    const ban = await assertCustomerNotBanned(session.user.id);
+    if (!ban.ok) {
+      return NextResponse.json({ error: ban.error }, { status: ban.status });
+    }
   }
 
   const proofLimit = RATE_LIMITS.transferProofOrder(orderId);

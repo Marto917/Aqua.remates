@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
+import { CustomerAccountStatusBanner } from "@/components/account/CustomerAccountStatusBanner";
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatArs } from "@/lib/currency";
+import { getCustomerModeration } from "@/lib/customer-moderation";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
 import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-labels";
@@ -23,14 +25,17 @@ export default async function MisComprasPage() {
 
   const email = session.user.email?.toLowerCase() ?? "";
   const ridersAppEnabled = await isRidersAppEnabled();
-  const orders = await prisma.retailOrder.findMany({
-    where: {
-      OR: [{ customerId: session.user.id }, { buyerEmail: email }],
-    },
-    orderBy: { createdAt: "desc" },
-    include: { items: true },
-    take: 50,
-  });
+  const [orders, moderation] = await Promise.all([
+    prisma.retailOrder.findMany({
+      where: {
+        OR: [{ customerId: session.user.id }, { buyerEmail: email }],
+      },
+      orderBy: { createdAt: "desc" },
+      include: { items: true },
+      take: 50,
+    }),
+    getCustomerModeration(session.user.id),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -44,6 +49,13 @@ export default async function MisComprasPage() {
         </p>
       </div>
 
+      {moderation ? (
+        <CustomerAccountStatusBanner
+          bannedUntil={moderation.bannedUntil}
+          banReason={moderation.banReason}
+          accountWarning={moderation.accountWarning}
+        />
+      ) : null}
       {orders.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
           Todavía no tenés compras registradas.{" "}

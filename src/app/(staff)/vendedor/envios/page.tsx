@@ -145,6 +145,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
   const inTransitCount = retailOrders.filter(
     (o) => isHomeDelivery(o.shippingMethod) && o.deliveryStatus === "DISPATCHED",
   ).length;
+  const pendingPackCount = retailOrders.filter((o) => !isOrderPacked(o.packedAt)).length;
 
   return (
     <div className="space-y-6">
@@ -160,7 +161,15 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
             </Link>
           ) : null}
         </p>
-        <EnviosLiveRefresh enabled={inTransitCount > 0} />
+        {pendingPackCount > 0 ? (
+          <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-950">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
+              {pendingPackCount}
+            </span>
+            pendiente{pendingPackCount === 1 ? "" : "s"} de armar
+          </p>
+        ) : null}
+        <EnviosLiveRefresh enabled={inTransitCount > 0 || pendingPackCount > 0} />
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">

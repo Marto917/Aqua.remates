@@ -9,12 +9,31 @@ type UserItem = {
   email: string;
   role: UserRole;
   staffAccessLevel: StaffAccessLevel | null;
+  transferProofRejectCount: number;
+  accountWarning: boolean;
+  bannedUntil: string | null;
+  banReason: string | null;
 };
 
 type RoleFilter = "ALL" | "CUSTOMERS" | "STAFF";
 
-export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }) {
-  const [users, setUsers] = useState(initialUsers);
+export function AdminUsersManager({
+  initialUsers,
+}: {
+  initialUsers: Array<
+    Omit<UserItem, "bannedUntil"> & { bannedUntil: Date | string | null }
+  >;
+}) {
+  const [users, setUsers] = useState<UserItem[]>(
+    initialUsers.map((u) => ({
+      ...u,
+      bannedUntil: u.bannedUntil
+        ? typeof u.bannedUntil === "string"
+          ? u.bannedUntil
+          : u.bannedUntil.toISOString()
+        : null,
+    })),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -142,6 +161,62 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
     setUsers((list) => list.filter((u) => u.id !== userId));
   }
 
+  async function banUser(userId: string, days: number) {
+    if (!window.confirm(`¿Suspender esta cuenta por ${days} día(s)?`)) return;
+    setError(null);
+    const res = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        banDays: days,
+        banReason: "Suspensión manual desde panel de usuarios.",
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      bannedUntil?: string;
+    };
+    if (!res.ok) {
+      setError(data.error ?? "No se pudo suspender la cuenta.");
+      return;
+    }
+    setUsers((list) =>
+      list.map((u) =>
+        u.id === userId
+          ? {
+              ...u,
+              bannedUntil: data.bannedUntil ?? new Date(Date.now() + days * 86400000).toISOString(),
+              accountWarning: true,
+              banReason: "Suspensión manual desde panel de usuarios.",
+            }
+          : u,
+      ),
+    );
+  }
+
+  async function unbanUser(userId: string) {
+    if (!window.confirm("¿Levantar la suspensión de esta cuenta?")) return;
+    setError(null);
+    const res = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId, unban: true }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setError(data.error ?? "No se pudo desbanear.");
+      return;
+    }
+    setUsers((list) =>
+      list.map((u) =>
+        u.id === userId
+          ? { ...u, bannedUntil: null, banReason: null, accountWarning: true }
+          : u,
+      ),
+    );
+  }
+
   const filterBtn = (id: RoleFilter, label: string, count: number) => {
     const active = roleFilter === id;
     return (
@@ -217,18 +292,22 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
               <th className="px-3 py-2 text-left">Email</th>
               <th className="px-3 py-2 text-left">Rol</th>
               <th className="px-3 py-2 text-left">Permiso staff</th>
+              <th className="px-3 py-2 text-left">Estado</th>
               <th className="px-3 py-2 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                   No hay usuarios con ese filtro.
                 </td>
               </tr>
             ) : (
-              filteredUsers.map((u) => (
+              filteredUsers.map((u) => {
+                const banned =
+                  u.bannedUntil != null && new Date(u.bannedUntil).getTime() > Date.now();
+                return (
                 <tr key={u.id} className="border-t align-top">
                   <td className="px-3 py-2">
                     {editingId === u.id ? (
@@ -277,6 +356,35 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
                       <option value="MANAGER">Encargado</option>
                     </select>
                   </td>
+                  <td className="px-3 py-2 text-xs">
+                    {u.role === "CUSTOMER" ? (
+                      <div className="space-y-1">
+                        {banned ? (
+                          <p className="font-medium text-rose-700">
+                            Suspendido hasta{" "}
+                            {new Date(u.bannedUntil!).toLocaleString("es-AR", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </p>
+                        ) : (
+                          <p className="text-slate-500">Activo</p>
+                        )}
+                        {u.transferProofRejectCount > 0 ? (
+                          <p className="text-amber-800">
+                            Rechazos: {u.transferProofRejectCount}
+                          </p>
+                        ) : null}
+                        {u.accountWarning ? (
+                          <p className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-900">
+                            Historial con problemas
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-right">
                     {editingId === u.id ? (
                       <div className="flex flex-col items-end gap-2">
@@ -307,7 +415,7 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
                         </div>
                       </div>
                     ) : (
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => startEdit(u)}
@@ -315,6 +423,24 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
                         >
                           Editar
                         </button>
+                        {u.role === "CUSTOMER" && banned ? (
+                          <button
+                            type="button"
+                            onClick={() => unbanUser(u.id)}
+                            className="rounded border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-50"
+                          >
+                            Desbanear
+                          </button>
+                        ) : null}
+                        {u.role === "CUSTOMER" && !banned ? (
+                          <button
+                            type="button"
+                            onClick={() => banUser(u.id, 7)}
+                            className="rounded border border-amber-300 px-2 py-1 text-xs font-medium text-amber-900 hover:bg-amber-50"
+                          >
+                            Ban 7 días
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => deleteUser(u.id, u.name)}
@@ -326,7 +452,8 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: UserItem[] }
                     )}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

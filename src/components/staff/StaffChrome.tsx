@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
 import { StaffMobileNav } from "@/components/staff/StaffMobileNav";
+import { StaffOrderAlerts } from "@/components/staff/StaffOrderAlerts";
 
 const STORAGE_KEY = "aqua-staff-sidebar-open";
 const CHANGE_EVENT = "aqua-staff-sidebar";
@@ -53,6 +54,19 @@ function writeSidebarOpen(open: boolean) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+function NavLabel({ label, badge }: { label: string; badge?: number }) {
+  return (
+    <span className="flex items-center justify-between gap-2">
+      <span>{label}</span>
+      {badge != null && badge > 0 ? (
+        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function StaffChrome({
   area,
   homeHref,
@@ -65,6 +79,7 @@ export function StaffChrome({
   children,
 }: Props) {
   const sidebarOpen = useSyncExternalStore(subscribeSidebar, readSidebarOpen, () => true);
+  const [pendingPackCount, setPendingPackCount] = useState(0);
 
   return (
     <div
@@ -72,6 +87,8 @@ export function StaffChrome({
         sidebarOpen ? "lg:pl-60" : "lg:pl-0"
       }`}
     >
+      <StaffOrderAlerts onCountChange={setPendingPackCount} />
+
       {/* Sidebar fijo (desktop) */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:flex ${
@@ -89,16 +106,19 @@ export function StaffChrome({
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Menú staff">
           <ul className="space-y-0.5">
-            {links.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-muted hover:text-brand-dark"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+            {links.map((item) => {
+              const isEnvios = item.href === "/vendedor/envios";
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-muted hover:text-brand-dark"
+                  >
+                    <NavLabel label={item.label} badge={isEnvios ? pendingPackCount : undefined} />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
         <div className="space-y-2 border-t border-slate-100 px-3 py-3">
@@ -155,13 +175,25 @@ export function StaffChrome({
           <Link href={homeHref} className="font-semibold text-brand-dark">
             <SiteLogo logoUrl={logoUrl} />
           </Link>
-          <StaffMobileNav
-            links={links}
-            preview={preview}
-            profileLine={profileLine}
-            staffLogin={staffLogin}
-            signedIn={signedIn}
-          />
+          <div className="flex items-center gap-2">
+            {pendingPackCount > 0 ? (
+              <Link
+                href="/vendedor/envios"
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-bold text-white"
+              >
+                Armar
+                <span>{pendingPackCount > 99 ? "99+" : pendingPackCount}</span>
+              </Link>
+            ) : null}
+            <StaffMobileNav
+              links={links}
+              preview={preview}
+              profileLine={profileLine}
+              staffLogin={staffLogin}
+              signedIn={signedIn}
+              pendingPackCount={pendingPackCount}
+            />
+          </div>
         </div>
       </header>
 

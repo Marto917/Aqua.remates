@@ -17,6 +17,10 @@ export default async function AdminUsersPage() {
       email: true,
       role: true,
       staffAccessLevel: true,
+      transferProofRejectCount: true,
+      accountWarning: true,
+      bannedUntil: true,
+      banReason: true,
     },
   });
 

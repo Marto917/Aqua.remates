@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { RetailOrderStatus } from "@prisma/client";
 import { z } from "zod";
 import { confirmRetailOrderForCustomer } from "@/lib/confirm-retail-order";
+import {
+  banCustomer,
+  formatBanUntil,
+  recordTransferProofRejection,
+} from "@/lib/customer-moderation";
 import { prisma } from "@/lib/prisma";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { requireStaff } from "@/lib/staff-auth";
@@ -13,7 +18,9 @@ const updateSchema = z.object({
   status: z.nativeEnum(RetailOrderStatus),
 });
 
-export type TransferReviewResult = { ok: true } | { ok: false; error: string };
+export type TransferReviewResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string };
 
 export async function updateRetailOrderStatus(formData: FormData) {
   await requireStaff();
@@ -75,6 +82,10 @@ export async function rejectTransferOrder(formData: FormData): Promise<TransferR
       return { ok: false, error: "Pedido inválido." };
     }
 
+    const banDaysRaw = String(formData.get("banDays") ?? "").trim();
+    const banDays = banDaysRaw ? Number(banDaysRaw) : 0;
+    const banReason = String(formData.get("banReason") ?? "").trim() || null;
+
     const order = await prisma.retailOrder.findUnique({ where: { id } });
     if (!order || order.paymentMethod !== "BANK_TRANSFER") {
       return { ok: false, error: "No es un pedido por transferencia." };
@@ -85,13 +96,75 @@ export async function rejectTransferOrder(formData: FormData): Promise<TransferR
       data: { status: "CANCELLED" },
     });
 
+    let rejectCount: number | null = null;
+    let bannedUntil: Date | null = null;
+
+    if (order.customerId) {
+      rejectCount = await recordTransferProofRejection(order.customerId);
+      if (Number.isFinite(banDays) && banDays > 0) {
+        const ban = await banCustomer({
+          userId: order.customerId,
+          days: banDays,
+          reason: banReason,
+        });
+        bannedUntil = ban.bannedUntil;
+      }
+    }
+
     revalidatePath("/admin/pedidos");
     revalidatePath(`/admin/pedidos/${id}`);
+    revalidatePath("/admin/usuarios");
     revalidatePath("/vendedor/pedidos");
+    revalidatePath("/cuenta/mis-compras");
 
-    return { ok: true };
+    let message = "Pedido cancelado. Se registró el rechazo del comprobante.";
+    if (rejectCount != null) {
+      message += ` Rechazos del cliente: ${rejectCount}.`;
+    }
+    if (bannedUntil) {
+      message += ` Cuenta suspendida hasta ${bannedUntil.toLocaleString("es-AR")}.`;
+    }
+
+    return { ok: true, message };
   } catch (e) {
     console.error("rejectTransferOrder:", e);
+    return { ok: false, error: staffActionErrorMessage(e) };
+  }
+}
+
+export async function banCustomerFromOrder(formData: FormData): Promise<TransferReviewResult> {
+  try {
+    await requireStaff();
+    const orderId = String(formData.get("id") ?? "");
+    const banDays = Number(formData.get("banDays") ?? 0);
+    const banReason = String(formData.get("banReason") ?? "").trim() || null;
+    if (!orderId || !Number.isFinite(banDays) || banDays < 1) {
+      return { ok: false, error: "Datos de suspensión inválidos." };
+    }
+
+    const order = await prisma.retailOrder.findUnique({
+      where: { id: orderId },
+      select: { customerId: true },
+    });
+    if (!order?.customerId) {
+      return { ok: false, error: "El pedido no tiene cuenta de cliente asociada." };
+    }
+
+    const { bannedUntil } = await banCustomer({
+      userId: order.customerId,
+      days: banDays,
+      reason: banReason,
+    });
+
+    revalidatePath(`/admin/pedidos/${orderId}`);
+    revalidatePath("/admin/usuarios");
+
+    return {
+      ok: true,
+      message: `Cuenta suspendida hasta ${formatBanUntil(bannedUntil)}.`,
+    };
+  } catch (e) {
+    console.error("banCustomerFromOrder:", e);
     return { ok: false, error: staffActionErrorMessage(e) };
   }
 }
