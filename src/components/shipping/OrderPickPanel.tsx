@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { BarcodePickScanner } from "@/components/shipping/BarcodePickScanner";
 import { formatArs } from "@/lib/currency";
 import { colorLabelToDisplayName } from "@/lib/color-display";
@@ -48,7 +47,6 @@ export function OrderPickPanel({
   alreadyPacked,
   packedAtLabel,
 }: Props) {
-  const router = useRouter();
   const [picked, setPicked] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,13 +107,13 @@ export function OrderPickPanel({
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
         setError(data.error ?? "No se pudo confirmar el armado.");
+        setSaving(false);
         return;
       }
-      router.refresh();
-      router.push("/vendedor/envios");
+      // Soft nav deja la lista de envíos en cache; forzamos recarga fresca.
+      window.location.assign("/vendedor/envios");
     } catch {
       setError("Error de conexión.");
-    } finally {
       setSaving(false);
     }
   }
@@ -140,6 +138,10 @@ export function OrderPickPanel({
           <Link
             href="/vendedor/envios"
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.assign("/vendedor/envios");
+            }}
           >
             Volver a envíos
           </Link>
