@@ -23,7 +23,6 @@ export default async function AdminUsersPage() {
       banReason: true,
     },
   });
-
   return (
     <section className="mx-auto max-w-6xl space-y-4 px-4">
       <div>

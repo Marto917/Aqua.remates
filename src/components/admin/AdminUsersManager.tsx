@@ -186,7 +186,7 @@ export function AdminUsersManager({
         u.id === userId
           ? {
               ...u,
-              bannedUntil: data.bannedUntil ?? new Date(Date.now() + days * 86400000).toISOString(),
+              bannedUntil: data.bannedUntil ?? null,
               accountWarning: true,
               banReason: "Suspensión manual desde panel de usuarios.",
             }
@@ -305,8 +305,7 @@ export function AdminUsersManager({
               </tr>
             ) : (
               filteredUsers.map((u) => {
-                const banned =
-                  u.bannedUntil != null && new Date(u.bannedUntil).getTime() > Date.now();
+                const banned = Boolean(u.bannedUntil);
                 return (
                 <tr key={u.id} className="border-t align-top">
                   <td className="px-3 py-2">

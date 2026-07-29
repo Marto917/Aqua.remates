@@ -49,8 +49,6 @@ export function StaffOrderAlerts({
   const pathname = usePathname();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const primed = useRef(false);
-  const onCountChangeRef = useRef(onCountChange);
-  onCountChangeRef.current = onCountChange;
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +65,7 @@ export function StaffOrderAlerts({
         };
         const orders = data.orders ?? [];
         const count = typeof data.count === "number" ? data.count : orders.length;
-        onCountChangeRef.current?.(count);
+        onCountChange?.(count);
 
         const ids = new Set(orders.map((o) => o.id));
         const seen = readSeenIds();
@@ -117,7 +115,7 @@ export function StaffOrderAlerts({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [pathname, router]);
+  }, [pathname, router, onCountChange]);
 
   function dismiss(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));

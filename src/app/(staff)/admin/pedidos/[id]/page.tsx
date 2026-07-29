@@ -5,6 +5,7 @@ import { updateRetailOrderStatus } from "../actions";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { TransferProofPreview } from "@/components/staff/TransferProofPreview";
 import { TransferReviewButtons } from "@/components/staff/TransferReviewButtons";
+import { CustomerBannedNotice } from "@/components/staff/CustomerBannedNotice";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { formatArs } from "@/lib/currency";
 import {
@@ -142,16 +143,11 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
                     Esta cuenta tiene historial de problemas (comprobantes / suspensión).
                   </div>
                 ) : null}
-                {order.customer.bannedUntil &&
-                order.customer.bannedUntil.getTime() > Date.now() ? (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs text-rose-900">
-                    Suspendida hasta{" "}
-                    {order.customer.bannedUntil.toLocaleString("es-AR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
-                    {order.customer.banReason ? ` — ${order.customer.banReason}` : ""}
-                  </div>
+                {order.customer.bannedUntil ? (
+                  <CustomerBannedNotice
+                    until={order.customer.bannedUntil.toISOString()}
+                    reason={order.customer.banReason}
+                  />
                 ) : null}
               </>
             ) : null}

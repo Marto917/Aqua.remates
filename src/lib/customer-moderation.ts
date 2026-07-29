@@ -6,11 +6,11 @@ export type CustomerModerationFields = Pick<
   "bannedUntil" | "banReason" | "transferProofRejectCount" | "accountWarning"
 >;
 
+/** Tras limpiar bans vencidos en DB, basta con mirar si hay fecha. */
 export function isCustomerCurrentlyBanned(
   user: Pick<CustomerModerationFields, "bannedUntil"> | null | undefined,
 ): boolean {
-  if (!user?.bannedUntil) return false;
-  return user.bannedUntil.getTime() > Date.now();
+  return Boolean(user?.bannedUntil);
 }
 
 export function formatBanUntil(until: Date): string {
@@ -31,8 +31,17 @@ export function customerBanMessage(
   return `${base} Si creés que es un error, contactanos por WhatsApp.`;
 }
 
+async function clearExpiredBan(userId: string, bannedUntil: Date) {
+  if (bannedUntil.getTime() > Date.now()) return false;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { bannedUntil: null, banReason: null },
+  });
+  return true;
+}
+
 export async function getCustomerModeration(userId: string) {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -43,6 +52,10 @@ export async function getCustomerModeration(userId: string) {
       role: true,
     },
   });
+  if (!user?.bannedUntil) return user;
+  const cleared = await clearExpiredBan(user.id, user.bannedUntil);
+  if (!cleared) return user;
+  return { ...user, bannedUntil: null, banReason: null };
 }
 
 /** Bloquea compras si hay ban activo. */

@@ -96,7 +96,7 @@ export function TransferReviewButtons({
     });
   }
 
-  const currentlyBanned = bannedUntil ? new Date(bannedUntil).getTime() > Date.now() : false;
+  const currentlyBanned = Boolean(bannedUntil);
 
   return (
     <div className="space-y-3">
