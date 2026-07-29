@@ -5,6 +5,12 @@ export function getStaffLoginPath(): string {
   return `/${path}`;
 }
 
+/** True si la URL es el login staff (debe quedar accesible sin sesión). */
+export function isStaffLoginPath(pathname: string): boolean {
+  const staffLogin = getStaffLoginPath();
+  return pathname === staffLogin || pathname.startsWith(`${staffLogin}/`);
+}
+
 export function getStaffLoginUrl(origin?: string): string {
   const path = getStaffLoginPath();
   if (origin) {

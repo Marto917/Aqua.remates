@@ -19,10 +19,13 @@ type RoleFilter = "ALL" | "CUSTOMERS" | "STAFF";
 
 export function AdminUsersManager({
   initialUsers,
+  canManageOwners = false,
 }: {
   initialUsers: Array<
     Omit<UserItem, "bannedUntil"> & { bannedUntil: Date | string | null }
   >;
+  /** Solo el dueño puede crear/editar OWNER o encargados (MANAGER). */
+  canManageOwners?: boolean;
 }) {
   const [users, setUsers] = useState<UserItem[]>(
     initialUsers.map((u) => ({
@@ -250,16 +253,21 @@ export function AdminUsersManager({
           placeholder="Contraseña"
           className="rounded-md border px-3 py-2"
         />
-        <select name="role" className="rounded-md border px-3 py-2">
+        <select name="role" className="rounded-md border px-3 py-2" defaultValue="CUSTOMER">
           <option value="CUSTOMER">Cliente</option>
           <option value="EMPLOYEE">Empleado</option>
-          <option value="OWNER">Admin principal</option>
+          {canManageOwners ? <option value="OWNER">Admin principal</option> : null}
         </select>
-        <select name="staffAccessLevel" className="rounded-md border px-3 py-2 md:col-span-2">
+        <select name="staffAccessLevel" className="rounded-md border px-3 py-2 md:col-span-2" defaultValue="SELLER">
           <option value="SELLER">Permiso vendedor</option>
-          <option value="MANAGER">Permiso encargado</option>
+          {canManageOwners ? <option value="MANAGER">Permiso encargado</option> : null}
         </select>
-        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+        {!canManageOwners ? (
+          <p className="md:col-span-2 text-xs text-slate-500">
+            Como encargado podés crear clientes y vendedores. Solo el admin principal gestiona dueños y
+            encargados.
+          </p>
+        ) : null}        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
         <button
           disabled={saving}
           className="md:col-span-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
@@ -335,11 +343,14 @@ export function AdminUsersManager({
                     <select
                       className="rounded border px-2 py-1"
                       value={u.role}
+                      disabled={!canManageOwners && u.role === "OWNER"}
                       onChange={(e) => updateRole(u.id, e.target.value as UserRole, u.staffAccessLevel)}
                     >
                       <option value="CUSTOMER">Cliente</option>
                       <option value="EMPLOYEE">Empleado</option>
-                      <option value="OWNER">Admin principal</option>
+                      {canManageOwners || u.role === "OWNER" ? (
+                        <option value="OWNER">Admin principal</option>
+                      ) : null}
                     </select>
                   </td>
                   <td className="px-3 py-2">
@@ -349,13 +360,18 @@ export function AdminUsersManager({
                       onChange={(e) =>
                         updateRole(u.id, u.role, e.target.value as StaffAccessLevel)
                       }
-                      disabled={u.role === "CUSTOMER"}
+                      disabled={
+                        u.role === "CUSTOMER" ||
+                        (!canManageOwners &&
+                          (u.role === "OWNER" || u.staffAccessLevel === "MANAGER"))
+                      }
                     >
                       <option value="SELLER">Vendedor</option>
-                      <option value="MANAGER">Encargado</option>
+                      {canManageOwners || u.staffAccessLevel === "MANAGER" ? (
+                        <option value="MANAGER">Encargado</option>
+                      ) : null}
                     </select>
-                  </td>
-                  <td className="px-3 py-2 text-xs">
+                  </td>                  <td className="px-3 py-2 text-xs">
                     {u.role === "CUSTOMER" ? (
                       <div className="space-y-1">
                         {banned ? (
@@ -415,13 +431,16 @@ export function AdminUsersManager({
                       </div>
                     ) : (
                       <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(u)}
-                          className="rounded border border-brand/40 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted"
-                        >
-                          Editar
-                        </button>
+                        {canManageOwners ||
+                        (u.role !== "OWNER" && u.staffAccessLevel !== "MANAGER") ? (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(u)}
+                            className="rounded border border-brand/40 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted"
+                          >
+                            Editar
+                          </button>
+                        ) : null}
                         {u.role === "CUSTOMER" && banned ? (
                           <button
                             type="button"
@@ -440,13 +459,16 @@ export function AdminUsersManager({
                             Ban 7 días
                           </button>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={() => deleteUser(u.id, u.name)}
-                          className="rounded border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                        >
-                          Borrar
-                        </button>
+                        {canManageOwners ||
+                        (u.role !== "OWNER" && u.staffAccessLevel !== "MANAGER") ? (
+                          <button
+                            type="button"
+                            onClick={() => deleteUser(u.id, u.name)}
+                            className="rounded border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                          >
+                            Borrar
+                          </button>
+                        ) : null}
                       </div>
                     )}
                   </td>

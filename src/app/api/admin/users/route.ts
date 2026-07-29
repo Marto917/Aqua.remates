@@ -5,7 +5,12 @@ import { z } from "zod";
 import { banCustomer, unbanCustomer } from "@/lib/customer-moderation";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
-import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
+import {
+  canManageUsers,
+  getStaffContext,
+  isOwnerAccess,
+  type StaffContext,
+} from "@/lib/staff-auth";
 
 const createSchema = z.object({
   name: z.string().trim().min(2),
@@ -35,6 +40,42 @@ async function assertCanManage() {
   return ctx;
 }
 
+/** Encargado: solo clientes y empleados vendedor. Dueño: todo. */
+function managerForbiddenError() {
+  return NextResponse.json(
+    {
+      error:
+        "Solo el administrador principal puede gestionar dueños o permisos de encargado.",
+    },
+    { status: 403 },
+  );
+}
+
+function resolveStaffAccessLevel(
+  role: UserRole,
+  requested: StaffAccessLevel | null | undefined,
+  fallback: StaffAccessLevel | null,
+): StaffAccessLevel | null {
+  if (role === UserRole.OWNER) return StaffAccessLevel.MANAGER;
+  if (role === UserRole.EMPLOYEE) {
+    return requested ?? fallback ?? StaffAccessLevel.SELLER;
+  }
+  return null;
+}
+
+function assertManagerMayAssign(
+  ctx: StaffContext,
+  role: UserRole,
+  staffAccessLevel: StaffAccessLevel | null,
+): NextResponse | null {
+  if (isOwnerAccess(ctx)) return null;
+  if (role === UserRole.OWNER) return managerForbiddenError();
+  if (role === UserRole.EMPLOYEE && staffAccessLevel === StaffAccessLevel.MANAGER) {
+    return managerForbiddenError();
+  }
+  return null;
+}
+
 export async function POST(req: Request) {
   const ctx = await assertCanManage();
   if (ctx instanceof NextResponse) return ctx;
@@ -50,14 +91,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ese email ya está en uso." }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   const role = parsed.data.role as UserRole;
-  const staffAccessLevel =
-    role === UserRole.OWNER
-      ? StaffAccessLevel.MANAGER
-      : role === UserRole.EMPLOYEE
-        ? (parsed.data.staffAccessLevel as StaffAccessLevel | undefined) ?? StaffAccessLevel.SELLER
-        : null;
+  const staffAccessLevel = resolveStaffAccessLevel(
+    role,
+    parsed.data.staffAccessLevel as StaffAccessLevel | undefined,
+    null,
+  );
+
+  const denied = assertManagerMayAssign(ctx, role, staffAccessLevel);
+  if (denied) return denied;
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
   await prisma.user.create({
     data: {
@@ -88,6 +132,11 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
   }
 
+  // Encargado no puede tocar cuentas OWNER.
+  if (!isOwnerAccess(ctx) && existing.role === UserRole.OWNER) {
+    return managerForbiddenError();
+  }
+
   if (parsed.data.unban) {
     if (existing.role !== UserRole.CUSTOMER) {
       return NextResponse.json({ error: "Solo se pueden desbanear clientes." }, { status: 400 });
@@ -116,14 +165,14 @@ export async function PATCH(req: Request) {
   }
 
   const role = (parsed.data.role ?? existing.role) as UserRole;
-  const staffAccessLevel =
-    role === UserRole.OWNER
-      ? StaffAccessLevel.MANAGER
-      : role === UserRole.EMPLOYEE
-        ? (parsed.data.staffAccessLevel as StaffAccessLevel | undefined) ??
-          existing.staffAccessLevel ??
-          StaffAccessLevel.SELLER
-        : null;
+  const staffAccessLevel = resolveStaffAccessLevel(
+    role,
+    parsed.data.staffAccessLevel as StaffAccessLevel | null | undefined,
+    existing.staffAccessLevel,
+  );
+
+  const denied = assertManagerMayAssign(ctx, role, staffAccessLevel);
+  if (denied) return denied;
 
   const data: {
     name?: string;
@@ -135,8 +184,15 @@ export async function PATCH(req: Request) {
   } = {
     role,
     staffAccessLevel,
-    emailVerified: role === UserRole.CUSTOMER ? null : existing.emailVerified ?? new Date(),
   };
+
+  if (parsed.data.role && parsed.data.role !== existing.role) {
+    if (role === UserRole.CUSTOMER) {
+      // Al pasar a cliente no forzamos desverificar; se mantiene lo que había.
+    } else if (!existing.emailVerified) {
+      data.emailVerified = new Date();
+    }
+  }
 
   if (parsed.data.name) data.name = parsed.data.name;
   if (parsed.data.email) data.email = parsed.data.email;
@@ -173,10 +229,22 @@ export async function DELETE(req: Request) {
   }
 
   if (target.role === UserRole.OWNER) {
+    if (!isOwnerAccess(ctx)) {
+      return managerForbiddenError();
+    }
     const owners = await prisma.user.count({ where: { role: UserRole.OWNER } });
     if (owners <= 1) {
       return NextResponse.json({ error: "Debe quedar al menos un administrador." }, { status: 400 });
     }
+  }
+
+  // Encargado tampoco borra otros encargados (MANAGER).
+  if (
+    !isOwnerAccess(ctx) &&
+    target.role === UserRole.EMPLOYEE &&
+    target.staffAccessLevel === StaffAccessLevel.MANAGER
+  ) {
+    return managerForbiddenError();
   }
 
   await prisma.user.delete({ where: { id: userId } });

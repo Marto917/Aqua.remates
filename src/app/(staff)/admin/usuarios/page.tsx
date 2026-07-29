@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminUsersManager } from "@/components/admin/AdminUsersManager";
-import { canManageUsers, getStaffContext } from "@/lib/staff-auth";
+import { canManageUsers, getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminUsersPage() {
@@ -31,7 +31,7 @@ export default async function AdminUsersPage() {
           Crear, editar y eliminar cuentas de clientes y personal (encargado y vendedor).
         </p>
       </div>
-      <AdminUsersManager initialUsers={users} />
+      <AdminUsersManager initialUsers={users} canManageOwners={isOwnerAccess(ctx)} />
     </section>
   );
 }

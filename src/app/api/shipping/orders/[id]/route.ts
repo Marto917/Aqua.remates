@@ -12,26 +12,41 @@ const querySchema = z.object({
   type: z.enum(["retail", "wholesale"]).default("retail"),
 });
 
-function checkLookupAuth(req: Request): boolean {
+type LookupAuthResult =
+  | { ok: true }
+  | { ok: false; status: 401 | 503; error: string };
+
+function checkLookupAuth(req: Request): LookupAuthResult {
   const secret = process.env.SHIPPING_LOOKUP_KEY?.trim();
   if (!secret) {
-    return true;
+    // Fail-closed: sin clave no se expone PII de pedidos (antes quedaba abierto).
+    return {
+      ok: false,
+      status: 503,
+      error:
+        "Consulta de envíos no disponible. Configurá SHIPPING_LOOKUP_KEY en el servidor.",
+    };
   }
+
   const header = req.headers.get("authorization");
-  if (header?.startsWith("Bearer ")) {
-    return header.slice(7) === secret;
+  if (header?.startsWith("Bearer ") && header.slice(7) === secret) {
+    return { ok: true };
   }
   const apiKey = req.headers.get("x-shipping-key");
-  return apiKey === secret;
+  if (apiKey === secret) {
+    return { ok: true };
+  }
+  return { ok: false, status: 401, error: "No autorizado." };
 }
 
 /**
  * Consulta ligera para apps externas (el QR incluye orderId + dirección).
- * Si SHIPPING_LOOKUP_KEY está definida, exige Authorization: Bearer <key> o header X-Shipping-Key.
+ * Siempre exige SHIPPING_LOOKUP_KEY + Authorization: Bearer <key> o header X-Shipping-Key.
  */
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
-  if (!checkLookupAuth(req)) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const auth = checkLookupAuth(req);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const { id } = await context.params;

@@ -17,6 +17,7 @@ import {
 } from "@/lib/login-rate-limit";
 import { prisma } from "@/lib/prisma";
 import { getPublicAppUrl } from "@/lib/app-url";
+import { assertNextAuthSecretConfigured } from "@/lib/nextauth-secret";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 /** Normaliza NEXTAUTH_URL (sin barra final, www canónico en producción). */
@@ -28,6 +29,7 @@ function ensureNextAuthUrl(): void {
 }
 
 ensureNextAuthUrl();
+assertNextAuthSecretConfigured();
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),

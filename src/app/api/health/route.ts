@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { isGoogleAuthConfigured } from "@/lib/google-auth";
+import { getNextAuthSecretStatus } from "@/lib/nextauth-secret";
 
 /**
  * Comprobación rápida de deploy: DB alcanzable y variables críticas presentes.
@@ -9,7 +10,7 @@ import { isGoogleAuthConfigured } from "@/lib/google-auth";
  */
 export async function GET() {
   const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
-  const hasNextAuthSecret = Boolean(process.env.NEXTAUTH_SECRET);
+  const secretStatus = getNextAuthSecretStatus();
   const nextAuthUrl = getAppBaseUrl();
   const googleOAuthCallbackUri = `${nextAuthUrl}/api/auth/callback/google`;
   let dbOk = false;
@@ -21,9 +22,11 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    ok: hasDatabaseUrl && hasNextAuthSecret && dbOk,
+    ok: hasDatabaseUrl && secretStatus.secure && dbOk,
     hasDatabaseUrl,
-    hasNextAuthSecret,
+    hasNextAuthSecret: secretStatus.present,
+    nextAuthSecretSecure: secretStatus.secure,
+    nextAuthSecretIssue: secretStatus.reason,
     hasNextAuthUrl: Boolean(process.env.NEXTAUTH_URL),
     nextAuthUrl,
     googleOAuthCallbackUri,

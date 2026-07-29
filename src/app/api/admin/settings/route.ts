@@ -33,6 +33,11 @@ const schema = z.object({
 });
 
 export async function GET() {
+  const ctx = await getStaffContext();
+  if (!canStaffAccess(ctx)) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+
   await ensureStoreSettings();
   const row = await prisma.storeSettings.findUnique({ where: { id: "default" } });
   return NextResponse.json(row);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 import { isBackofficePreview } from "./src/lib/backoffice-preview";
-import { getStaffLoginPath } from "./src/lib/staff-login-path";
+import { getStaffLoginPath, isStaffLoginPath } from "./src/lib/staff-login-path";
 
 const OWNER_ONLY_PATHS = ["/admin/finanzas", "/admin/aprobaciones", "/admin/riders"];
 const USER_MANAGEMENT_PATHS = ["/admin/usuarios"];
@@ -13,12 +13,10 @@ const ROLES = {
 } as const;
 
 function isStaffArea(pathname: string): boolean {
-  const staffLogin = getStaffLoginPath();
   return (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/vendedor") ||
-    pathname === staffLogin ||
-    pathname.startsWith(`${staffLogin}/`)
+    isStaffLoginPath(pathname)
   );
 }
 
@@ -50,6 +48,11 @@ export async function middleware(req: NextRequest) {
   if (isStaffArea(pathname)) {
     const preview = isBackofficePreview();
     if (preview) {
+      return nextWithHeaders(req);
+    }
+
+    // Login staff: sin token (si no, redirect loop / página inaccesible).
+    if (isStaffLoginPath(pathname)) {
       return nextWithHeaders(req);
     }
 
