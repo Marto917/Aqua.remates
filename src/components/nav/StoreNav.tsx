@@ -39,7 +39,7 @@ export async function StoreNav({ session, logoUrl }: Props) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 [--store-nav-height:3.5rem] sm:[--store-nav-height:4rem]">
+    <header className="sticky top-0 z-50 isolate border-b border-teal-100 bg-white/95 shadow-sm backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 [--store-nav-height:3.5rem] sm:[--store-nav-height:4rem]">
       <nav className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/"

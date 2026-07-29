@@ -23,9 +23,13 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string;
-    role: UserRole;
+    id?: string;
+    role?: UserRole;
     staffAccessLevel?: StaffAccessLevel | null;
     emailVerified?: boolean;
+    /** Segundos de vida de esta sesión según rol. */
+    sessionMaxAge?: number;
+    /** Epoch (segundos) del login / inicio de sesión. */
+    sessionStartedAt?: number;
   }
 }

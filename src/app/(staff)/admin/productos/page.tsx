@@ -103,12 +103,25 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                 <td className="px-3 py-2">
                   <div className="flex items-start gap-2">
                     {issues.length > 0 ? (
-                      <span
-                        className="mt-0.5 shrink-0 text-amber-600"
-                        title={`Datos incompletos: ${issues.join(", ")}`}
-                        aria-label={`Incompleto: ${issues.join(", ")}`}
-                      >
-                        ⚠️
+                      <span className="group relative mt-0.5 inline-flex shrink-0">
+                        <span
+                          tabIndex={0}
+                          className="cursor-help text-amber-600 outline-none"
+                          aria-label={`Incompleto: ${issues.join(", ")}`}
+                        >
+                          ⚠️
+                        </span>
+                        <span
+                          role="tooltip"
+                          className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-[16rem] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-left text-xs font-medium text-amber-950 shadow-md group-hover:block group-focus-within:block"
+                        >
+                          <span className="block font-semibold text-amber-900">Falta completar:</span>
+                          <ul className="mt-1 list-disc space-y-0.5 pl-3.5">
+                            {issues.map((issue) => (
+                              <li key={issue}>{issue}</li>
+                            ))}
+                          </ul>
+                        </span>
                       </span>
                     ) : null}
                     <span>{product.name}</span>

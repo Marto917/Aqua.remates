@@ -36,6 +36,10 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
   const host = req.headers.get("host")?.split(",")[0]?.trim().toLowerCase() ?? "";
+  const useSecureCookies =
+    process.env.NODE_ENV === "production" ||
+    (process.env.NEXTAUTH_URL ?? "").startsWith("https://");
+  const sessionCookieName = `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`;
 
   // Apex → www: evita que Google OAuth y las cookies fallen por dominio distinto.
   if (host === "aquaremates.com.ar") {
@@ -56,7 +60,12 @@ export async function middleware(req: NextRequest) {
       return nextWithHeaders(req);
     }
 
-    const token = await getToken({ req, secret });
+    const token = await getToken({
+      req,
+      secret,
+      secureCookie: useSecureCookies,
+      cookieName: sessionCookieName,
+    });
     const staffLoginPath = getStaffLoginPath();
     if (!token) {
       const loginUrl = new URL(staffLoginPath, req.url);
@@ -86,7 +95,12 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/checkout")) {
-    const token = await getToken({ req, secret });
+    const token = await getToken({
+      req,
+      secret,
+      secureCookie: useSecureCookies,
+      cookieName: sessionCookieName,
+    });
     if (!token) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", pathname);

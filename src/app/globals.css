@@ -4,14 +4,14 @@
 
 html {
   -webkit-tap-highlight-color: rgba(20, 184, 166, 0.12);
-  overflow-x: hidden;
 }
 
 body {
   @apply bg-brand-muted text-slate-900 antialiased;
   padding-left: env(safe-area-inset-left, 0);
   padding-right: env(safe-area-inset-right, 0);
-  overflow-x: hidden;
+  /* clip evita scroll horizontal sin romper clics de header sticky / fixed */
+  overflow-x: clip;
 }
 
 @keyframes cart-toast-in {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SignOutButton } from "@/components/SignOutButton";
 
 type StaffNavLink = {
@@ -28,6 +28,18 @@ export function StaffMobileNav({
 }: Props) {
   const [open, setOpen] = useState(false);
 
+  // Si el menú quedó abierto en mobile y pasan a desktop, el backdrop full-screen
+  // seguía bloqueando todos los clics del panel.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => {
+      if (mq.matches) setOpen(false);
+    };
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   return (
     <div className="relative">
       <button
@@ -48,11 +60,11 @@ export function StaffMobileNav({
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/30"
+            className="fixed inset-0 z-40 bg-black/30 lg:hidden"
             aria-label="Cerrar menú"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+          <div className="absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:hidden">
             <nav className="max-h-[70vh] overflow-y-auto py-1">
               {links.map((item) => {
                 const isEnvios = item.href === "/vendedor/envios";

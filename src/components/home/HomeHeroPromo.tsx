@@ -82,10 +82,10 @@ export function HomeHeroBanner({ hero }: Props) {
     <div className="w-full">{content}</div>
   );
 
-  /** Sale del max-w-6xl del layout y ocupa todo el ancho de la pantalla. */
+  /** Sale del max-w-6xl del layout y ocupa todo el ancho (sin w-screen/transform que tapa el nav). */
   return (
     <div className="-mt-5 w-full sm:-mt-8">
-      <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">{inner}</div>
+      <div className="relative w-[100vw] max-w-[100vw] ml-[calc(50%-50vw)]">{inner}</div>
     </div>
   );
 }

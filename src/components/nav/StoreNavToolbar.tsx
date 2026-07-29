@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CartNavButton } from "@/components/CartNavButton";
 import { IconHome, IconSearch } from "@/components/icons/NavIcons";
 import { NavSearch } from "@/components/nav/NavSearch";
@@ -16,6 +16,18 @@ const mobileLinks = [
 export function StoreNavToolbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => {
+      if (mq.matches) {
+        setMenuOpen(false);
+      }
+    };
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   return (
     <div className="relative flex min-w-0 items-center justify-end gap-0 sm:gap-1">

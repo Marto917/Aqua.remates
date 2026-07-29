@@ -1,6 +1,7 @@
 import { StaffAccessLevel, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
@@ -59,10 +60,62 @@ const cookieDomain =
     ? ".aquaremates.com.ar"
     : undefined);
 
+/** Clientes: 30 días. Staff (OWNER/EMPLOYEE): 12 horas. */
+const CUSTOMER_SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60;
+const STAFF_SESSION_MAX_AGE_SEC = 12 * 60 * 60;
+
+function isStaffRole(role: unknown): boolean {
+  return role === UserRole.OWNER || role === UserRole.EMPLOYEE;
+}
+
+function sessionMaxAgeForRole(role: unknown): number {
+  return isStaffRole(role) ? STAFF_SESSION_MAX_AGE_SEC : CUSTOMER_SESSION_MAX_AGE_SEC;
+}
+
+/** Corta la sesión si pasó el TTL (12h staff / 30d cliente). */
+function enforceSessionTtl(token: JWT): JWT {
+  const role = token.role;
+  const maxAge =
+    typeof token.sessionMaxAge === "number"
+      ? token.sessionMaxAge
+      : sessionMaxAgeForRole(role);
+  const startedAt =
+    typeof token.sessionStartedAt === "number"
+      ? token.sessionStartedAt
+      : typeof token.iat === "number"
+        ? token.iat
+        : null;
+
+  if (startedAt != null && Math.floor(Date.now() / 1000) - startedAt > maxAge) {
+    // Expira el JWT para que middleware / getSession lo traten como sin sesión.
+    token.exp = Math.floor(Date.now() / 1000) - 60;
+    delete (token as { id?: string }).id;
+    return token;
+  }
+
+  // Asegura que el JWT no viva más que el TTL del rol (sobre todo staff 12h).
+  if (startedAt != null) {
+    token.exp = startedAt + maxAge;
+  }
+  if (token.sessionMaxAge == null) token.sessionMaxAge = maxAge;
+  if (token.sessionStartedAt == null && startedAt != null) {
+    token.sessionStartedAt = startedAt;
+  }
+
+  return token;
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    // Tope de cookie = el más largo (clientes). Staff se corta en el callback jwt.
+    maxAge: CUSTOMER_SESSION_MAX_AGE_SEC,
+  },
+  jwt: {
+    maxAge: CUSTOMER_SESSION_MAX_AGE_SEC,
+  },
   pages: {
     signIn: "/login",
     error: "/login",
@@ -78,6 +131,7 @@ export const authOptions: NextAuthOptions = {
               path: "/",
               secure: isProd,
               domain: cookieDomain,
+              maxAge: CUSTOMER_SESSION_MAX_AGE_SEC,
             },
           },
         },
@@ -234,6 +288,8 @@ export const authOptions: NextAuthOptions = {
             token.emailVerified = true;
             token.email = resolved.email;
             token.name = resolved.name;
+            token.sessionMaxAge = sessionMaxAgeForRole(resolved.role);
+            token.sessionStartedAt = Math.floor(Date.now() / 1000);
             if (resolved.imageUrl) {
               token.picture = resolved.imageUrl;
             }
@@ -241,7 +297,7 @@ export const authOptions: NextAuthOptions = {
         } catch (e) {
           console.error("[auth] Google jwt resolve error:", e);
         }
-        return token;
+        return enforceSessionTtl(token);
       }
 
       if (user) {
@@ -249,6 +305,8 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role as UserRole;
         token.staffAccessLevel = user.staffAccessLevel ?? null;
         token.emailVerified = Boolean(user.emailVerified);
+        token.sessionMaxAge = sessionMaxAgeForRole(user.role);
+        token.sessionStartedAt = Math.floor(Date.now() / 1000);
         if (user.image) {
           token.picture = user.image;
         }
@@ -296,13 +354,20 @@ export const authOptions: NextAuthOptions = {
             token.name = dbUser.name;
             token.email = dbUser.email;
             if (dbUser.imageUrl) token.picture = dbUser.imageUrl;
+            if (token.sessionMaxAge == null) {
+              token.sessionMaxAge = sessionMaxAgeForRole(dbUser.role);
+            }
+            if (token.sessionStartedAt == null) {
+              token.sessionStartedAt =
+                typeof token.iat === "number" ? token.iat : Math.floor(Date.now() / 1000);
+            }
           }
         } catch (e) {
           console.error("[auth] jwt rehydrate error:", e);
         }
       }
 
-      return token;
+      return enforceSessionTtl(token);
     },
     async session({ session, token }) {
       if (session.user && token.id) {

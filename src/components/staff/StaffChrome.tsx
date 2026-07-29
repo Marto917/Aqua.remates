@@ -89,10 +89,12 @@ export function StaffChrome({
     >
       <StaffOrderAlerts onCountChange={setPendingPackCount} />
 
-      {/* Sidebar fijo (desktop) */}
+      {/* Sidebar fijo (desktop). Cerrado: sin pointer-events (evita bloquear clics). */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:flex ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen
+            ? "translate-x-0 pointer-events-auto"
+            : "pointer-events-none -translate-x-full"
         }`}
         aria-hidden={!sidebarOpen}
       >
@@ -170,7 +172,7 @@ export function StaffChrome({
       </button>
 
       {/* Barra superior mobile */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm lg:hidden">
+      <header className="sticky top-0 z-50 isolate border-b border-slate-200 bg-white shadow-sm lg:hidden">
         <div className="flex items-center justify-between gap-2 px-3 py-2.5">
           <Link href={homeHref} className="font-semibold text-brand-dark">
             <SiteLogo logoUrl={logoUrl} />
