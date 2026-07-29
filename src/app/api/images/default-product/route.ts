@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const localPath = path.join(process.cwd(), "public", publicPath.replace(/^\/+/, ""));
     try {
       await access(localPath);
-      return NextResponse.redirect(appPathUrl(publicPath, req));
+      return NextResponse.redirect(appPathUrl(publicPath, req), 303);
     } catch {
       // Sigue al siguiente candidato.
     }

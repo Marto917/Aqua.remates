@@ -1,7 +1,7 @@
 import { CatalogVisibility, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { appPathUrl } from "@/lib/app-url";
+import { appPathUrl, redirectToApp } from "@/lib/app-url";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
@@ -49,14 +49,44 @@ const updateDetailsSchema = z.object({
   ),
 });
 
-function redirectProduct(req: Request, path: string) {
-  return NextResponse.redirect(appPathUrl(path, req));
+function redirectWithError(req: Request, id: string, message: string) {
+  const url = appPathUrl(`/admin/productos/${id}`, req);
+  url.searchParams.set("error", message);
+  return Response.redirect(url, 303);
 }
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
+    return await handleProductPost(req, params);
+  } catch (error) {
+    console.error("[admin/products/:id] POST failed:", error);
+    const { id } = await params.catch(() => ({ id: "" }));
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+    if (id && code === "P2002") {
+      return redirectWithError(
+        req,
+        id,
+        "Ese código de barras / SKU ya está usado en otro producto.",
+      );
+    }
+    if (id) {
+      return redirectWithError(
+        req,
+        id,
+        error instanceof Error ? error.message : "No se pudo guardar el producto.",
+      );
+    }
+    return NextResponse.json({ error: "No se pudo guardar el producto." }, { status: 500 });
+  }
+}
+
+async function handleProductPost(req: Request, params: Promise<{ id: string }>) {
   const session = await getSafeSession();
   const canManage =
     isBackofficePreview() ||
@@ -68,7 +98,7 @@ export async function POST(
       "error",
       "No autorizado. Configura BACKOFFICE_PREVIEW en el hosting o inicia sesion como staff.",
     );
-    return NextResponse.redirect(url);
+    return Response.redirect(url, 303);
   }
 
   const { id } = await params;
@@ -87,12 +117,11 @@ export async function POST(
         const buffer = Buffer.from(await productImageFile.arrayBuffer());
         productImageUrl = await saveCompressedProductImage(buffer);
       } catch (error) {
-        const url = appPathUrl(`/admin/productos/${id}`, req);
-        url.searchParams.set(
-          "error",
+        return redirectWithError(
+          req,
+          id,
           error instanceof Error ? error.message : "No se pudo procesar la imagen del producto.",
         );
-        return NextResponse.redirect(url);
       }
     }
 
@@ -128,12 +157,11 @@ export async function POST(
           data: { imageUrl },
         });
       } catch (error) {
-        const url = appPathUrl(`/admin/productos/${id}`, req);
-        url.searchParams.set(
-          "error",
+        return redirectWithError(
+          req,
+          id,
           error instanceof Error ? error.message : "No se pudo procesar una imagen de variante.",
         );
-        return NextResponse.redirect(url);
       }
 
       const positionKey = `variantImagePosition_${variantId}`;
@@ -184,17 +212,16 @@ export async function POST(
           });
           sortOrder += 1;
         } catch (error) {
-          const url = appPathUrl(`/admin/productos/${id}`, req);
-          url.searchParams.set(
-            "error",
+          return redirectWithError(
+            req,
+            id,
             error instanceof Error ? error.message : "No se pudo guardar una foto de galería.",
           );
-          return NextResponse.redirect(url);
         }
       }
     }
 
-    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
+    return redirectToApp(`/admin/productos/${id}?ok=1`, req);
   }
 
   if (intent === "update_details") {
@@ -209,9 +236,7 @@ export async function POST(
     });
 
     if (!parsed.success) {
-      const url = appPathUrl(`/admin/productos/${id}`, req);
-      url.searchParams.set("error", "Revisá los datos y precios del producto.");
-      return NextResponse.redirect(url);
+      return redirectWithError(req, id, "Revisá los datos y precios del producto.");
     }
 
     const categorySlug = categorySlugFromName(parsed.data.categoryName);
@@ -235,7 +260,7 @@ export async function POST(
       },
     });
 
-    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
+    return redirectToApp(`/admin/productos/${id}?ok=1`, req);
   }
 
   if (intent === "update_visibility") {
@@ -243,13 +268,13 @@ export async function POST(
       catalogVisibility: formData.get("catalogVisibility"),
     });
     if (!parsed.success) {
-      return redirectProduct(req, "/admin/productos?error=Visibilidad+inválida");
+      return redirectToApp("/admin/productos?error=Visibilidad+inválida", req);
     }
     await prisma.product.update({
       where: { id },
       data: { catalogVisibility: parsed.data.catalogVisibility },
     });
-    return redirectProduct(req, "/admin/productos");
+    return redirectToApp("/admin/productos", req);
   }
 
   if (intent === "update_category") {
@@ -258,9 +283,7 @@ export async function POST(
     });
 
     if (!parsed.success) {
-      const url = appPathUrl(`/admin/productos/${id}`, req);
-      url.searchParams.set("error", "Categoría inválida.");
-      return NextResponse.redirect(url);
+      return redirectWithError(req, id, "Categoría inválida.");
     }
 
     const categorySlug = categorySlugFromName(parsed.data.categoryName);
@@ -278,7 +301,7 @@ export async function POST(
       data: { categoryId: category.id },
     });
 
-    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
+    return redirectToApp(`/admin/productos/${id}?ok=1`, req);
   }
 
   const payload = Object.fromEntries(formData.entries());
@@ -293,5 +316,5 @@ export async function POST(
     data: { isActive: parsed.data.isActive },
   });
 
-  return redirectProduct(req, "/admin/productos");
+  return redirectToApp("/admin/productos", req);
 }
