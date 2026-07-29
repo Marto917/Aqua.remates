@@ -1,6 +1,7 @@
 import { access } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
+import { appPathUrl } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
     const localPath = path.join(process.cwd(), "public", publicPath.replace(/^\/+/, ""));
     try {
       await access(localPath);
-      return NextResponse.redirect(new URL(publicPath, req.url));
+      return NextResponse.redirect(appPathUrl(publicPath, req));
     } catch {
       // Sigue al siguiente candidato.
     }

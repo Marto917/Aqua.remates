@@ -1,6 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { appPathUrl } from "@/lib/app-url";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
@@ -52,7 +53,7 @@ function errorResponse(req: Request, status: number, message: string) {
   if (wantsJson(req)) {
     return NextResponse.json({ error: message }, { status });
   }
-  const url = new URL("/admin/productos", req.url);
+  const url = appPathUrl("/admin/productos", req);
   url.searchParams.set("error", message);
   return NextResponse.redirect(url);
 }
@@ -191,5 +192,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, productId: product.id, slug: product.slug });
   }
 
-  return NextResponse.redirect(new URL("/admin/productos?ok=1", req.url));
+  return NextResponse.redirect(appPathUrl("/admin/productos?ok=1", req));
 }

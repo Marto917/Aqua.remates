@@ -57,6 +57,38 @@ export function getAppBaseUrl(): string {
   return getPublicAppUrl();
 }
 
+/**
+ * Origen seguro para redirects HTTP (forms POST → 303).
+ * En producción NUNCA usa el host interno del contenedor (localhost:PORT de Railway).
+ */
+export function resolveAppOrigin(req?: Request): string {
+  if (process.env.NODE_ENV === "production") {
+    return getPublicAppUrl();
+  }
+  if (!req) return getPublicAppUrl();
+
+  const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = (forwardedHost ?? req.headers.get("host"))?.split(",")[0]?.trim() ?? "";
+  const forwardedProto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+
+  if (host && !host.startsWith("localhost") && !host.startsWith("127.0.0.1")) {
+    const proto = forwardedProto ?? "https";
+    return preferWwwForKnownApex(`${proto}://${host}`.replace(/\/$/, ""));
+  }
+
+  try {
+    return preferWwwForKnownApex(new URL(req.url).origin.replace(/\/$/, ""));
+  } catch {
+    return getPublicAppUrl();
+  }
+}
+
+/** URL absoluta de una ruta de la app (para Location de redirects). */
+export function appPathUrl(path: string, req?: Request): URL {
+  const pathname = path.startsWith("/") ? path : `/${path}`;
+  return new URL(pathname, `${resolveAppOrigin(req)}/`);
+}
+
 export function buildPublicUrl(path: string, params?: Record<string, string>): string {
   const url = new URL(path.startsWith("/") ? path : `/${path}`, getPublicAppUrl());
   if (params) {

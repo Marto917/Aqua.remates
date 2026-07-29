@@ -1,6 +1,7 @@
 import { CatalogVisibility, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { appPathUrl } from "@/lib/app-url";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
@@ -48,6 +49,10 @@ const updateDetailsSchema = z.object({
   ),
 });
 
+function redirectProduct(req: Request, path: string) {
+  return NextResponse.redirect(appPathUrl(path, req));
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -58,7 +63,7 @@ export async function POST(
     session?.user.role === UserRole.OWNER ||
     session?.user.role === UserRole.EMPLOYEE;
   if (!canManage) {
-    const url = new URL("/admin/productos", req.url);
+    const url = appPathUrl("/admin/productos", req);
     url.searchParams.set(
       "error",
       "No autorizado. Configura BACKOFFICE_PREVIEW en el hosting o inicia sesion como staff.",
@@ -82,7 +87,7 @@ export async function POST(
         const buffer = Buffer.from(await productImageFile.arrayBuffer());
         productImageUrl = await saveCompressedProductImage(buffer);
       } catch (error) {
-        const url = new URL(`/admin/productos/${id}`, req.url);
+        const url = appPathUrl(`/admin/productos/${id}`, req);
         url.searchParams.set(
           "error",
           error instanceof Error ? error.message : "No se pudo procesar la imagen del producto.",
@@ -123,7 +128,7 @@ export async function POST(
           data: { imageUrl },
         });
       } catch (error) {
-        const url = new URL(`/admin/productos/${id}`, req.url);
+        const url = appPathUrl(`/admin/productos/${id}`, req);
         url.searchParams.set(
           "error",
           error instanceof Error ? error.message : "No se pudo procesar una imagen de variante.",
@@ -179,7 +184,7 @@ export async function POST(
           });
           sortOrder += 1;
         } catch (error) {
-          const url = new URL(`/admin/productos/${id}`, req.url);
+          const url = appPathUrl(`/admin/productos/${id}`, req);
           url.searchParams.set(
             "error",
             error instanceof Error ? error.message : "No se pudo guardar una foto de galería.",
@@ -189,7 +194,7 @@ export async function POST(
       }
     }
 
-    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
   }
 
   if (intent === "update_details") {
@@ -204,7 +209,7 @@ export async function POST(
     });
 
     if (!parsed.success) {
-      const url = new URL(`/admin/productos/${id}`, req.url);
+      const url = appPathUrl(`/admin/productos/${id}`, req);
       url.searchParams.set("error", "Revisá los datos y precios del producto.");
       return NextResponse.redirect(url);
     }
@@ -230,7 +235,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
   }
 
   if (intent === "update_visibility") {
@@ -238,13 +243,13 @@ export async function POST(
       catalogVisibility: formData.get("catalogVisibility"),
     });
     if (!parsed.success) {
-      return NextResponse.redirect(new URL("/admin/productos?error=Visibilidad+inválida", req.url));
+      return redirectProduct(req, "/admin/productos?error=Visibilidad+inválida");
     }
     await prisma.product.update({
       where: { id },
       data: { catalogVisibility: parsed.data.catalogVisibility },
     });
-    return NextResponse.redirect(new URL("/admin/productos", req.url));
+    return redirectProduct(req, "/admin/productos");
   }
 
   if (intent === "update_category") {
@@ -253,7 +258,7 @@ export async function POST(
     });
 
     if (!parsed.success) {
-      const url = new URL(`/admin/productos/${id}`, req.url);
+      const url = appPathUrl(`/admin/productos/${id}`, req);
       url.searchParams.set("error", "Categoría inválida.");
       return NextResponse.redirect(url);
     }
@@ -273,7 +278,7 @@ export async function POST(
       data: { categoryId: category.id },
     });
 
-    return NextResponse.redirect(new URL(`/admin/productos/${id}?ok=1`, req.url));
+    return redirectProduct(req, `/admin/productos/${id}?ok=1`);
   }
 
   const payload = Object.fromEntries(formData.entries());
@@ -288,5 +293,5 @@ export async function POST(
     data: { isActive: parsed.data.isActive },
   });
 
-  return NextResponse.redirect(new URL("/admin/productos", req.url));
+  return redirectProduct(req, "/admin/productos");
 }
