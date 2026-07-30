@@ -19,7 +19,6 @@ export function BarcodeCameraScanner({
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const onScanRef = useRef(onScan);
-  onScanRef.current = onScan;
 
   const [cameraOn, setCameraOn] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -27,6 +26,10 @@ export function BarcodeCameraScanner({
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [manual, setManual] = useState("");
   const lastScanRef = useRef({ code: "", at: 0 });
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
 
   const handleScan = useCallback((code: string) => {
     const trimmed = code.trim();
