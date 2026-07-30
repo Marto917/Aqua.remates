@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { BarcodeCameraScanner } from "@/components/barcode/BarcodeCameraScanner";
 import { IconPencil } from "@/components/icons/StaffIcons";
 
 type Props = {
@@ -23,11 +27,14 @@ export function AdminProductEditDetails({
   categories,
   categoryName,
 }: Props) {
+  const [skuValue, setSkuValue] = useState(sku ?? "");
+  const skuInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <form
       method="post"
       action={`/api/admin/products/${productId}`}
-      className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
     >
       <input type="hidden" name="intent" value="update_details" />
       <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
@@ -40,25 +47,40 @@ export function AdminProductEditDetails({
           required
           defaultValue={name}
           placeholder="Nombre"
-          className="rounded-md border px-3 py-2 md:col-span-2"
+          className="min-h-11 rounded-md border px-3 py-2 md:col-span-2"
         />
-        <div>
+        <div className="space-y-2 md:col-span-2">
           <input
+            ref={skuInputRef}
             name="sku"
-            defaultValue={sku ?? ""}
+            value={skuValue}
+            onChange={(e) => setSkuValue(e.target.value)}
             placeholder="Código / barras"
             autoComplete="off"
-            className="w-full rounded-md border px-3 py-2 font-mono text-sm"
+            className="w-full min-h-11 rounded-md border px-3 py-2 font-mono text-sm"
           />
-          <p className="mt-1 text-xs text-slate-500">Escaneo con lector USB; no visible en la tienda.</p>
+          <BarcodeCameraScanner
+            title="Escanear código con cámara"
+            hint="Apuntá al código de barras para actualizar el SKU."
+            onScan={(code) => {
+              setSkuValue(code);
+              skuInputRef.current?.focus();
+            }}
+          />
+          <p className="text-xs text-slate-500">No visible en la tienda; sirve para armar pedidos.</p>
         </div>
         <input
           name="supplierName"
           defaultValue={supplierName ?? ""}
           placeholder="Proveedor"
-          className="rounded-md border px-3 py-2"
+          className="min-h-11 rounded-md border px-3 py-2"
         />
-        <select name="categoryName" required defaultValue={categoryName} className="rounded-md border px-3 py-2">
+        <select
+          name="categoryName"
+          required
+          defaultValue={categoryName}
+          className="min-h-11 rounded-md border px-3 py-2"
+        >
           {categories.map((c) => (
             <option key={c.id} value={c.name}>
               {c.name}
@@ -73,7 +95,7 @@ export function AdminProductEditDetails({
           min="0.01"
           defaultValue={listPrice}
           placeholder="Precio de lista"
-          className="rounded-md border px-3 py-2"
+          className="min-h-11 rounded-md border px-3 py-2"
         />
         <input
           name="wholesalePrice"
@@ -82,7 +104,7 @@ export function AdminProductEditDetails({
           min="0"
           defaultValue={wholesalePrice}
           placeholder="Precio mayorista"
-          className="rounded-md border px-3 py-2"
+          className="min-h-11 rounded-md border px-3 py-2"
         />
       </div>
       <p className="text-xs text-slate-500">
@@ -97,11 +119,10 @@ export function AdminProductEditDetails({
       />
       <button
         type="submit"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark"
-        aria-label="Guardar datos y precios"
-        title="Guardar"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark sm:w-auto"
       >
-        <IconPencil className="h-4 w-4" />
+        <IconPencil className="h-4 w-4" aria-hidden />
+        Guardar datos
       </button>
     </form>
   );

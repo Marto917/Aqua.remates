@@ -11,9 +11,73 @@ type PageProps = {
   searchParams: Promise<{ error?: string; ok?: string }>;
 };
 
+type CatalogProduct = Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>;
+
+function ProductIssuesBadge({ issues }: { issues: string[] }) {
+  if (issues.length === 0) return null;
+  return (
+    <span className="group relative mt-0.5 inline-flex shrink-0">
+      <span
+        tabIndex={0}
+        className="cursor-help text-amber-600 outline-none"
+        aria-label={`Incompleto: ${issues.join(", ")}`}
+      >
+        ⚠️
+      </span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-[16rem] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-left text-xs font-medium text-amber-950 shadow-md group-hover:block group-focus-within:block"
+      >
+        <span className="block font-semibold text-amber-900">Falta completar:</span>
+        <ul className="mt-1 list-disc space-y-0.5 pl-3.5">
+          {issues.map((issue) => (
+            <li key={issue}>{issue}</li>
+          ))}
+        </ul>
+      </span>
+    </span>
+  );
+}
+
+function ProductActionButtons({ product }: { product: CatalogProduct }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <form method="post" action={`/api/admin/products/${product.id}`}>
+        <input type="hidden" name="isActive" value={product.isActive ? "false" : "true"} />
+        <button
+          type="submit"
+          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full ${
+            product.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+          }`}
+          aria-label={product.isActive ? "Deshabilitar producto" : "Habilitar producto"}
+          title={product.isActive ? "Visible en tienda" : "Oculto en tienda"}
+        >
+          <IconToggle className="h-4 w-4" />
+        </button>
+      </form>
+      <a
+        href={`/admin/productos/${product.id}`}
+        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-brand bg-brand px-3.5 text-sm font-semibold text-white hover:bg-brand-dark"
+        aria-label="Editar producto"
+      >
+        <IconPencil className="h-4 w-4" />
+        <span>Editar</span>
+      </a>
+      <a
+        href={`/admin/productos/${product.id}#imagenes`}
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
+        aria-label="Editar imágenes"
+        title="Imágenes"
+      >
+        <IconCamera className="h-4 w-4" />
+      </a>
+    </div>
+  );
+}
+
 export default async function AdminProductsPage({ searchParams }: PageProps) {
   const { error, ok } = await searchParams;
-  let products: Prisma.ProductGetPayload<{ include: { category: true; variants: true } }>[] = [];
+  let products: CatalogProduct[] = [];
   let supplierNames: string[] = [];
   let categories: { id: string; name: string; slug: string }[] = [];
   try {
@@ -30,9 +94,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           orderBy: { supplierName: "asc" },
         })
         .then((rows) =>
-          rows
-            .map((r) => r.supplierName?.trim() ?? "")
-            .filter(Boolean),
+          rows.map((r) => r.supplierName?.trim() ?? "").filter(Boolean),
         ),
       prisma.category.findMany({ orderBy: { name: "asc" } }),
     ]);
@@ -52,13 +114,13 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <div className="flex flex-wrap gap-2">
           <a
             href="#crear-producto"
-            className="inline-flex shrink-0 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             + Nuevo artículo
           </a>
           <a
             href="/api/admin/export-catalog"
-            className="inline-flex shrink-0 rounded-full border border-brand bg-white px-4 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-brand bg-white px-4 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
           >
             Exportar catálogo
           </a>
@@ -71,7 +133,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </p>
       ) : null}
 
       <AdminProductCreatePanel
@@ -81,8 +145,45 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         defaultOpen={Boolean(error)}
       />
 
-      <div className="overflow-hidden rounded-xl border bg-white">
-        <table className="w-full text-sm">
+      {/* Mobile: tarjetas con acciones siempre visibles */}
+      <ul className="space-y-3 md:hidden">
+        {products.map((product) => {
+          const issues = getProductCompletenessIssues(product);
+          return (
+            <li
+              key={product.id}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start gap-2">
+                <ProductIssuesBadge issues={issues} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-900">{product.name}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{product.category.name}</p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {formatArs(Number(product.listPrice))}
+                    <span className="text-slate-400"> · </span>
+                    May. {formatArs(Number(product.wholesalePrice))}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formatVariantColorsForStaff(product.variants.map((v) => v.colorLabel))}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                <ProductVisibilitySelect
+                  productId={product.id}
+                  value={product.catalogVisibility}
+                />
+                <ProductActionButtons product={product} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop: tabla */}
+      <div className="hidden overflow-x-auto rounded-xl border bg-white md:block">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-slate-100">
             <tr>
               <th className="px-3 py-2 text-left">Producto</th>
@@ -99,83 +200,70 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             {products.map((product) => {
               const issues = getProductCompletenessIssues(product);
               return (
-              <tr key={product.id} className="border-t">
-                <td className="px-3 py-2">
-                  <div className="flex items-start gap-2">
-                    {issues.length > 0 ? (
-                      <span className="group relative mt-0.5 inline-flex shrink-0">
-                        <span
-                          tabIndex={0}
-                          className="cursor-help text-amber-600 outline-none"
-                          aria-label={`Incompleto: ${issues.join(", ")}`}
-                        >
-                          ⚠️
-                        </span>
-                        <span
-                          role="tooltip"
-                          className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-max max-w-[16rem] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-left text-xs font-medium text-amber-950 shadow-md group-hover:block group-focus-within:block"
-                        >
-                          <span className="block font-semibold text-amber-900">Falta completar:</span>
-                          <ul className="mt-1 list-disc space-y-0.5 pl-3.5">
-                            {issues.map((issue) => (
-                              <li key={issue}>{issue}</li>
-                            ))}
-                          </ul>
-                        </span>
-                      </span>
-                    ) : null}
-                    <span>{product.name}</span>
-                  </div>
-                </td>
-                <td className="px-3 py-2">{product.category.name}</td>
-                <td className="px-3 py-2">{formatArs(Number(product.listPrice))}</td>
-                <td className="px-3 py-2">{formatArs(Number(product.wholesalePrice))}</td>
-                <td className="px-3 py-2 text-xs text-slate-600">
-                  {formatVariantColorsForStaff(product.variants.map((v) => v.colorLabel))}
-                </td>
-                <td className="px-3 py-2">
-                  <ProductVisibilitySelect
-                    productId={product.id}
-                    value={product.catalogVisibility}
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <form method="post" action={`/api/admin/products/${product.id}`}>
-                    <input type="hidden" name="isActive" value={product.isActive ? "false" : "true"} />
-                    <button
-                      type="submit"
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${
-                        product.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-                      }`}
-                      aria-label={product.isActive ? "Deshabilitar producto" : "Habilitar producto"}
-                      title={product.isActive ? "Visible en tienda" : "Oculto en tienda"}
-                    >
-                      <IconToggle className="h-4 w-4" />
-                    </button>
-                  </form>
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex gap-1">
-                    <a
-                      href={`/admin/productos/${product.id}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
-                      aria-label="Editar producto"
-                      title="Editar"
-                    >
-                      <IconPencil className="h-4 w-4" />
-                    </a>
-                    <a
-                      href={`/admin/productos/${product.id}#imagenes`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
-                      aria-label="Editar imágenes"
-                      title="Imágenes"
-                    >
-                      <IconCamera className="h-4 w-4" />
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            );
+                <tr key={product.id} className="border-t">
+                  <td className="px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <ProductIssuesBadge issues={issues} />
+                      <span>{product.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">{product.category.name}</td>
+                  <td className="px-3 py-2">{formatArs(Number(product.listPrice))}</td>
+                  <td className="px-3 py-2">{formatArs(Number(product.wholesalePrice))}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">
+                    {formatVariantColorsForStaff(product.variants.map((v) => v.colorLabel))}
+                  </td>
+                  <td className="px-3 py-2">
+                    <ProductVisibilitySelect
+                      productId={product.id}
+                      value={product.catalogVisibility}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <form method="post" action={`/api/admin/products/${product.id}`}>
+                      <input
+                        type="hidden"
+                        name="isActive"
+                        value={product.isActive ? "false" : "true"}
+                      />
+                      <button
+                        type="submit"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${
+                          product.isActive
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-rose-100 text-rose-800"
+                        }`}
+                        aria-label={
+                          product.isActive ? "Deshabilitar producto" : "Habilitar producto"
+                        }
+                        title={product.isActive ? "Visible en tienda" : "Oculto en tienda"}
+                      >
+                        <IconToggle className="h-4 w-4" />
+                      </button>
+                    </form>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-1">
+                      <a
+                        href={`/admin/productos/${product.id}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
+                        aria-label="Editar producto"
+                        title="Editar"
+                      >
+                        <IconPencil className="h-4 w-4" />
+                      </a>
+                      <a
+                        href={`/admin/productos/${product.id}#imagenes`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand-dark"
+                        aria-label="Editar imágenes"
+                        title="Imágenes"
+                      >
+                        <IconCamera className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              );
             })}
           </tbody>
         </table>
