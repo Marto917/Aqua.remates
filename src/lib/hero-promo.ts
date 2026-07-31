@@ -8,7 +8,7 @@ export const HERO_PROMO_SPECS = {
     minWidth: 1200,
     minHeight: 400,
     aspect: "3:1",
-    recommended: "1920 × 640 px (3:1) — se muestra completa, sin recorte",
+    recommended: "1920 × 640 px (3:1) — se muestra completa, sin zoom ni recorte",
     altRecommended: "Misma proporción 3:1 (ej. 1500 × 500 px)",
     formats: "JPG, PNG o WebP",
   },
@@ -18,7 +18,7 @@ export const HERO_PROMO_SPECS = {
     minWidth: 1080,
     minHeight: 540,
     aspect: "2:1",
-    recommended: "1080 × 540 px (2:1) — se muestra completa, sin recorte",
+    recommended: "1080 × 540 px (2:1) — se muestra completa, sin zoom ni recorte",
     formats: "JPG, PNG o WebP. Si no subís una, se usa la de PC.",
   },
 } as const;

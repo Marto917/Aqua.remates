@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { HeroPromoSettings } from "@/lib/hero-promo";
+import { HERO_BANNER_ASPECT } from "@/lib/banner-image-specs";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
@@ -19,16 +20,17 @@ function FullWidthHeroImage({
   variant: "mobile" | "desktop";
   className?: string;
 }) {
-  const aspectClass = variant === "mobile" ? "aspect-[2/1]" : "aspect-[3/1]";
+  const aspectClass =
+    variant === "mobile" ? HERO_BANNER_ASPECT.mobile.aspectClass : HERO_BANNER_ASPECT.desktop.aspectClass;
 
   return (
-    <div className={`relative w-full overflow-hidden ${className ?? ""}`}>
+    <div className={`relative w-full overflow-hidden bg-slate-100 ${className ?? ""}`}>
       <div className={`relative w-full ${aspectClass}`}>
         <Image
           src={resolveProductImageUrl(src)}
           alt={alt}
           fill
-          className="object-cover object-center"
+          className="object-contain object-center"
           sizes="100vw"
           priority
           unoptimized={src.startsWith("http")}
@@ -70,7 +72,10 @@ export function HomeHeroBanner({ hero }: Props) {
   const content = (
     <>
       {mobile}
-      {desktop ?? (mobileSrc ? <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" variant="desktop" /> : null)}
+      {desktop ??
+        (mobileSrc ? (
+          <FullWidthHeroImage src={mobileSrc} alt="Promoción AQUA" variant="desktop" className="hidden sm:block" />
+        ) : null)}
     </>
   );
 
@@ -85,7 +90,7 @@ export function HomeHeroBanner({ hero }: Props) {
   /** Sale del max-w-6xl del layout y ocupa todo el ancho (sin w-screen/transform que tapa el nav). */
   return (
     <div className="-mt-5 w-full sm:-mt-8">
-      <div className="relative w-[100vw] max-w-[100vw] ml-[calc(50%-50vw)]">{inner}</div>
+      <div className="relative ml-[calc(50%-50vw)] w-[100vw] max-w-[100vw]">{inner}</div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function HomePromoRibbon({ imageUrl, linkUrl }: Props) {
           src={src}
           alt="Promoción"
           fill
-          className="object-cover object-center"
+          className="object-contain object-center"
           sizes="100vw"
           unoptimized={src.startsWith("http")}
         />

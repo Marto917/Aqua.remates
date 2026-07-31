@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const desktopFile = formData.get("desktopImage");
   if (desktopFile instanceof File && desktopFile.size > 0) {
     const buffer = Buffer.from(await desktopFile.arrayBuffer());
-    desktopImageUrl = await saveCompressedProductImage(buffer);
+    desktopImageUrl = await saveCompressedProductImage(buffer, { maxSide: 1920 });
   } else if (clearDesktop) {
     desktopImageUrl = null;
   }
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const mobileFile = formData.get("mobileImage");
   if (mobileFile instanceof File && mobileFile.size > 0) {
     const buffer = Buffer.from(await mobileFile.arrayBuffer());
-    mobileImageUrl = await saveCompressedProductImage(buffer);
+    mobileImageUrl = await saveCompressedProductImage(buffer, { maxSide: 1920 });
   } else if (clearMobile) {
     mobileImageUrl = null;
   }

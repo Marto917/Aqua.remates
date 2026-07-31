@@ -69,7 +69,7 @@ export function AdminHomeRibbonForm({ imageUrl: initialUrl, linkUrl: initialLink
       >
         {shown ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={shown} alt="Vista previa cinta" className="h-full w-full object-cover" />
+          <img src={shown} alt="Vista previa cinta" className="h-full w-full object-contain" />
         ) : (
           <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-dark">
             TOCAR PARA SUBIR CINTA

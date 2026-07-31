@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Subí una imagen (JPG, PNG o WebP)." }, { status: 400 });
     }
     const buffer = Buffer.from(await image.arrayBuffer());
-    homeRibbonImageUrl = await saveCompressedProductImage(buffer);
+    homeRibbonImageUrl = await saveCompressedProductImage(buffer, { maxSide: 1920 });
   }
 
   const updated = await prisma.storeSettings.update({

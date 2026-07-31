@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { CAROUSEL_BANNER_SPECS } from "@/lib/banner-image-specs";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Slide = {
@@ -158,7 +159,7 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
 
   const frame = allHaveImages ? (
     <div
-      className="relative aspect-[16/6] w-full cursor-grab touch-pan-y select-none bg-slate-100 active:cursor-grabbing sm:aspect-[21/7]"
+      className={`relative w-full cursor-grab touch-pan-y select-none bg-slate-100 active:cursor-grabbing ${CAROUSEL_BANNER_SPECS.aspectClass}`}
       {...gestureHandlers}
     >
       {safeSlides.map((slide, i) => {
@@ -181,8 +182,8 @@ export function PromoCarousel({ slides = defaultSlides }: { slides?: Slide[] }) 
               alt={showTitle ? slide.title! : "Promoción AQUA"}
               fill
               draggable={false}
-              className="pointer-events-none object-cover object-center"
-              sizes="100vw"
+              className="pointer-events-none object-contain object-center"
+              sizes="(max-width: 1152px) 100vw, 1152px"
               priority={i === 0}
               unoptimized={isRemoteSrc(src)}
             />

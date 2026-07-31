@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const sortOrder = sortOrderForPlacement(placement, orderRaw);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const imageUrl = await saveCompressedProductImage(buffer);
+  const imageUrl = await saveCompressedProductImage(buffer, { maxSide: 1920 });
 
   const banner = await prisma.banner.create({
     data: { title, imageUrl, linkUrl, isActive, sortOrder },

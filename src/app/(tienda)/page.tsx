@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { type Prisma as PrismaTypes } from "@prisma/client";
+import { HomeHeroBanner } from "@/components/home/HomeHeroPromo";
 import { HomeHeroSearch } from "@/components/home/HomeHeroSearch";
 import { HomePromoRibbon } from "@/components/home/HomePromoRibbon";
 import { catalogVisibilityWhere } from "@/lib/catalog-visibility";
 import { ProductCard } from "@/components/ProductCard";
 import { PromoCarousel } from "@/components/PromoCarousel";
+import { getHeroPromoSettings } from "@/lib/hero-promo";
 import { prisma } from "@/lib/prisma";
 
 type HomeProduct = PrismaTypes.ProductGetPayload<{
@@ -21,9 +23,14 @@ export default async function HomePage() {
   let homeProducts: HomeProduct[] = [];
   let carouselBanners: Array<{ id: string; title: string | null; imageUrl: string; linkUrl: string | null }> = [];
   let ribbon: { imageUrl: string | null; linkUrl: string | null } = { imageUrl: null, linkUrl: null };
+  let hero: Awaited<ReturnType<typeof getHeroPromoSettings>> = {
+    desktopImageUrl: null,
+    mobileImageUrl: null,
+    linkUrl: null,
+  };
 
   try {
-    const [products, carousel, settings] = await Promise.all([
+    const [products, carousel, settings, heroSettings] = await Promise.all([
       prisma.product.findMany({
         where: { isActive: true, ...catalogVisibilityWhere("retail") },
         orderBy: { updatedAt: "desc" },
@@ -47,6 +54,7 @@ export default async function HomePage() {
         where: { id: "default" },
         select: { homeRibbonImageUrl: true, homeRibbonLinkUrl: true },
       }),
+      getHeroPromoSettings(),
     ]);
     homeProducts = products;
     carouselBanners = carousel;
@@ -54,6 +62,7 @@ export default async function HomePage() {
       imageUrl: settings?.homeRibbonImageUrl ?? null,
       linkUrl: settings?.homeRibbonLinkUrl ?? null,
     };
+    hero = heroSettings;
   } catch (error) {
     console.error("No se pudieron cargar datos del home:", error);
   }
@@ -63,6 +72,8 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8 sm:space-y-10">
+      <HomeHeroBanner hero={hero} />
+
       {carouselBanners.length > 0 ? (
         <PromoCarousel
           slides={carouselBanners.map((b) => ({

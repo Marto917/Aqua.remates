@@ -2,11 +2,10 @@
 
 import { FormEvent, useRef, useState } from "react";
 import Image from "next/image";
+import { CAROUSEL_BANNER_SPECS } from "@/lib/banner-image-specs";
 import { resolveProductImageUrl } from "@/lib/product-images";
 
 const MAX_CAROUSEL = 3;
-
-const CAROUSEL_SPECS = "Recomendado 1920 × 600 px o más (banner ancho)";
 
 type BannerItem = {
   id: string;
@@ -35,6 +34,7 @@ function CarouselPlacementPreview({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const nextSlot = items.length;
+  const aspect = CAROUSEL_BANNER_SPECS.aspectClass;
 
   function openPicker() {
     if (!carouselFull) inputRef.current?.click();
@@ -60,13 +60,13 @@ function CarouselPlacementPreview({
               return (
                 <div
                   key={item.id}
-                  className="relative aspect-[16/7] overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
+                  className={`relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100 ${aspect}`}
                 >
                   <Image
                     src={resolveProductImageUrl(item.imageUrl)}
                     alt={item.title ?? `Slide ${i + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized
                   />
                   <span className="absolute bottom-0.5 left-0.5 rounded bg-black/50 px-1 text-[8px] text-white">
@@ -82,10 +82,10 @@ function CarouselPlacementPreview({
                   key={`pending-${i}`}
                   type="button"
                   onClick={openPicker}
-                  className="group relative aspect-[16/7] overflow-hidden rounded-lg border-2 border-violet-400 bg-violet-100"
+                  className={`group relative overflow-hidden rounded-lg border-2 border-violet-400 bg-violet-100 ${aspect}`}
                   aria-label="Cambiar imagen del carrusel"
                 >
-                  <Image src={pendingPreview} alt="Vista previa" fill className="object-cover" unoptimized />
+                  <Image src={pendingPreview} alt="Vista previa" fill className="object-contain" unoptimized />
                   <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
                 </button>
               );
@@ -97,7 +97,7 @@ function CarouselPlacementPreview({
                   key={`slot-${i}`}
                   type="button"
                   onClick={openPicker}
-                  className="group flex aspect-[16/7] items-center justify-center rounded-lg border-2 border-dashed border-violet-400 bg-violet-50 transition hover:border-violet-600 hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
+                  className={`group flex items-center justify-center rounded-lg border-2 border-dashed border-violet-400 bg-violet-50 transition hover:border-violet-600 hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-400/50 ${aspect}`}
                   aria-label="Subir imagen al carrusel"
                 >
                   <span className="px-1 text-center text-[8px] font-bold leading-tight text-violet-800 group-hover:underline">
@@ -112,7 +112,7 @@ function CarouselPlacementPreview({
             return (
               <div
                 key={`empty-${i}`}
-                className="aspect-[16/7] rounded-lg border border-dashed border-slate-200 bg-slate-50"
+                className={`rounded-lg border border-dashed border-slate-200 bg-slate-50 ${aspect}`}
                 aria-hidden
               />
             );
@@ -127,7 +127,11 @@ function CarouselPlacementPreview({
           ))}
         </div>
       </div>
-      <p className="mt-2 text-center text-[10px] text-slate-600">{CAROUSEL_SPECS}</p>
+      <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-600">
+        <strong>{CAROUSEL_BANNER_SPECS.recommended}</strong>
+        <br />
+        {CAROUSEL_BANNER_SPECS.note}
+      </p>
       <input
         ref={inputRef}
         type="file"
@@ -170,7 +174,7 @@ function PromoPlacementPreview({
         >
           {pendingPreview ? (
             <>
-              <Image src={pendingPreview} alt="Vista previa promo" fill className="object-cover" unoptimized />
+              <Image src={pendingPreview} alt="Vista previa promo" fill className="object-contain" unoptimized />
               <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
             </>
           ) : (
@@ -316,8 +320,8 @@ export function AdminBannersManager({ initialBanners }: Props) {
       <div className="rounded-2xl border bg-white p-5">
         <h2 className="text-lg font-semibold text-slate-900">Carrusel del home</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Máximo <strong>{MAX_CAROUSEL} imágenes</strong> en el slider principal. Tocá el recuadro de la vista previa
-          para subir cada una.
+          Máximo <strong>{MAX_CAROUSEL} imágenes</strong> en el slider principal. Usá{" "}
+          <strong>{CAROUSEL_BANNER_SPECS.recommended}</strong> para que se vea completa, sin recorte.
         </p>
 
         {carouselFull ? (
@@ -432,7 +436,7 @@ function BannerList({
                   src={resolveProductImageUrl(item.imageUrl)}
                   alt={item.title ?? "Banner"}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
               <div className="space-y-1 p-3 text-xs text-slate-600">
