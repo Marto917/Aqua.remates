@@ -17,6 +17,8 @@ export type CatalogExportV2 = {
     isActive: boolean;
     isBestSeller: boolean;
     categorySlug: string;
+    sku?: string | null;
+    barcodes?: { code: string; label?: string | null }[];
     variants: {
       colorLabel: string;
       imageUrl: string | null;

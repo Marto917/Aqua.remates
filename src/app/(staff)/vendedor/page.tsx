@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExportCatalogButton, ExportCatalogTextButton } from "@/components/admin/ExportCatalogButton";
 import { getSafeSession } from "@/lib/get-session";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { prisma } from "@/lib/prisma";
@@ -173,15 +174,18 @@ export default async function VendedorHomePage() {
       <div className="rounded-xl border border-brand/30 bg-brand-muted/40 p-4">
         <p className="font-semibold text-slate-900">Exportar catálogo</p>
         <p className="mt-1 text-sm text-slate-600">
-          ZIP con <code className="rounded bg-white px-1">catalog-aqua.json</code> e imágenes en{" "}
-          <code className="rounded bg-white px-1">public/uploads/products/</code>.
+          ZIP completo (JSON + imágenes) o CSV de texto para cargar en un POS / Excel.
         </p>
-        <a
-          href="/api/admin/export-catalog"
-          className="mt-3 inline-flex rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          Descargar ZIP del catálogo
-        </a>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <ExportCatalogTextButton
+            className="inline-flex rounded-md border border-brand bg-white px-4 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50 disabled:opacity-60"
+            label="Texto para POS"
+          />
+          <ExportCatalogButton
+            className="inline-flex rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+            label="Descargar ZIP"
+          />
+        </div>
       </div>
     </section>
   );

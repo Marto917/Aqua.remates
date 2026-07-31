@@ -1,5 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import { AdminProductCreatePanel } from "@/components/admin/AdminProductCreatePanel";
+import {
+  ExportCatalogButton,
+  ExportCatalogTextButton,
+} from "@/components/admin/ExportCatalogButton";
 import { ProductVisibilitySelect } from "@/components/admin/ProductVisibilitySelect";
 import { IconCamera, IconPencil, IconToggle } from "@/components/icons/StaffIcons";
 import { formatArs } from "@/lib/currency";
@@ -122,12 +126,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           >
             + Nuevo artículo
           </a>
-          <a
-            href="/api/admin/export-catalog"
-            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-brand bg-white px-4 py-2 text-sm font-medium text-brand-dark hover:bg-brand-muted/50"
-          >
-            Exportar catálogo
-          </a>
+          <ExportCatalogTextButton />
+          <ExportCatalogButton />
         </div>
       </div>
 
