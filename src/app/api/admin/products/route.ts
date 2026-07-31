@@ -5,8 +5,10 @@ import { appPathUrl, redirectToApp } from "@/lib/app-url";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
+import { barcodesFromFormData } from "@/lib/product-barcodes";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
+import { replaceProductBarcodes } from "@/lib/replace-product-barcodes";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
 import { ensureUniqueProductSlug } from "@/lib/unique-product-slug";
 
@@ -135,31 +137,39 @@ export async function POST(req: Request) {
   const labels = colorLabels.length > 0 ? colorLabels : ["#64748b"];
 
   const productSlug = await ensureUniqueProductSlug(prisma, normalizedData.name);
-  const product = await prisma.product.create({
-    data: {
-      name: normalizedData.name,
-      sku: normalizedData.sku || null,
-      supplierName: normalizedData.supplierName,
-      slug: productSlug,
-      description: normalizedData.description,
-      imageUrl,
-      listPrice,
-      wholesalePrice: listPrice,
-      discountWholesalePercent: 0,
-      discountBadgeLabel: null,
-      isBestSeller: normalizedData.isBestSeller,
-      isActive: normalizedData.isActive,
-      category: {
-        connectOrCreate: {
-          where: { slug: categorySlug },
-          create: {
-            name: normalizedData.categoryName,
-            slug: categorySlug,
+  let product;
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: normalizedData.name,
+        sku: null,
+        supplierName: normalizedData.supplierName,
+        slug: productSlug,
+        description: normalizedData.description,
+        imageUrl,
+        listPrice,
+        wholesalePrice: listPrice,
+        discountWholesalePercent: 0,
+        discountBadgeLabel: null,
+        isBestSeller: normalizedData.isBestSeller,
+        isActive: normalizedData.isActive,
+        category: {
+          connectOrCreate: {
+            where: { slug: categorySlug },
+            create: {
+              name: normalizedData.categoryName,
+              slug: categorySlug,
+            },
           },
         },
       },
-    },
-  });
+    });
+    await replaceProductBarcodes(product.id, barcodesFromFormData(formData));
+  } catch (error) {
+    const msg =
+      error instanceof Error ? error.message : "No se pudo crear el producto o sus códigos.";
+    return errorResponse(req, 400, msg);
+  }
 
   for (const [index, colorLabel] of labels.entries()) {
     const variantImageFile = formData.get(`variantImage_${index}`);

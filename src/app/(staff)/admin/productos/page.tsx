@@ -83,7 +83,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   try {
     [products, supplierNames, categories] = await Promise.all([
       prisma.product.findMany({
-        include: { category: true, variants: { orderBy: { sortOrder: "asc" } } },
+        include: {
+          category: true,
+          variants: { orderBy: { sortOrder: "asc" } },
+          barcodes: { select: { code: true } },
+        },
         orderBy: { updatedAt: "desc" },
       }),
       prisma.product

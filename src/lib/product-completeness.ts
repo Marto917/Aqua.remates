@@ -5,11 +5,15 @@ type ProductLike = {
   listPrice: { toString(): string } | number;
   wholesalePrice: { toString(): string } | number;
   variants: { isActive: boolean }[];
+  barcodes?: { code: string }[];
 };
 
 export function getProductCompletenessIssues(product: ProductLike): string[] {
   const issues: string[] = [];
-  if (!product.sku?.trim()) issues.push("Código de barra");
+  const hasBarcode =
+    Boolean(product.sku?.trim()) ||
+    Boolean(product.barcodes?.some((b) => b.code?.trim()));
+  if (!hasBarcode) issues.push("Código de barra");
   if (!product.description?.trim()) issues.push("Descripción");
   if (!product.imageUrl?.trim()) issues.push("Imagen");
   if (Number(product.listPrice) <= 0) issues.push("Precio");

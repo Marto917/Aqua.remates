@@ -33,6 +33,7 @@ export async function GET(req: Request) {
         { name: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },
         { sku: { contains: q, mode: "insensitive" } },
+        { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
         { category: { name: { contains: q, mode: "insensitive" } } },
       ],
     },
@@ -44,6 +45,7 @@ export async function GET(req: Request) {
       imageUrl: true,
       description: true,
       category: { select: { name: true } },
+      barcodes: { select: { code: true }, take: 12 },
     },
     take: 24,
   });
@@ -56,6 +58,7 @@ export async function GET(req: Request) {
         { name: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },
         { sku: { contains: q, mode: "insensitive" } },
+        { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
         { category: { name: { contains: q, mode: "insensitive" } } },
       ],
     },
@@ -64,7 +67,14 @@ export async function GET(req: Request) {
   const ranked = products
     .map((p) => ({
       ...p,
-      _score: scoreMatch(q, p.name, p.sku, p.description, p.category.name),
+      _score: scoreMatch(
+        q,
+        p.name,
+        p.sku,
+        p.description,
+        p.category.name,
+        ...p.barcodes.map((b) => b.code),
+      ),
     }))
     .filter((p) => p._score > 0)
     .sort((a, b) => b._score - a._score)

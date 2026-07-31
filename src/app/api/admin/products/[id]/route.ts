@@ -5,8 +5,10 @@ import { appPathUrl, redirectToApp } from "@/lib/app-url";
 import { isBackofficePreview } from "@/lib/backoffice-preview";
 import { categorySlugFromName } from "@/lib/categories";
 import { getSafeSession } from "@/lib/get-session";
+import { barcodesFromFormData } from "@/lib/product-barcodes";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/product-images";
+import { replaceProductBarcodes } from "@/lib/replace-product-barcodes";
 import { saveCompressedProductImage } from "@/lib/save-product-image";
 
 function parseScale(value: FormDataEntryValue | null): number | undefined {
@@ -250,7 +252,6 @@ async function handleProductPost(req: Request, params: Promise<{ id: string }>) 
       where: { id },
       data: {
         name: parsed.data.name,
-        sku: parsed.data.sku?.trim() || null,
         supplierName: parsed.data.supplierName?.trim() || null,
         description: parsed.data.description?.trim() ?? "",
         categoryId: category.id,
@@ -259,6 +260,16 @@ async function handleProductPost(req: Request, params: Promise<{ id: string }>) 
         discountBadgeLabel: null,
       },
     });
+
+    try {
+      await replaceProductBarcodes(id, barcodesFromFormData(formData));
+    } catch (error) {
+      return redirectWithError(
+        req,
+        id,
+        error instanceof Error ? error.message : "No se pudieron guardar los códigos de barra.",
+      );
+    }
 
     return redirectToApp(`/admin/productos/${id}?ok=1`, req);
   }

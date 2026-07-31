@@ -55,7 +55,12 @@ export default async function RetailOrderPickPage({ params }: PageProps) {
   const [products, variants] = await Promise.all([
     prisma.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, sku: true, imageUrl: true },
+      select: {
+        id: true,
+        sku: true,
+        imageUrl: true,
+        barcodes: { select: { code: true }, orderBy: { sortOrder: "asc" } },
+      },
     }),
     prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
@@ -70,6 +75,10 @@ export default async function RetailOrderPickPage({ params }: PageProps) {
     const product = line.productId ? productById.get(line.productId) : undefined;
     const variant = line.variantId ? variantById.get(line.variantId) : undefined;
     const colorLabel = line.variantColorLabel ?? variant?.colorLabel ?? null;
+    const codes = [
+      ...(product?.barcodes.map((b) => b.code) ?? []),
+      ...(product?.sku ? [product.sku] : []),
+    ].filter((c, i, arr) => c.trim() && arr.indexOf(c) === i);
     return {
       id: line.id,
       productName: line.productName,
@@ -79,7 +88,7 @@ export default async function RetailOrderPickPage({ params }: PageProps) {
       unitPrice: Number(line.unitPrice),
       subtotal: Number(line.subtotal),
       imageUrl: variant?.imageUrl || product?.imageUrl || DEFAULT_PRODUCT_IMAGE,
-      barcode: product?.sku ?? null,
+      barcodes: codes,
     };
   });
 

@@ -289,12 +289,28 @@ model Product {
   categoryId               String
   category                 Category          @relation(fields: [categoryId], references: [id])
   variants                 ProductVariant[]
+  barcodes                 ProductBarcode[]
   reviews                  ProductReview[]
   wishlistItems            WishlistItem[]
   retailItems              RetailOrderItem[]
   wholesaleRequestItems    WholesaleRequestItem[]
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
+}
+
+/// Códigos de barra adicionales (mismo producto, distinto proveedor/color/envase).
+model ProductBarcode {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Valor escaneable (único en todo el catálogo).
+  code      String   @unique
+  /// Nota opcional (ej. "Proveedor X", "Caja x12").
+  label     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 /// Misma ficha de producto; la única diferencia visible suele ser el color (u otra variante simple).

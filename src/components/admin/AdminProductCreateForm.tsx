@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
-import { BarcodeCameraScanner } from "@/components/barcode/BarcodeCameraScanner";
+import { FormEvent, useState } from "react";
+import { ProductBarcodesEditor } from "@/components/admin/ProductBarcodesEditor";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { COLOR_OPTIONS } from "@/lib/color-options";
 
@@ -14,8 +14,6 @@ type Props = {
 export function AdminProductCreateForm({ initialError, supplierNames = [], categories }: Props) {
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
-  const [sku, setSku] = useState("");
-  const skuInputRef = useRef<HTMLInputElement>(null);
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
     { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.hex ?? "#2563eb" },
   ]);
@@ -145,29 +143,7 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
             />
           </label>
         </div>
-        <div className="md:col-span-2 space-y-2">
-          <input
-            ref={skuInputRef}
-            name="sku"
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            placeholder="Código / código de barras"
-            autoComplete="off"
-            className="w-full rounded-md border px-3 py-2 font-mono text-sm"
-          />
-          <BarcodeCameraScanner
-            title="Escanear código con cámara"
-            hint="Apuntá al código de barras del producto para cargar el SKU automáticamente."
-            onScan={(code) => {
-              setSku(code);
-              skuInputRef.current?.focus();
-            }}
-            disabled={submitting}
-          />
-          <p className="text-xs text-slate-500">
-            El SKU no se muestra al cliente; sirve para buscar y escanear en armado de pedidos.
-          </p>
-        </div>
+        <ProductBarcodesEditor disabled={submitting} />
         <select name="categoryName" required className="rounded-md border px-3 py-2">
           <option value="">Seleccionar categoría</option>
           {categories.map((category) => (

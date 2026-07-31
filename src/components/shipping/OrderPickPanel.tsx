@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BarcodePickScanner } from "@/components/shipping/BarcodePickScanner";
 import { formatArs } from "@/lib/currency";
 import { colorLabelToDisplayName } from "@/lib/color-display";
+import { barcodesMatch, normalizeBarcode } from "@/lib/product-barcodes";
 import { retailShippingMethodLabel } from "@/lib/order-labels";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import type { RetailShippingMethod } from "@prisma/client";
@@ -19,7 +20,8 @@ export type PickLine = {
   unitPrice: number;
   subtotal: number;
   imageUrl: string;
-  barcode: string | null;
+  /** Todos los códigos del producto (principal + extras). */
+  barcodes: string[];
 };
 
 type Props = {
@@ -32,10 +34,6 @@ type Props = {
   alreadyPacked: boolean;
   packedAtLabel: string | null;
 };
-
-function normalizeBarcode(value: string | null | undefined): string {
-  return (value ?? "").replace(/\D/g, "");
-}
 
 export function OrderPickPanel({
   orderId,
@@ -79,10 +77,9 @@ export function OrderPickPanel({
     const code = normalizeBarcode(raw);
     if (!code) return;
 
-    const match = items.find((line) => {
-      const stored = normalizeBarcode(line.barcode);
-      return stored.length > 0 && stored === code;
-    });
+    const match = items.find((line) =>
+      line.barcodes.some((b) => barcodesMatch(b, code)),
+    );
 
     if (!match) {
       setScanMsg(`Código ${raw} no coincide con ningún producto del pedido.`);
@@ -203,7 +200,10 @@ export function OrderPickPanel({
                       Color: {line.colorDisplayName || colorLabelToDisplayName(line.variantColorLabel)}
                     </p>
                     <p className="mt-1 font-mono text-xs text-slate-600">
-                      Código: {line.barcode?.trim() || "— sin código —"}
+                      Código:{" "}
+                      {line.barcodes.length > 0
+                        ? line.barcodes.join(" · ")
+                        : "— sin código —"}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Precio unitario {formatArs(line.unitPrice)}

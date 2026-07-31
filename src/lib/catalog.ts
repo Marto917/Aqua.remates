@@ -47,6 +47,7 @@ function buildCatalogWhere(filters: CatalogFilters): Prisma.ProductWhereInput {
             { name: { contains: q, mode: "insensitive" } },
             { description: { contains: q, mode: "insensitive" } },
             { sku: { contains: q, mode: "insensitive" } },
+            { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
             { category: { name: { contains: q, mode: "insensitive" } } },
           ],
         }

@@ -26,6 +26,7 @@ export default async function AdminProductoImagenesPage({
         orderBy: { sortOrder: "asc" },
         include: { images: { orderBy: { sortOrder: "asc" } } },
       },
+      barcodes: { orderBy: { sortOrder: "asc" } },
       category: true,
     },
   });
@@ -67,6 +68,7 @@ export default async function AdminProductoImagenesPage({
         productId={product.id}
         name={product.name}
         sku={product.sku}
+        barcodes={product.barcodes.map((b) => ({ code: b.code, label: b.label }))}
         description={product.description}
         supplierName={product.supplierName}
         listPrice={Number(product.listPrice)}

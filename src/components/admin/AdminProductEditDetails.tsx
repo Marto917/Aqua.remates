@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { BarcodeCameraScanner } from "@/components/barcode/BarcodeCameraScanner";
+import { ProductBarcodesEditor } from "@/components/admin/ProductBarcodesEditor";
 import { IconPencil } from "@/components/icons/StaffIcons";
 
 type Props = {
   productId: string;
   name: string;
   sku: string | null;
+  barcodes?: Array<{ code: string; label?: string | null }>;
   description: string;
   supplierName: string | null;
   listPrice: number;
@@ -20,6 +20,7 @@ export function AdminProductEditDetails({
   productId,
   name,
   sku,
+  barcodes,
   description,
   supplierName,
   listPrice,
@@ -27,8 +28,12 @@ export function AdminProductEditDetails({
   categories,
   categoryName,
 }: Props) {
-  const [skuValue, setSkuValue] = useState(sku ?? "");
-  const skuInputRef = useRef<HTMLInputElement>(null);
+  const initialBarcodes =
+    barcodes && barcodes.length > 0
+      ? barcodes
+      : sku?.trim()
+        ? [{ code: sku.trim() }]
+        : [{ code: "" }];
 
   return (
     <form
@@ -49,26 +54,7 @@ export function AdminProductEditDetails({
           placeholder="Nombre"
           className="min-h-11 rounded-md border px-3 py-2 md:col-span-2"
         />
-        <div className="space-y-2 md:col-span-2">
-          <input
-            ref={skuInputRef}
-            name="sku"
-            value={skuValue}
-            onChange={(e) => setSkuValue(e.target.value)}
-            placeholder="Código / barras"
-            autoComplete="off"
-            className="w-full min-h-11 rounded-md border px-3 py-2 font-mono text-sm"
-          />
-          <BarcodeCameraScanner
-            title="Escanear código con cámara"
-            hint="Apuntá al código de barras para actualizar el SKU."
-            onScan={(code) => {
-              setSkuValue(code);
-              skuInputRef.current?.focus();
-            }}
-          />
-          <p className="text-xs text-slate-500">No visible en la tienda; sirve para armar pedidos.</p>
-        </div>
+        <ProductBarcodesEditor initial={initialBarcodes} />
         <input
           name="supplierName"
           defaultValue={supplierName ?? ""}
