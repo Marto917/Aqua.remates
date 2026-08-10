@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { deleteRetailOrderAsOwner } from "@/app/(staff)/admin/pedidos/actions";
+import { useState } from "react";
 
 type Props = {
   orderId: string;
@@ -17,10 +16,10 @@ export function StaffDeleteOrderButton({
   compact = false,
 }: Props) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function onClick() {
+  async function onClick() {
     setError(null);
     if (
       !window.confirm(
@@ -29,26 +28,42 @@ export function StaffDeleteOrderButton({
     ) {
       return;
     }
-    startTransition(async () => {
-      const result = await deleteRetailOrderAsOwner(orderId);
-      if (!result.ok) {
-        setError(result.error);
+
+    setPending(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = (await res.json()) as { ok?: boolean; error?: string };
+      } catch {
+        data = {};
+      }
+
+      if (!res.ok || !data.ok) {
+        setError(data.error || `No se pudo borrar (HTTP ${res.status}).`);
         return;
       }
+
       if (redirectToList) {
         router.push("/admin/pedidos");
-        router.refresh();
-        return;
       }
       router.refresh();
-    });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error de red al borrar.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => void onClick()}
         disabled={pending}
         className={
           compact
@@ -58,7 +73,7 @@ export function StaffDeleteOrderButton({
       >
         {pending ? "Borrando…" : "Borrar"}
       </button>
-      {error ? <span className="text-xs text-rose-700">{error}</span> : null}
+      {error ? <span className="max-w-[14rem] text-left text-xs text-rose-700">{error}</span> : null}
     </span>
   );
 }

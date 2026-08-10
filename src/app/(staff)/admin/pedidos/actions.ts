@@ -173,14 +173,14 @@ export async function banCustomerFromOrder(formData: FormData): Promise<Transfer
 export type DeleteRetailOrderResult = { ok: true } | { ok: false; error: string };
 
 /** Solo el dueño (mail = DEFAULT_OWNER_EMAIL) puede borrar pedidos. */
-export async function deleteRetailOrderAsOwner(orderId: string): Promise<DeleteRetailOrderResult> {
+export async function deleteRetailOrderAsOwner(formData: FormData): Promise<DeleteRetailOrderResult> {
   try {
     const ctx = await requireStaff();
     if (!canOwnerDeleteRetailOrders(ctx.session)) {
       return { ok: false, error: "Solo el dueño puede borrar pedidos." };
     }
 
-    const id = orderId.trim();
+    const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, error: "Pedido inválido." };
     }
@@ -193,7 +193,10 @@ export async function deleteRetailOrderAsOwner(orderId: string): Promise<DeleteR
       return { ok: false, error: "Pedido no encontrado." };
     }
 
-    await prisma.retailOrder.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.retailOrderItem.deleteMany({ where: { orderId: id } }),
+      prisma.retailOrder.delete({ where: { id } }),
+    ]);
 
     revalidatePath("/admin/pedidos");
     revalidatePath("/vendedor/pedidos");
