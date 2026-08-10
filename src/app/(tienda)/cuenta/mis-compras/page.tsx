@@ -9,7 +9,7 @@ import {
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatArs } from "@/lib/currency";
-import { canSessionDeleteOwnOrders } from "@/lib/customer-order-delete";
+import { canSessionDeleteOwnOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
 import { getCustomerModeration } from "@/lib/customer-moderation";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
@@ -25,7 +25,13 @@ export default async function MisComprasPage() {
     redirect("/login?callbackUrl=/cuenta/mis-compras");
   }
   if (session.user.role !== UserRole.CUSTOMER) {
-    redirect("/");
+    // El dueño (mismo mail que DEFAULT_OWNER_EMAIL) puede entrar a borrar compras de prueba.
+    if (
+      session.user.role !== UserRole.OWNER ||
+      !matchesDefaultOwnerEmail(session.user.email)
+    ) {
+      redirect("/");
+    }
   }
 
   const email = session.user.email?.toLowerCase() ?? "";

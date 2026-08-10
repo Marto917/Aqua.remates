@@ -5,25 +5,19 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/**
- * Emails (separados por coma) autorizados a borrar sus propias compras en /cuenta/mis-compras.
- * Solo para cuentas de prueba / dueño. Vacío = nadie puede borrar.
- */
-export function customerOrderDeleteAllowlist(): string[] {
-  const raw = process.env.CUSTOMER_ORDER_DELETE_EMAILS?.trim() ?? "";
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((e) => normalizeEmail(e))
-    .filter(Boolean);
+export function matchesDefaultOwnerEmail(email: string | null | undefined): boolean {
+  const ownerEmail = process.env.DEFAULT_OWNER_EMAIL?.trim();
+  if (!ownerEmail || !email?.trim()) return false;
+  return normalizeEmail(email) === normalizeEmail(ownerEmail);
 }
 
+/**
+ * Solo la cuenta cuyo email coincide con DEFAULT_OWNER_EMAIL
+ * puede borrar compras propias en /cuenta/mis-compras.
+ */
 export function canSessionDeleteOwnOrders(session: Session | null): boolean {
   if (!session?.user?.id) return false;
-  if (session.user.role !== UserRole.CUSTOMER) return false;
-  const email = session.user.email?.trim();
-  if (!email) return false;
-  const allow = customerOrderDeleteAllowlist();
-  if (allow.length === 0) return false;
-  return allow.includes(normalizeEmail(email));
+  const role = session.user.role;
+  if (role !== UserRole.CUSTOMER && role !== UserRole.OWNER) return false;
+  return matchesDefaultOwnerEmail(session.user.email);
 }

@@ -83,7 +83,7 @@ export function DeleteAllOwnOrdersButton({ orderCount }: AllProps) {
   return (
     <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
       <p className="text-sm text-rose-900">
-        Herramienta solo para tu cuenta: podés borrar compras de prueba.
+        Herramienta solo para tu cuenta (mismo mail que DEFAULT_OWNER_EMAIL): podés borrar compras de prueba.
       </p>
       <button
         type="button"

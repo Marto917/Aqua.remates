@@ -2,16 +2,32 @@
 
 import { revalidatePath } from "next/cache";
 import { UserRole } from "@prisma/client";
-import { canSessionDeleteOwnOrders } from "@/lib/customer-order-delete";
 import { canCustomerAccessOrder } from "@/lib/order-access";
+import { canSessionDeleteOwnOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
 export type DeleteOwnOrderResult = { ok: true } | { ok: false; error: string };
 
+function orderBelongsToSession(
+  order: { customerId: string | null; buyerEmail: string },
+  session: NonNullable<Awaited<ReturnType<typeof getSafeSession>>>,
+): boolean {
+  if (session.user.role === UserRole.CUSTOMER) {
+    return canCustomerAccessOrder(order, session);
+  }
+  // OWNER con el mismo mail que DEFAULT_OWNER_EMAIL: pedidos ligados a su user o email.
+  if (session.user.role === UserRole.OWNER && matchesDefaultOwnerEmail(session.user.email)) {
+    if (order.customerId && order.customerId === session.user.id) return true;
+    const sessionEmail = session.user.email?.trim().toLowerCase() ?? "";
+    return Boolean(sessionEmail) && order.buyerEmail.trim().toLowerCase() === sessionEmail;
+  }
+  return false;
+}
+
 export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOrderResult> {
   const session = await getSafeSession();
-  if (!canSessionDeleteOwnOrders(session)) {
+  if (!canSessionDeleteOwnOrders(session) || !session) {
     return { ok: false, error: "No tenés permiso para borrar compras." };
   }
 
@@ -29,7 +45,7 @@ export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOr
     return { ok: false, error: "Pedido no encontrado." };
   }
 
-  if (!canCustomerAccessOrder(order, session)) {
+  if (!orderBelongsToSession(order, session)) {
     return { ok: false, error: "Ese pedido no es de tu cuenta." };
   }
 
@@ -47,7 +63,7 @@ export async function deleteAllOwnRetailOrders(): Promise<DeleteOwnOrderResult> 
   }
 
   const email = session.user.email?.trim().toLowerCase() ?? "";
-  if (!email || session.user.role !== UserRole.CUSTOMER) {
+  if (!email) {
     return { ok: false, error: "No tenés permiso para borrar compras." };
   }
 
