@@ -402,6 +402,8 @@ model RetailOrder {
   promoDiscountAmount     Decimal               @default(0) @db.Decimal(10, 2)
   totalAmount             Decimal               @db.Decimal(10, 2)
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
+  /// Primera vez que un vendedor/admin abrió el detalle del pedido.
+  staffSeenAt             DateTime?
   transferAlias           String?
   transferCbu             String?
   transferProofUrl        String?

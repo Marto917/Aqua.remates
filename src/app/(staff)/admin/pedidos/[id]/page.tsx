@@ -16,6 +16,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { isHomeDelivery } from "@/lib/shipping";
+import { OrderStatusBadge } from "@/components/staff/OrderStatusBadge";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -60,6 +61,18 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  if (!order.staffSeenAt) {
+    try {
+      await prisma.retailOrder.update({
+        where: { id: order.id },
+        data: { staffSeenAt: new Date() },
+      });
+      order = { ...order, staffSeenAt: new Date() };
+    } catch (e) {
+      console.error("AdminPedidoDetailPage staffSeenAt:", e);
+    }
+  }
+
   const statusOptions = Object.values(RetailOrderStatus);
   const isTransfer = order.paymentMethod === "BANK_TRANSFER";
   const canReviewTransfer =
@@ -87,9 +100,14 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
               Ticket de envío
             </Link>
           ) : null}
-          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-800">
-            {retailOrderStatusLabel[order.status]}
-          </span>
+          <OrderStatusBadge
+            status={order.status}
+            staffSeenAt={order.staffSeenAt}
+            packedAt={order.packedAt}
+            shippingMethod={order.shippingMethod}
+            deliveryStatus={order.deliveryStatus}
+            className="[&>span:first-child]:px-3 [&>span:first-child]:py-1 [&>span:first-child]:text-sm"
+          />
         </div>
       </div>
 

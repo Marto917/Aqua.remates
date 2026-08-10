@@ -124,6 +124,16 @@ export async function POST(req: Request) {
       const msg = e instanceof Error ? e.message : "No se pudo procesar la imagen.";
       return errorResponse(req, 400, msg);
     }
+  } else {
+    const imported = String(formData.get("importedImageUrl") ?? "").trim();
+    // Solo rutas locales de uploads (evita SSRF / URLs arbitrarias).
+    if (
+      imported.startsWith("/uploads/products/") &&
+      !imported.includes("..") &&
+      !imported.includes("\\")
+    ) {
+      imageUrl = imported;
+    }
   }
 
   const categorySlug = categorySlugFromName(normalizedData.categoryName) || `categoria-${Date.now()}`;

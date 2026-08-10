@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { retailOrderStatusLabel } from "@/lib/order-labels";
 import { formatArs } from "@/lib/currency";
+import { OrderStatusBadge } from "@/components/staff/OrderStatusBadge";
+import { OrderStatusColorLegend } from "@/components/staff/OrderStatusColorLegend";
+import { orderStatusToneClasses, retailOrderStatusTone } from "@/lib/order-status-visual";
 
 export default async function AdminPedidosPage() {
   let orders: Awaited<ReturnType<typeof prisma.retailOrder.findMany>> = [];
@@ -21,11 +23,14 @@ export default async function AdminPedidosPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Pedidos minoristas (B2C)</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Transferencias, Mercado Pago y envíos: validá pagos y avanzá el estado del pedido.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Pedidos minoristas (B2C)</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Transferencias, Mercado Pago y envíos: validá pagos y avanzá el estado del pedido.
+          </p>
+        </div>
+        <OrderStatusColorLegend />
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -70,33 +75,42 @@ export default async function AdminPedidosPage() {
                 </td>
               </tr>
             ) : (
-              orders.map((o) => (
-                <tr key={o.id} className="border-b border-slate-100 hover:bg-slate-50/80">
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                    {o.createdAt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{o.buyerName}</div>
-                    <div className="text-xs text-slate-500">{o.buyerEmail}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-800">
-                    {formatArs(Number(o.totalAmount))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                      {retailOrderStatusLabel[o.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/pedidos/${o.id}`}
-                      className="text-sm font-medium text-brand-dark underline-offset-2 hover:underline"
-                    >
-                      Ver
-                    </Link>
-                  </td>
-                </tr>
-              ))
+              orders.map((o) => {
+                const visual = {
+                  status: o.status,
+                  staffSeenAt: o.staffSeenAt,
+                  packedAt: o.packedAt,
+                  shippingMethod: o.shippingMethod,
+                  deliveryStatus: o.deliveryStatus,
+                };
+                const tone = retailOrderStatusTone(visual);
+                const rowClass = orderStatusToneClasses[tone].row;
+                return (
+                  <tr key={o.id} className={`border-b border-slate-100 ${rowClass}`}>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                      {o.createdAt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{o.buyerName}</div>
+                      <div className="text-xs text-slate-500">{o.buyerEmail}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-800">
+                      {formatArs(Number(o.totalAmount))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <OrderStatusBadge {...visual} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/pedidos/${o.id}`}
+                        className="text-sm font-medium text-brand-dark underline-offset-2 hover:underline"
+                      >
+                        Ver
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

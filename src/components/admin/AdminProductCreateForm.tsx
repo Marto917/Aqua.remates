@@ -1,14 +1,27 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { ProductBarcodesEditor } from "@/components/admin/ProductBarcodesEditor";
 import { IconCamera } from "@/components/icons/StaffIcons";
 import { COLOR_OPTIONS } from "@/lib/color-options";
+import { resolveProductImageUrl } from "@/lib/product-images";
 
 type Props = {
   initialError?: string;
   supplierNames?: string[];
   categories: { id: string; name: string; slug: string }[];
+};
+
+type MeliImportResult = {
+  itemId: string;
+  title: string;
+  description: string;
+  barcode: string | null;
+  meliPrice: number | null;
+  permalink: string | null;
+  importedImageUrl: string | null;
+  pictures: Array<{ sourceUrl: string; localUrl?: string }>;
 };
 
 export function AdminProductCreateForm({ initialError, supplierNames = [], categories }: Props) {
@@ -17,6 +30,23 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
   const [variants, setVariants] = useState<Array<{ id: string; colorLabel: string }>>([
     { id: crypto.randomUUID(), colorLabel: COLOR_OPTIONS[0]?.hex ?? "#2563eb" },
   ]);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [listPrice, setListPrice] = useState("");
+  const [meliUrl, setMeliUrl] = useState("");
+  const [meliLoading, setMeliLoading] = useState(false);
+  const [meliError, setMeliError] = useState<string | null>(null);
+  const [meliOk, setMeliOk] = useState<string | null>(null);
+  const [meliRefPrice, setMeliRefPrice] = useState<number | null>(null);
+  const [importedImageUrl, setImportedImageUrl] = useState<string | null>(null);
+  const [previewPictures, setPreviewPictures] = useState<
+    Array<{ src: string; label: string }>
+  >([]);
+  const [barcodeSeed, setBarcodeSeed] = useState<Array<{ code: string; label?: string | null }>>(
+    [],
+  );
+  const [barcodeEditorKey, setBarcodeEditorKey] = useState(0);
 
   function addVariant() {
     const nextColor = COLOR_OPTIONS[variants.length % COLOR_OPTIONS.length]?.hex ?? "#2563eb";
@@ -46,6 +76,62 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
     setVariants((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
   }
 
+  function applyMeliImport(item: MeliImportResult) {
+    setName(item.title);
+    setDescription(item.description);
+    setMeliRefPrice(item.meliPrice);
+    setImportedImageUrl(item.importedImageUrl);
+    setPreviewPictures(
+      item.pictures.map((p, i) => ({
+        src: resolveProductImageUrl(p.localUrl || p.sourceUrl),
+        label: i === 0 ? "Principal" : `Foto ${i + 1}`,
+      })),
+    );
+
+    if (item.barcode) {
+      setBarcodeSeed([{ code: item.barcode, label: "ML / EAN" }]);
+    } else {
+      setBarcodeSeed([]);
+    }
+    setBarcodeEditorKey((k) => k + 1);
+
+    const priceHint =
+      item.meliPrice != null
+        ? ` Precio en ML (referencia): $${item.meliPrice.toLocaleString("es-AR")}.`
+        : "";
+    setMeliOk(
+      `Datos de ${item.itemId} cargados.${priceHint} Revisá categoría, proveedor y precios antes de guardar.`,
+    );
+  }
+
+  async function onImportMeli() {
+    setMeliLoading(true);
+    setMeliError(null);
+    setMeliOk(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/import-meli", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ url: meliUrl }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        item?: MeliImportResult;
+      };
+      if (!res.ok || !data.ok || !data.item) {
+        setMeliError(data.error ?? "No se pudo importar el artículo.");
+        return;
+      }
+      applyMeliImport(data.item);
+    } catch {
+      setMeliError("No se pudo conectar con el servidor.");
+    } finally {
+      setMeliLoading(false);
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -64,6 +150,11 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
     }
 
     fd.set("colorLabels", normalizedColors.join(","));
+    fd.set("name", name.trim());
+    fd.set("description", description);
+    if (importedImageUrl) {
+      fd.set("importedImageUrl", importedImageUrl);
+    }
 
     setSubmitting(true);
     setError(null);
@@ -104,13 +195,87 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
     >
       <h2 className="text-lg font-semibold">Crear producto</h2>
       {error ? (
-        <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+        <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </p>
       ) : null}
+
+      <div className="space-y-2 rounded-xl border border-dashed border-brand/40 bg-brand-muted/30 p-4">
+        <p className="text-sm font-semibold text-slate-900">Importar desde Mercado Libre</p>
+        <p className="text-xs text-slate-600">
+          Pegá el link de <strong>un</strong> artículo. Se completan nombre, descripción, fotos y
+          código (si viene). Vos confirmás categoría, proveedor y precios. Solo usá artículos que el
+          proveedor autorice.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="url"
+            value={meliUrl}
+            onChange={(e) => setMeliUrl(e.target.value)}
+            placeholder="https://articulo.mercadolibre.com.ar/MLA-…"
+            disabled={meliLoading || submitting}
+            className="min-h-11 w-full flex-1 rounded-md border px-3 py-2 text-sm"
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            onClick={() => void onImportMeli()}
+            disabled={meliLoading || submitting || !meliUrl.trim()}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
+          >
+            {meliLoading ? "Trayendo…" : "Traer de Mercado Libre"}
+          </button>
+        </div>
+        {meliError ? (
+          <p className="text-sm text-rose-700" role="alert">
+            {meliError}
+          </p>
+        ) : null}
+        {meliOk ? (
+          <p className="text-sm text-emerald-800" role="status">
+            {meliOk}
+          </p>
+        ) : null}
+        {meliRefPrice != null ? (
+          <p className="text-xs text-slate-500">
+            Referencia ML:{" "}
+            <span className="font-medium text-slate-700">
+              ${meliRefPrice.toLocaleString("es-AR")}
+            </span>{" "}
+            — no se copia al precio de Aqua; cargalo vos abajo.
+          </p>
+        ) : null}
+        {previewPictures.length > 0 ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {previewPictures.map((pic) => (
+              <div
+                key={pic.src}
+                className="relative h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white"
+                title={pic.label}
+              >
+                <Image
+                  src={pic.src}
+                  alt={pic.label}
+                  fill
+                  className="object-contain"
+                  sizes="64px"
+                  unoptimized
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {importedImageUrl ? (
+          <input type="hidden" name="importedImageUrl" value={importedImageUrl} />
+        ) : null}
+      </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         <input
           name="name"
           required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           placeholder="Nombre del producto"
           className="rounded-md border px-3 py-2 md:col-span-2"
         />
@@ -134,7 +299,9 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
         <div className="md:col-span-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
             <IconCamera className="h-5 w-5 text-brand-dark" aria-hidden />
-            Imagen del producto
+            {importedImageUrl
+              ? "Cambiar imagen (opcional; si no tocás, se usa la de ML)"
+              : "Imagen del producto"}
             <input
               name="imageFile"
               type="file"
@@ -143,7 +310,11 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
             />
           </label>
         </div>
-        <ProductBarcodesEditor disabled={submitting} />
+        <ProductBarcodesEditor
+          key={barcodeEditorKey}
+          initial={barcodeSeed.length > 0 ? barcodeSeed : undefined}
+          disabled={submitting}
+        />
         <select name="categoryName" required className="rounded-md border px-3 py-2">
           <option value="">Seleccionar categoría</option>
           {categories.map((category) => (
@@ -157,6 +328,8 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
           required
           type="number"
           step="0.01"
+          value={listPrice}
+          onChange={(e) => setListPrice(e.target.value)}
           placeholder="Precio de lista"
           className="rounded-md border px-3 py-2 md:col-span-2"
         />
@@ -168,6 +341,8 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
       <textarea
         name="description"
         rows={3}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
         placeholder="Descripcion de producto (opcional)"
         className="w-full rounded-md border px-3 py-2"
       />
@@ -225,7 +400,9 @@ export function AdminProductCreateForm({ initialError, supplierNames = [], categ
                 </div>
                 <p className="mt-2 text-xs text-slate-600">
                   Seleccionado:{" "}
-                  <span className="font-medium text-slate-900">{normalizeHex(variant.colorLabel) || "inválido"}</span>
+                  <span className="font-medium text-slate-900">
+                    {normalizeHex(variant.colorLabel) || "inválido"}
+                  </span>
                 </p>
               </div>
               <div className="md:col-span-2">
