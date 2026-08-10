@@ -17,6 +17,9 @@ import { prisma } from "@/lib/prisma";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { isHomeDelivery } from "@/lib/shipping";
 import { OrderStatusBadge } from "@/components/staff/OrderStatusBadge";
+import { StaffDeleteOrderButton } from "@/components/staff/StaffDeleteOrderButton";
+import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
+import { getStaffContext } from "@/lib/staff-auth";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -81,6 +84,9 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
     order.status !== "CONFIRMED" &&
     (order.status === "TRANSFER_REPORTED" || order.status === "PENDING_TRANSFER");
 
+  const staffCtx = await getStaffContext();
+  const canDelete = canOwnerDeleteRetailOrders(staffCtx.session);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -108,6 +114,9 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
             deliveryStatus={order.deliveryStatus}
             className="[&>span:first-child]:px-3 [&>span:first-child]:py-1 [&>span:first-child]:text-sm"
           />
+          {canDelete ? (
+            <StaffDeleteOrderButton orderId={order.id} redirectToList />
+          ) : null}
         </div>
       </div>
 

@@ -12,12 +12,18 @@ export function matchesDefaultOwnerEmail(email: string | null | undefined): bool
 }
 
 /**
- * Solo la cuenta cuyo email coincide con DEFAULT_OWNER_EMAIL
- * puede borrar compras propias en /cuenta/mis-compras.
+ * Dueño (OWNER) cuyo mail coincide con DEFAULT_OWNER_EMAIL.
+ * Si DEFAULT_OWNER_EMAIL no está seteado, alcanza con ser OWNER.
  */
-export function canSessionDeleteOwnOrders(session: Session | null): boolean {
+export function canOwnerDeleteRetailOrders(session: Session | null): boolean {
   if (!session?.user?.id) return false;
-  const role = session.user.role;
-  if (role !== UserRole.CUSTOMER && role !== UserRole.OWNER) return false;
+  if (session.user.role !== UserRole.OWNER) return false;
+  const configured = process.env.DEFAULT_OWNER_EMAIL?.trim();
+  if (!configured) return true;
   return matchesDefaultOwnerEmail(session.user.email);
+}
+
+/** @deprecated alias — usar canOwnerDeleteRetailOrders */
+export function canSessionDeleteOwnOrders(session: Session | null): boolean {
+  return canOwnerDeleteRetailOrders(session);
 }

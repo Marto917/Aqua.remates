@@ -9,7 +9,7 @@ import {
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatArs } from "@/lib/currency";
-import { canSessionDeleteOwnOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
+import { canOwnerDeleteRetailOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
 import { getCustomerModeration } from "@/lib/customer-moderation";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
@@ -35,7 +35,7 @@ export default async function MisComprasPage() {
   }
 
   const email = session.user.email?.toLowerCase() ?? "";
-  const canDeleteOwn = canSessionDeleteOwnOrders(session);
+  const canDeleteOwn = canOwnerDeleteRetailOrders(session);
   const ridersAppEnabled = await isRidersAppEnabled();
   const [orders, moderation] = await Promise.all([
     prisma.retailOrder.findMany({

@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { requireStaff } from "@/lib/staff-auth";
+import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
 
 const updateSchema = z.object({
   id: z.string().min(1),
@@ -165,6 +166,42 @@ export async function banCustomerFromOrder(formData: FormData): Promise<Transfer
     };
   } catch (e) {
     console.error("banCustomerFromOrder:", e);
+    return { ok: false, error: staffActionErrorMessage(e) };
+  }
+}
+
+export type DeleteRetailOrderResult = { ok: true } | { ok: false; error: string };
+
+/** Solo el dueño (mail = DEFAULT_OWNER_EMAIL) puede borrar pedidos. */
+export async function deleteRetailOrderAsOwner(orderId: string): Promise<DeleteRetailOrderResult> {
+  try {
+    const ctx = await requireStaff();
+    if (!canOwnerDeleteRetailOrders(ctx.session)) {
+      return { ok: false, error: "Solo el dueño puede borrar pedidos." };
+    }
+
+    const id = orderId.trim();
+    if (!id) {
+      return { ok: false, error: "Pedido inválido." };
+    }
+
+    const existing = await prisma.retailOrder.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { ok: false, error: "Pedido no encontrado." };
+    }
+
+    await prisma.retailOrder.delete({ where: { id } });
+
+    revalidatePath("/admin/pedidos");
+    revalidatePath("/vendedor/pedidos");
+    revalidatePath("/vendedor/envios");
+    revalidatePath("/cuenta/mis-compras");
+    return { ok: true };
+  } catch (e) {
+    console.error("deleteRetailOrderAsOwner:", e);
     return { ok: false, error: staffActionErrorMessage(e) };
   }
 }

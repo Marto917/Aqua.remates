@@ -3,9 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { formatArs } from "@/lib/currency";
 import { OrderStatusBadge } from "@/components/staff/OrderStatusBadge";
 import { OrderStatusColorLegend } from "@/components/staff/OrderStatusColorLegend";
+import { StaffDeleteOrderButton } from "@/components/staff/StaffDeleteOrderButton";
+import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
 import { orderStatusToneClasses, retailOrderStatusTone } from "@/lib/order-status-visual";
+import { getStaffContext } from "@/lib/staff-auth";
 
 export default async function AdminPedidosPage() {
+  const ctx = await getStaffContext();
+  const canDelete = canOwnerDeleteRetailOrders(ctx.session);
+
   let orders: Awaited<ReturnType<typeof prisma.retailOrder.findMany>> = [];
   try {
     orders = await prisma.retailOrder.findMany({
@@ -101,12 +107,15 @@ export default async function AdminPedidosPage() {
                       <OrderStatusBadge {...visual} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/pedidos/${o.id}`}
-                        className="text-sm font-medium text-brand-dark underline-offset-2 hover:underline"
-                      >
-                        Ver
-                      </Link>
+                      <div className="flex flex-wrap items-center justify-end gap-3">
+                        <Link
+                          href={`/admin/pedidos/${o.id}`}
+                          className="text-sm font-medium text-brand-dark underline-offset-2 hover:underline"
+                        >
+                          Ver
+                        </Link>
+                        {canDelete ? <StaffDeleteOrderButton orderId={o.id} compact /> : null}
+                      </div>
                     </td>
                   </tr>
                 );

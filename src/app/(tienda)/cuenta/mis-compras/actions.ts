@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { UserRole } from "@prisma/client";
 import { canCustomerAccessOrder } from "@/lib/order-access";
-import { canSessionDeleteOwnOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
+import { canOwnerDeleteRetailOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
@@ -27,7 +27,7 @@ function orderBelongsToSession(
 
 export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOrderResult> {
   const session = await getSafeSession();
-  if (!canSessionDeleteOwnOrders(session) || !session) {
+  if (!canOwnerDeleteRetailOrders(session) || !session) {
     return { ok: false, error: "No tenés permiso para borrar compras." };
   }
 
@@ -58,7 +58,7 @@ export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOr
 
 export async function deleteAllOwnRetailOrders(): Promise<DeleteOwnOrderResult> {
   const session = await getSafeSession();
-  if (!canSessionDeleteOwnOrders(session) || !session?.user?.id) {
+  if (!canOwnerDeleteRetailOrders(session) || !session?.user?.id) {
     return { ok: false, error: "No tenés permiso para borrar compras." };
   }
 
