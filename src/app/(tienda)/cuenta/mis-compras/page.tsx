@@ -2,9 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import { CustomerAccountStatusBanner } from "@/components/account/CustomerAccountStatusBanner";
+import {
+  DeleteAllOwnOrdersButton,
+  DeleteOwnOrderButton,
+} from "@/components/cuenta/DeleteOwnOrderButton";
 import { DeliveryCodeForCustomer } from "@/components/DeliveryCodeForCustomer";
 import { DeliveryDeliveredNotice } from "@/components/shipping/DeliveryDeliveredNotice";
 import { formatArs } from "@/lib/currency";
+import { canSessionDeleteOwnOrders } from "@/lib/customer-order-delete";
 import { getCustomerModeration } from "@/lib/customer-moderation";
 import { deliveryDispatchStatusLabel } from "@/lib/delivery-dispatch";
 import { fulfillmentStatusLabel } from "@/lib/fulfillment";
@@ -24,6 +29,7 @@ export default async function MisComprasPage() {
   }
 
   const email = session.user.email?.toLowerCase() ?? "";
+  const canDeleteOwn = canSessionDeleteOwnOrders(session);
   const ridersAppEnabled = await isRidersAppEnabled();
   const [orders, moderation] = await Promise.all([
     prisma.retailOrder.findMany({
@@ -56,6 +62,9 @@ export default async function MisComprasPage() {
           accountWarning={moderation.accountWarning}
         />
       ) : null}
+
+      {canDeleteOwn ? <DeleteAllOwnOrdersButton orderCount={orders.length} /> : null}
+
       {orders.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
           Todavía no tenés compras registradas.{" "}
@@ -136,6 +145,7 @@ export default async function MisComprasPage() {
                   ) : null}
                 </div>
               ) : null}
+              {canDeleteOwn ? <DeleteOwnOrderButton orderId={order.id} /> : null}
             </li>
           ))}
         </ul>
