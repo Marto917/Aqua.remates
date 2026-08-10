@@ -64,6 +64,23 @@ export default async function AdminPedidoDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  if (order.deletedAt) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-950">
+        <h1 className="font-semibold">Este pedido está en la papelera</h1>
+        <p className="mt-2">
+          Podés restaurarlo desde la papelera antes de que se borre definitivamente.
+        </p>
+        <Link
+          href="/admin/pedidos/papelera"
+          className="mt-4 inline-block font-medium text-brand-dark underline"
+        >
+          Ir a la papelera
+        </Link>
+      </div>
+    );
+  }
+
   if (!order.staffSeenAt) {
     try {
       await prisma.retailOrder.update({

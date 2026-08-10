@@ -16,6 +16,7 @@ type Props = {
   staffLogin: string;
   signedIn: boolean;
   pendingPackCount?: number;
+  pendingReviewCount?: number;
 };
 
 export function StaffMobileNav({
@@ -25,11 +26,11 @@ export function StaffMobileNav({
   staffLogin,
   signedIn,
   pendingPackCount = 0,
+  pendingReviewCount = 0,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const total = pendingPackCount + pendingReviewCount;
 
-  // Si el menú quedó abierto en mobile y pasan a desktop, el backdrop full-screen
-  // seguía bloqueando todos los clics del panel.
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const onChange = () => {
@@ -50,9 +51,9 @@ export function StaffMobileNav({
         aria-label="Abrir menú"
       >
         Menú
-        {pendingPackCount > 0 ? (
+        {total > 0 ? (
           <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {pendingPackCount > 99 ? "99+" : pendingPackCount}
+            {total > 99 ? "99+" : total}
           </span>
         ) : null}
       </button>
@@ -68,6 +69,13 @@ export function StaffMobileNav({
             <nav className="max-h-[70vh] overflow-y-auto py-1">
               {links.map((item) => {
                 const isEnvios = item.href === "/vendedor/envios";
+                const isPedidos =
+                  item.href === "/admin/pedidos" || item.href === "/vendedor/pedidos";
+                const badge = isEnvios
+                  ? pendingPackCount
+                  : isPedidos
+                    ? pendingReviewCount
+                    : 0;
                 return (
                   <Link
                     key={item.href}
@@ -76,9 +84,9 @@ export function StaffMobileNav({
                     className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
                   >
                     <span>{item.label}</span>
-                    {isEnvios && pendingPackCount > 0 ? (
+                    {badge > 0 ? (
                       <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        {pendingPackCount > 99 ? "99+" : pendingPackCount}
+                        {badge > 99 ? "99+" : badge}
                       </span>
                     ) : null}
                   </Link>

@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 import { requireStaff } from "@/lib/staff-auth";
 import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
+import { softDeleteRetailOrder } from "@/lib/retail-order-trash";
 
 const updateSchema = z.object({
   id: z.string().min(1),
@@ -172,7 +173,7 @@ export async function banCustomerFromOrder(formData: FormData): Promise<Transfer
 
 export type DeleteRetailOrderResult = { ok: true } | { ok: false; error: string };
 
-/** Solo el dueño (mail = DEFAULT_OWNER_EMAIL) puede borrar pedidos. */
+/** Solo el dueño (mail = DEFAULT_OWNER_EMAIL) puede enviar pedidos a la papelera. */
 export async function deleteRetailOrderAsOwner(formData: FormData): Promise<DeleteRetailOrderResult> {
   try {
     const ctx = await requireStaff();
@@ -185,20 +186,16 @@ export async function deleteRetailOrderAsOwner(formData: FormData): Promise<Dele
       return { ok: false, error: "Pedido inválido." };
     }
 
-    const existing = await prisma.retailOrder.findUnique({
-      where: { id },
-      select: { id: true },
+    const result = await softDeleteRetailOrder({
+      orderId: id,
+      deletedById: ctx.session?.user?.id ?? null,
     });
-    if (!existing) {
-      return { ok: false, error: "Pedido no encontrado." };
+    if (!result.ok) {
+      return result;
     }
 
-    await prisma.$transaction([
-      prisma.retailOrderItem.deleteMany({ where: { orderId: id } }),
-      prisma.retailOrder.delete({ where: { id } }),
-    ]);
-
     revalidatePath("/admin/pedidos");
+    revalidatePath("/admin/pedidos/papelera");
     revalidatePath("/vendedor/pedidos");
     revalidatePath("/vendedor/envios");
     revalidatePath("/cuenta/mis-compras");

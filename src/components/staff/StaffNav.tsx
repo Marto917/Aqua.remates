@@ -1,4 +1,5 @@
 import { StaffChrome } from "@/components/staff/StaffChrome";
+import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
 import { prisma } from "@/lib/prisma";
 import { canManageUsers, getStaffContext, isOwnerAccess } from "@/lib/staff-auth";
 import { getStaffLoginPath } from "@/lib/staff-login-path";
@@ -19,6 +20,7 @@ export async function StaffNav({ area, children }: StaffNavProps) {
   const role = ctx.session?.user?.role;
   const displayName = ctx.session?.user?.name;
   const showOwner = isOwnerAccess(ctx);
+  const showTrash = canOwnerDeleteRetailOrders(ctx.session);
   const showUsers = canManageUsers(ctx);
   const homeHref = area === "admin" ? "/admin" : "/vendedor";
   const staffLogin = getStaffLoginPath();
@@ -31,6 +33,7 @@ export async function StaffNav({ area, children }: StaffNavProps) {
   const links: StaffNavLink[] = [
     { href: homeHref, label: "Inicio" },
     { href: "/admin/pedidos", label: "Pedidos minoristas" },
+    ...(showTrash ? [{ href: "/admin/pedidos/papelera", label: "Papelera" }] : []),
     { href: "/vendedor/envios", label: "Envíos" },
     ...(ridersOn ? [{ href: "/vendedor/envios/repartidores", label: "Viajes riders" }] : []),
     { href: "/admin/mayoristas", label: "Mayoristas" },

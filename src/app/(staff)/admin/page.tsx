@@ -16,7 +16,9 @@ export default async function AdminHomePage() {
   let nuevosMayoristas = 0;
   try {
     ;[pendingRetail, pendingApprovals, nuevosMayoristas] = await Promise.all([
-      prisma.retailOrder.count({ where: { status: "PENDING_TRANSFER" } }),
+      prisma.retailOrder.count({
+        where: { status: "PENDING_TRANSFER", deletedAt: null },
+      }),
       prisma.approvalRequest.count({ where: { status: "PENDING" } }),
       prisma.wholesaleRequest.count({ where: { status: "NUEVO" } }),
     ]);

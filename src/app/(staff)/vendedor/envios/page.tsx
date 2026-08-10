@@ -102,6 +102,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
   const [retailOrders, wholesaleOrders, activeRiders] = await Promise.all([
     prisma.retailOrder.findMany({
       where: {
+        deletedAt: null,
         status: { in: RETAIL_FULFILLMENT_STATUSES },
         ...shippingWhere,
       },
@@ -137,6 +138,7 @@ export default async function VendedorEnviosPage({ searchParams }: PageProps) {
 
   const domicilioCount = await prisma.retailOrder.count({
     where: {
+      deletedAt: null,
       status: { in: RETAIL_FULFILLMENT_STATUSES },
       shippingMethod: "DELIVERY",
     },

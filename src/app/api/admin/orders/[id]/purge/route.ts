@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
-import { softDeleteRetailOrder } from "@/lib/retail-order-trash";
+import { permanentlyDeleteRetailOrder } from "@/lib/retail-order-trash";
 import { getStaffContext } from "@/lib/staff-auth";
 import { staffActionErrorMessage } from "@/lib/staff-action-error";
 
@@ -8,13 +8,13 @@ export const runtime = "nodejs";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-/** Mueve el pedido a la papelera (15 días). Solo el dueño. */
+/** Borrado definitivo desde la papelera. Solo el dueño. */
 export async function DELETE(_req: Request, context: RouteContext) {
   try {
     const ctx = await getStaffContext();
     if (!canOwnerDeleteRetailOrders(ctx.session)) {
       return NextResponse.json(
-        { ok: false, error: "Solo el dueño puede borrar pedidos." },
+        { ok: false, error: "Solo el dueño puede borrar definitivamente." },
         { status: 403 },
       );
     }
@@ -25,21 +25,14 @@ export async function DELETE(_req: Request, context: RouteContext) {
       return NextResponse.json({ ok: false, error: "Pedido inválido." }, { status: 400 });
     }
 
-    const result = await softDeleteRetailOrder({
-      orderId: id,
-      deletedById: ctx.session?.user?.id ?? null,
-    });
-
+    const result = await permanentlyDeleteRetailOrder(id);
     if (!result.ok) {
-      return NextResponse.json(result, { status: 404 });
+      return NextResponse.json(result, { status: 400 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: "Pedido enviado a la papelera. Se elimina definitivamente a los 15 días.",
-    });
+    return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("DELETE /api/admin/orders/[id]:", e);
+    console.error("DELETE /api/admin/orders/[id]/purge:", e);
     return NextResponse.json(
       { ok: false, error: staffActionErrorMessage(e) },
       { status: 500 },

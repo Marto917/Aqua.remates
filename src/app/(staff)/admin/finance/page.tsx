@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export default async function AdminFinancePage() {
   const orders = await prisma.retailOrder.findMany({
+    where: { deletedAt: null },
     include: { items: true },
     orderBy: { createdAt: "desc" }
   });

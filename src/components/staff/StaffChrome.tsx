@@ -5,7 +5,10 @@ import { useState, useSyncExternalStore } from "react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SiteLogo } from "@/components/SiteLogo";
 import { StaffMobileNav } from "@/components/staff/StaffMobileNav";
-import { StaffOrderAlerts } from "@/components/staff/StaffOrderAlerts";
+import {
+  StaffOrderAlerts,
+  type StaffAttentionCounts,
+} from "@/components/staff/StaffOrderAlerts";
 
 const STORAGE_KEY = "aqua-staff-sidebar-open";
 const CHANGE_EVENT = "aqua-staff-sidebar";
@@ -79,7 +82,11 @@ export function StaffChrome({
   children,
 }: Props) {
   const sidebarOpen = useSyncExternalStore(subscribeSidebar, readSidebarOpen, () => true);
-  const [pendingPackCount, setPendingPackCount] = useState(0);
+  const [attention, setAttention] = useState<StaffAttentionCounts>({
+    total: 0,
+    review: 0,
+    pack: 0,
+  });
 
   return (
     <div
@@ -87,9 +94,8 @@ export function StaffChrome({
         sidebarOpen ? "lg:pl-60" : "lg:pl-0"
       }`}
     >
-      <StaffOrderAlerts onCountChange={setPendingPackCount} />
+      <StaffOrderAlerts onCountsChange={setAttention} />
 
-      {/* Sidebar fijo (desktop). Cerrado: sin pointer-events (evita bloquear clics). */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:flex ${
           sidebarOpen
@@ -105,18 +111,30 @@ export function StaffChrome({
           <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
             Panel {area === "admin" ? "admin" : "vendedor"}
           </p>
+          {attention.total > 0 ? (
+            <p className="mt-2 rounded-lg bg-amber-100 px-2 py-1.5 text-[11px] font-semibold text-amber-950">
+              {attention.total} pendiente{attention.total === 1 ? "" : "s"}
+            </p>
+          ) : null}
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Menú staff">
           <ul className="space-y-0.5">
             {links.map((item) => {
               const isEnvios = item.href === "/vendedor/envios";
+              const isPedidos =
+                item.href === "/admin/pedidos" || item.href === "/vendedor/pedidos";
+              const badge = isEnvios
+                ? attention.pack
+                : isPedidos
+                  ? attention.review
+                  : undefined;
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-muted hover:text-brand-dark"
                   >
-                    <NavLabel label={item.label} badge={isEnvios ? pendingPackCount : undefined} />
+                    <NavLabel label={item.label} badge={badge} />
                   </Link>
                 </li>
               );
@@ -142,7 +160,6 @@ export function StaffChrome({
         </div>
       </aside>
 
-      {/* Pestana para abrir/cerrar menú (desktop) */}
       <button
         type="button"
         onClick={() => writeSidebarOpen(!sidebarOpen)}
@@ -171,20 +188,28 @@ export function StaffChrome({
         </svg>
       </button>
 
-      {/* Barra superior mobile */}
       <header className="sticky top-0 z-50 isolate border-b border-slate-200 bg-white shadow-sm lg:hidden">
         <div className="flex items-center justify-between gap-2 px-3 py-2.5">
           <Link href={homeHref} className="font-semibold text-brand-dark">
             <SiteLogo logoUrl={logoUrl} />
           </Link>
           <div className="flex items-center gap-2">
-            {pendingPackCount > 0 ? (
+            {attention.review > 0 ? (
               <Link
-                href="/vendedor/envios"
+                href="/admin/pedidos"
                 className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-bold text-white"
               >
+                Revisar
+                <span>{attention.review > 99 ? "99+" : attention.review}</span>
+              </Link>
+            ) : null}
+            {attention.pack > 0 ? (
+              <Link
+                href="/vendedor/envios"
+                className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-2.5 py-1.5 text-xs font-bold text-white"
+              >
                 Armar
-                <span>{pendingPackCount > 99 ? "99+" : pendingPackCount}</span>
+                <span>{attention.pack > 99 ? "99+" : attention.pack}</span>
               </Link>
             ) : null}
             <StaffMobileNav
@@ -193,7 +218,8 @@ export function StaffChrome({
               profileLine={profileLine}
               staffLogin={staffLogin}
               signedIn={signedIn}
-              pendingPackCount={pendingPackCount}
+              pendingPackCount={attention.pack}
+              pendingReviewCount={attention.review}
             />
           </div>
         </div>

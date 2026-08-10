@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const POLL_MS = 15_000;
-const SEEN_KEY = "aqua-staff-seen-pack-ids";
+const POLL_MS = 12_000;
+const SEEN_KEY = "aqua-staff-seen-attention-ids";
+const BASE_TITLE = "Aqua · Panel";
 
 type PendingOrder = {
   id: string;
@@ -18,6 +19,13 @@ type PendingOrder = {
 type ToastItem = {
   id: string;
   buyerName: string;
+  kind: "review" | "pack";
+};
+
+export type StaffAttentionCounts = {
+  total: number;
+  review: number;
+  pack: number;
 };
 
 function readSeenIds(): Set<string> {
@@ -40,15 +48,56 @@ function writeSeenIds(ids: Set<string>) {
   }
 }
 
+function playAttentionBeep() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.value = 0.04;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+    osc.stop(ctx.currentTime + 0.4);
+    window.setTimeout(() => void ctx.close(), 500);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function StaffOrderAlerts({
-  onCountChange,
+  onCountsChange,
 }: {
-  onCountChange?: (count: number) => void;
+  onCountsChange?: (counts: StaffAttentionCounts) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [counts, setCounts] = useState<StaffAttentionCounts>({
+    total: 0,
+    review: 0,
+    pack: 0,
+  });
   const primed = useRef(false);
+  const titleBase = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (titleBase.current == null) {
+      titleBase.current = document.title || BASE_TITLE;
+    }
+    if (counts.total > 0) {
+      document.title = `(${counts.total}) ${titleBase.current}`;
+    } else {
+      document.title = titleBase.current;
+    }
+    return () => {
+      if (titleBase.current) document.title = titleBase.current;
+    };
+  }, [counts.total]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,12 +111,25 @@ export function StaffOrderAlerts({
         const data = (await res.json()) as {
           count?: number;
           orders?: PendingOrder[];
+          reviewCount?: number;
+          packCount?: number;
+          totalAttention?: number;
+          toReview?: PendingOrder[];
+          toPack?: PendingOrder[];
         };
-        const orders = data.orders ?? [];
-        const count = typeof data.count === "number" ? data.count : orders.length;
-        onCountChange?.(count);
 
-        const ids = new Set(orders.map((o) => o.id));
+        const toReview = data.toReview ?? [];
+        const toPack = data.toPack ?? data.orders ?? [];
+        const review = typeof data.reviewCount === "number" ? data.reviewCount : toReview.length;
+        const pack = typeof data.packCount === "number" ? data.packCount : toPack.length;
+        const total =
+          typeof data.totalAttention === "number" ? data.totalAttention : review + pack;
+
+        const nextCounts = { total, review, pack };
+        setCounts(nextCounts);
+        onCountsChange?.(nextCounts);
+
+        const ids = new Set([...toReview, ...toPack].map((o) => o.id));
         const seen = readSeenIds();
 
         if (!primed.current) {
@@ -76,9 +138,14 @@ export function StaffOrderAlerts({
           return;
         }
 
-        const newcomers = orders.filter((o) => !seen.has(o.id));
+        const newReview = toReview.filter((o) => !seen.has(o.id));
+        const newPack = toPack.filter((o) => !seen.has(o.id));
+        const newcomers: ToastItem[] = [
+          ...newReview.map((o) => ({ id: o.id, buyerName: o.buyerName, kind: "review" as const })),
+          ...newPack.map((o) => ({ id: o.id, buyerName: o.buyerName, kind: "pack" as const })),
+        ];
+
         if (newcomers.length === 0) {
-          // prune seen to current pending set + keep recent
           const next = new Set<string>();
           for (const id of seen) {
             if (ids.has(id)) next.add(id);
@@ -90,18 +157,19 @@ export function StaffOrderAlerts({
 
         for (const o of newcomers) seen.add(o.id);
         writeSeenIds(seen);
+        playAttentionBeep();
 
         setToasts((prev) => {
-          const merged = [
-            ...newcomers.map((o) => ({ id: o.id, buyerName: o.buyerName })),
-            ...prev,
-          ];
+          const merged = [...newcomers, ...prev];
           const dedup = new Map(merged.map((t) => [t.id, t]));
-          return [...dedup.values()].slice(0, 5);
+          return [...dedup.values()].slice(0, 6);
         });
 
-        // Si ya están en envíos, refrescar la lista
-        if (pathname.startsWith("/vendedor/envios")) {
+        if (
+          pathname.startsWith("/vendedor/envios") ||
+          pathname.startsWith("/admin/pedidos") ||
+          pathname.startsWith("/vendedor/pedidos")
+        ) {
           router.refresh();
         }
       } catch {
@@ -115,56 +183,125 @@ export function StaffOrderAlerts({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [pathname, router, onCountChange]);
+  }, [pathname, router, onCountsChange]);
 
   function dismiss(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
-  if (toasts.length === 0) return null;
+  const showBanner = counts.total > 0;
 
   return (
-    <div
-      className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2"
-      aria-live="polite"
-    >
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className="pointer-events-auto rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-lg shadow-amber-900/10"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-amber-950">Nuevo pedido para armar</p>
-              <p className="mt-0.5 text-xs text-amber-900">{t.buyerName}</p>
+    <>
+      {showBanner ? (
+        <div className="sticky top-0 z-[55] border-b border-amber-300 bg-amber-100 px-3 py-2 text-amber-950 shadow-sm lg:top-0">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold">
+              Tenés {counts.total} pedido{counts.total === 1 ? "" : "s"} pendiente
+              {counts.total === 1 ? "" : "s"}
+              {counts.review > 0 ? (
+                <span className="font-normal">
+                  {" "}
+                  · {counts.review} a revisar pago
+                </span>
+              ) : null}
+              {counts.pack > 0 ? (
+                <span className="font-normal">
+                  {" "}
+                  · {counts.pack} a armar
+                </span>
+              ) : null}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {counts.review > 0 ? (
+                <Link
+                  href="/admin/pedidos"
+                  className="rounded-lg bg-amber-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-amber-700"
+                >
+                  Revisar pagos
+                </Link>
+              ) : null}
+              {counts.pack > 0 ? (
+                <Link
+                  href="/vendedor/envios"
+                  className="rounded-lg border border-amber-400 bg-white px-2.5 py-1 text-xs font-bold text-amber-950 hover:bg-amber-50"
+                >
+                  Ir a armar
+                </Link>
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={() => dismiss(t.id)}
-              className="rounded px-1.5 text-sm text-amber-800 hover:bg-amber-100"
-              aria-label="Cerrar"
-            >
-              ×
-            </button>
-          </div>
-          <div className="mt-2 flex gap-2">
-            <Link
-              href={`/vendedor/envios/minorista/${t.id}/armar`}
-              onClick={() => dismiss(t.id)}
-              className="rounded-lg bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700"
-            >
-              Armar ahora
-            </Link>
-            <Link
-              href="/vendedor/envios"
-              onClick={() => dismiss(t.id)}
-              className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100"
-            >
-              Ver envíos
-            </Link>
           </div>
         </div>
-      ))}
-    </div>
+      ) : null}
+
+      {toasts.length > 0 ? (
+        <div
+          className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2"
+          aria-live="assertive"
+        >
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className={
+                t.kind === "review"
+                  ? "pointer-events-auto rounded-xl border border-amber-400 bg-amber-50 p-3 shadow-lg"
+                  : "pointer-events-auto rounded-xl border border-violet-300 bg-violet-50 p-3 shadow-lg"
+              }
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p
+                    className={`text-sm font-semibold ${
+                      t.kind === "review" ? "text-amber-950" : "text-violet-950"
+                    }`}
+                  >
+                    {t.kind === "review" ? "Comprobante para revisar" : "Pedido para armar"}
+                  </p>
+                  <p
+                    className={`mt-0.5 text-xs ${
+                      t.kind === "review" ? "text-amber-900" : "text-violet-900"
+                    }`}
+                  >
+                    {t.buyerName}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => dismiss(t.id)}
+                  className="rounded px-1.5 text-sm opacity-70 hover:bg-black/5"
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Link
+                  href={
+                    t.kind === "review"
+                      ? `/admin/pedidos/${t.id}`
+                      : `/vendedor/envios/minorista/${t.id}/armar`
+                  }
+                  onClick={() => dismiss(t.id)}
+                  className={
+                    t.kind === "review"
+                      ? "rounded-lg bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700"
+                      : "rounded-lg bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-violet-700"
+                  }
+                >
+                  {t.kind === "review" ? "Revisar" : "Armar ahora"}
+                </Link>
+                <Link
+                  href={t.kind === "review" ? "/admin/pedidos" : "/vendedor/envios"}
+                  onClick={() => dismiss(t.id)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50"
+                >
+                  Ver lista
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }

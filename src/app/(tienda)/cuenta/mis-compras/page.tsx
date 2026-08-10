@@ -17,6 +17,7 @@ import { retailOrderStatusLabel, retailShippingMethodLabel } from "@/lib/order-l
 import { isRidersAppEnabled } from "@/lib/riders-feature";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { retailOrderNotDeleted } from "@/lib/retail-order-trash";
 import { isHomeDelivery } from "@/lib/shipping";
 
 export default async function MisComprasPage() {
@@ -40,7 +41,10 @@ export default async function MisComprasPage() {
   const [orders, moderation] = await Promise.all([
     prisma.retailOrder.findMany({
       where: {
-        OR: [{ customerId: session.user.id }, { buyerEmail: email }],
+        AND: [
+          retailOrderNotDeleted,
+          { OR: [{ customerId: session.user.id }, { buyerEmail: email }] },
+        ],
       },
       orderBy: { createdAt: "desc" },
       include: { items: true },

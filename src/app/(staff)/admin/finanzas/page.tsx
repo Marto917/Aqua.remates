@@ -6,7 +6,11 @@ export default async function FinancialDashboardPage() {
 
   try {
     [retailOrders, wholesaleRequests] = await Promise.all([
-      prisma.retailOrder.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
+      prisma.retailOrder.findMany({
+        where: { deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
       prisma.wholesaleRequest.count(),
     ]);
   } catch (error) {

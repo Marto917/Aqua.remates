@@ -23,7 +23,7 @@ export function StaffDeleteOrderButton({
     setError(null);
     if (
       !window.confirm(
-        "¿Borrar este pedido de forma permanente? No se puede deshacer.",
+        "¿Enviar este pedido a la papelera? Podés restaurarlo hasta 15 días.",
       )
     ) {
       return;

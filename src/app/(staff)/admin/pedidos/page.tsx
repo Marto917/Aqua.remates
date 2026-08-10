@@ -6,6 +6,7 @@ import { OrderStatusColorLegend } from "@/components/staff/OrderStatusColorLegen
 import { StaffDeleteOrderButton } from "@/components/staff/StaffDeleteOrderButton";
 import { canOwnerDeleteRetailOrders } from "@/lib/customer-order-delete";
 import { orderStatusToneClasses, retailOrderStatusTone } from "@/lib/order-status-visual";
+import { retailOrderNotDeleted } from "@/lib/retail-order-trash";
 import { getStaffContext } from "@/lib/staff-auth";
 
 export default async function AdminPedidosPage() {
@@ -15,6 +16,7 @@ export default async function AdminPedidosPage() {
   let orders: Awaited<ReturnType<typeof prisma.retailOrder.findMany>> = [];
   try {
     orders = await prisma.retailOrder.findMany({
+      where: retailOrderNotDeleted,
       orderBy: { createdAt: "desc" },
       take: 80,
     });
@@ -35,6 +37,16 @@ export default async function AdminPedidosPage() {
           <p className="mt-1 text-sm text-slate-600">
             Transferencias, Mercado Pago y envíos: validá pagos y avanzá el estado del pedido.
           </p>
+          {canDelete ? (
+            <p className="mt-2">
+              <Link
+                href="/admin/pedidos/papelera"
+                className="text-sm font-medium text-slate-600 underline-offset-2 hover:underline"
+              >
+                Papelera de pedidos
+              </Link>
+            </p>
+          ) : null}
         </div>
         <OrderStatusColorLegend />
       </header>

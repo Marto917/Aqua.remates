@@ -19,6 +19,7 @@ export type RiderDeliveryItem = {
 export async function listRiderDeliveries(riderId: string): Promise<RiderDeliveryItem[]> {
   const orders = await prisma.retailOrder.findMany({
     where: {
+      deletedAt: null,
       shippingMethod: "DELIVERY",
       deliveryStatus: "DISPATCHED",
       status: { in: RETAIL_FULFILLMENT_STATUSES },

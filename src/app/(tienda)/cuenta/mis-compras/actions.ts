@@ -6,6 +6,7 @@ import { canCustomerAccessOrder } from "@/lib/order-access";
 import { canOwnerDeleteRetailOrders, matchesDefaultOwnerEmail } from "@/lib/customer-order-delete";
 import { getSafeSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { softDeleteRetailOrder, softDeleteRetailOrdersWhere } from "@/lib/retail-order-trash";
 
 export type DeleteOwnOrderResult = { ok: true } | { ok: false; error: string };
 
@@ -16,7 +17,6 @@ function orderBelongsToSession(
   if (session.user.role === UserRole.CUSTOMER) {
     return canCustomerAccessOrder(order, session);
   }
-  // OWNER con el mismo mail que DEFAULT_OWNER_EMAIL: pedidos ligados a su user o email.
   if (session.user.role === UserRole.OWNER && matchesDefaultOwnerEmail(session.user.email)) {
     if (order.customerId && order.customerId === session.user.id) return true;
     const sessionEmail = session.user.email?.trim().toLowerCase() ?? "";
@@ -38,10 +38,10 @@ export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOr
 
   const order = await prisma.retailOrder.findUnique({
     where: { id },
-    select: { id: true, customerId: true, buyerEmail: true },
+    select: { id: true, customerId: true, buyerEmail: true, deletedAt: true },
   });
 
-  if (!order) {
+  if (!order || order.deletedAt) {
     return { ok: false, error: "Pedido no encontrado." };
   }
 
@@ -49,10 +49,15 @@ export async function deleteOwnRetailOrder(orderId: string): Promise<DeleteOwnOr
     return { ok: false, error: "Ese pedido no es de tu cuenta." };
   }
 
-  await prisma.retailOrder.delete({ where: { id: order.id } });
+  const result = await softDeleteRetailOrder({
+    orderId: order.id,
+    deletedById: session.user.id,
+  });
+  if (!result.ok) return result;
 
   revalidatePath("/cuenta/mis-compras");
   revalidatePath("/admin/pedidos");
+  revalidatePath("/admin/pedidos/papelera");
   return { ok: true };
 }
 
@@ -67,13 +72,15 @@ export async function deleteAllOwnRetailOrders(): Promise<DeleteOwnOrderResult> 
     return { ok: false, error: "No tenés permiso para borrar compras." };
   }
 
-  await prisma.retailOrder.deleteMany({
-    where: {
+  await softDeleteRetailOrdersWhere(
+    {
       OR: [{ customerId: session.user.id }, { buyerEmail: email }],
     },
-  });
+    session.user.id,
+  );
 
   revalidatePath("/cuenta/mis-compras");
   revalidatePath("/admin/pedidos");
+  revalidatePath("/admin/pedidos/papelera");
   return { ok: true };
 }

@@ -404,6 +404,9 @@ model RetailOrder {
   status                  RetailOrderStatus     @default(PENDING_TRANSFER)
   /// Primera vez que un vendedor/admin abrió el detalle del pedido.
   staffSeenAt             DateTime?
+  /// Soft-delete: en papelera hasta purga (15 días).
+  deletedAt               DateTime?
+  deletedById             String?
   transferAlias           String?
   transferCbu             String?
   transferProofUrl        String?
@@ -413,6 +416,8 @@ model RetailOrder {
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
   items                   RetailOrderItem[]
+
+  @@index([deletedAt])
 }
 
 model RetailOrderItem {

@@ -20,7 +20,7 @@ export function DeleteOwnOrderButton({ orderId }: OneProps) {
     setError(null);
     if (
       !window.confirm(
-        "¿Borrar esta compra de forma permanente? Esta acción no se puede deshacer.",
+        "¿Enviar esta compra a la papelera? Se puede restaurar hasta 15 días.",
       )
     ) {
       return;
@@ -65,7 +65,7 @@ export function DeleteAllOwnOrdersButton({ orderCount }: AllProps) {
     setError(null);
     if (
       !window.confirm(
-        `¿Borrar las ${orderCount} compra(s) de tu cuenta? Esta acción no se puede deshacer.`,
+        `¿Enviar las ${orderCount} compra(s) a la papelera? Se pueden restaurar hasta 15 días.`,
       )
     ) {
       return;

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredTrashedRetailOrders } from "@/lib/retail-order-trash";
 
 const DELIVERED_ORDER_RETENTION_DAYS = 30;
 const INACTIVE_USER_RETENTION_DAYS = 90;
@@ -38,6 +39,7 @@ export async function purgeOldDeliveredOrders(): Promise<number> {
 
   const result = await prisma.retailOrder.deleteMany({
     where: {
+      deletedAt: null,
       deliveryStatus: "DELIVERED",
       deliveryDeliveredAt: { lt: cutoff },
     },
@@ -68,13 +70,15 @@ export async function purgeInactiveCustomerAccounts(): Promise<number> {
 
 export async function runDataRetention(): Promise<{
   orders: number;
+  trash: number;
   users: number;
   unverifiedUsers: number;
 }> {
-  const [orders, users, unverifiedUsers] = await Promise.all([
+  const [orders, trash, users, unverifiedUsers] = await Promise.all([
     purgeOldDeliveredOrders(),
+    purgeExpiredTrashedRetailOrders(),
     purgeInactiveCustomerAccounts(),
     purgeUnverifiedCustomerAccounts(),
   ]);
-  return { orders, users, unverifiedUsers };
+  return { orders, trash, users, unverifiedUsers };
 }
