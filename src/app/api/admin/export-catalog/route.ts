@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 import { existsSync, readdirSync, statSync } from "fs";
+import { PassThrough } from "stream";
+import { Readable } from "stream";
 import path from "path";
 import archiver from "archiver";
 import { NextResponse } from "next/server";
@@ -12,8 +14,12 @@ import { prisma } from "@/lib/prisma";
 import { getProductUploadsDir } from "@/lib/uploads-paths";
 
 export const runtime = "nodejs";
-/** Evita que Railway/proxy corte el request si hay muchas imágenes. */
-export const maxDuration = 120;
+/** Catálogos grandes + imágenes: Railway puede cortar antes si es bajo. */
+export const maxDuration = 300;
+
+const MAX_REMOTE_IMAGES = 80;
+const REMOTE_FETCH_TIMEOUT_MS = 8_000;
+const REMOTE_CONCURRENCY = 3;
 
 const LEEME = `Exportación de catálogo AQUA
 ============================
@@ -46,7 +52,7 @@ function hashUrl(url: string) {
 
 async function fetchUrlBytes(url: string) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  const timer = setTimeout(() => ctrl.abort(), REMOTE_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(url, { method: "GET", signal: ctrl.signal });
     if (!res.ok) {
@@ -60,6 +66,21 @@ async function fetchUrlBytes(url: string) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function mapPool<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+) {
+  let i = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      await fn(items[idx]!);
+    }
+  });
+  await Promise.all(workers);
 }
 
 async function buildCatalogJson(): Promise<CatalogExportV2> {
@@ -109,75 +130,75 @@ async function buildCatalogJson(): Promise<CatalogExportV2> {
   };
 }
 
-function zipCatalog(catalog: CatalogExportV2): Promise<Buffer> {
-  return new Promise<Buffer>((resolve, reject) => {
-    const archive = archiver("zip", { zlib: { level: 6 } });
-    const chunks: Buffer[] = [];
-    let settled = false;
+function collectRemoteUrls(catalog: CatalogExportV2): string[] {
+  const remoteUrls = new Set<string>();
+  for (const p of catalog.products) {
+    if (p.imageUrl?.startsWith("http")) remoteUrls.add(p.imageUrl);
+    for (const v of p.variants) {
+      if (v.imageUrl?.startsWith("http")) remoteUrls.add(v.imageUrl);
+    }
+  }
+  return [...remoteUrls].slice(0, MAX_REMOTE_IMAGES);
+}
 
-    const fail = (err: unknown) => {
-      if (settled) return;
-      settled = true;
-      reject(err instanceof Error ? err : new Error(String(err)));
-    };
+/**
+ * Arma el ZIP en streaming (sin bufferizar todo en RAM) para que el navegador
+ * empiece a recibir bytes y pueda mostrar progreso.
+ */
+function startZipStream(catalog: CatalogExportV2): ReadableStream<Uint8Array> {
+  const passThrough = new PassThrough();
+  const archive = archiver("zip", { zlib: { level: 5 } });
 
-    archive.on("data", (c: Buffer) => chunks.push(c));
-    archive.on("error", fail);
-    archive.on("end", () => {
-      if (settled) return;
-      settled = true;
-      resolve(Buffer.concat(chunks));
-    });
-
-    void (async () => {
-      try {
-        archive.append(JSON.stringify(catalog, null, 2), { name: "catalog-aqua.json" });
-        archive.append(LEEME, { name: "LEEME.txt" });
-
-        const uploadsDir = getProductUploadsDir();
-        if (existsSync(uploadsDir)) {
-          for (const name of readdirSync(uploadsDir)) {
-            const full = path.join(uploadsDir, name);
-            try {
-              if (!statSync(full).isFile()) continue;
-            } catch {
-              continue;
-            }
-            archive.file(full, { name: `public/uploads/products/${name}` });
-          }
-        }
-
-        const remoteUrls = new Set<string>();
-        for (const p of catalog.products) {
-          if (p.imageUrl?.startsWith("http")) remoteUrls.add(p.imageUrl);
-          for (const v of p.variants) {
-            if (v.imageUrl?.startsWith("http")) remoteUrls.add(v.imageUrl);
-          }
-        }
-
-        // No tumbar toda la exportación si una URL remota falla.
-        for (const url of remoteUrls) {
-          try {
-            const bytes = await fetchUrlBytes(url);
-            const ext = url.toLowerCase().includes(".png")
-              ? "png"
-              : url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")
-                ? "jpg"
-                : "webp";
-            archive.append(bytes, {
-              name: `public/uploads/products/remote/${hashUrl(url)}.${ext}`,
-            });
-          } catch (e) {
-            console.warn("[export-catalog] skip remote image:", url, e);
-          }
-        }
-
-        await archive.finalize();
-      } catch (e) {
-        fail(e);
-      }
-    })();
+  archive.on("error", (err) => {
+    console.error("[export-catalog] archiver", err);
+    passThrough.destroy(err);
   });
+  archive.pipe(passThrough);
+
+  void (async () => {
+    try {
+      archive.append(JSON.stringify(catalog, null, 2), { name: "catalog-aqua.json" });
+      archive.append(LEEME, { name: "LEEME.txt" });
+
+      const uploadsDir = getProductUploadsDir();
+      if (existsSync(uploadsDir)) {
+        for (const name of readdirSync(uploadsDir)) {
+          const full = path.join(uploadsDir, name);
+          try {
+            if (!statSync(full).isFile()) continue;
+          } catch {
+            continue;
+          }
+          archive.file(full, { name: `public/uploads/products/${name}` });
+        }
+      }
+
+      const remotes = collectRemoteUrls(catalog);
+      await mapPool(remotes, REMOTE_CONCURRENCY, async (url) => {
+        try {
+          const bytes = await fetchUrlBytes(url);
+          const ext = url.toLowerCase().includes(".png")
+            ? "png"
+            : url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")
+              ? "jpg"
+              : "webp";
+          archive.append(bytes, {
+            name: `public/uploads/products/remote/${hashUrl(url)}.${ext}`,
+          });
+        } catch (e) {
+          console.warn("[export-catalog] skip remote image:", url, e);
+        }
+      });
+
+      await archive.finalize();
+    } catch (e) {
+      console.error("[export-catalog] build zip", e);
+      archive.abort();
+      passThrough.destroy(e instanceof Error ? e : new Error(String(e)));
+    }
+  })();
+
+  return Readable.toWeb(passThrough) as ReadableStream<Uint8Array>;
 }
 
 export async function GET() {
@@ -193,16 +214,17 @@ export async function GET() {
     }
 
     const catalog = await buildCatalogJson();
-    const buffer = await zipCatalog(catalog);
     const filename = `aqua-catalogo-${new Date().toISOString().slice(0, 10)}.zip`;
+    const stream = startZipStream(catalog);
 
-    return new NextResponse(new Uint8Array(buffer), {
+    return new NextResponse(stream, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",
-        "Content-Length": String(buffer.length),
+        "X-Aqua-Export-Products": String(catalog.products.length),
+        // Sin Content-Length: el ZIP se genera al vuelo.
       },
     });
   } catch (e) {
