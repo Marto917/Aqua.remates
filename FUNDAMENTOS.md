@@ -1,12 +1,13 @@
 # Aqua — Fundamentos e ideas principales
 
 Documento vivo. Se actualiza mientras avanza el trabajo.  
-**Última actualización:** 8 ago 2026  
+**Última actualización:** 6 sep 2026  
 **Dominio:** [www.aquaremates.com.ar](https://www.aquaremates.com.ar)  
 **Marca:** Aqua / Aqua.remates
 
 > Este archivo describe *qué es* la app, *por qué* existe y *hacia dónde* puede ir.  
-> El checklist operativo día a día sigue en [`BACKLOG.md`](./BACKLOG.md).
+> Handoff técnico para IA: [`AGENTS.md`](./AGENTS.md) + carpeta [`docs/`](./docs/).  
+> Checklist histórico: [`BACKLOG.md`](./BACKLOG.md).
 
 ---
 
@@ -241,8 +242,13 @@ No reemplaza `BACKLOG.md` (tareas) ni el código (fuente de verdad técnica).
 
 | Archivo | Para qué |
 |---------|----------|
-| `BACKLOG.md` | Checklist priorizado de implementación |
-| `README.md` | Overview (puede ir desfasado vs código) |
+| `AGENTS.md` | Entrada obligatoria para IAs / otra PC |
+| `docs/HANDOFF.md` | Estado actual y pendientes |
+| `docs/CONTEXTO-APP.md` | Stack, auth, deploy, estructura |
+| `docs/MODULOS.md` | Módulos, rutas, APIs |
+| `docs/GOTCHAS.md` | Errores típicos a evitar |
+| `BACKLOG.md` | Checklist histórico (verificar vs código) |
+| `README.md` | Overview antiguo (puede ir desfasado) |
 | `.env.example` | Features opcionales e integraciones |
 | `riders_app_brief_para_ia.txt` | Contrato app repartidores |
 | `mercadopago_tutorial.txt` / `google_auth_tutorial.txt` / `envios_tutorial.txt` | Setup de integraciones |

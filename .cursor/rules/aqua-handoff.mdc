@@ -1,0 +1,24 @@
+---
+description: Contexto Aqua Remates — leer docs de handoff y reglas del repo
+alwaysApply: true
+---
+
+# Aqua Remates — contexto persistente
+
+Antes de cambios grandes, leer:
+
+1. `AGENTS.md`
+2. `docs/HANDOFF.md`
+3. `docs/GOTCHAS.md`
+
+## Reglas
+
+- Responder al usuario en español.
+- Fuente de verdad: código + `prisma/schema.prisma`. Docs orientan.
+- Redirects admin: `src/lib/app-url.ts` (nunca host Railway interno).
+- Staff login: path oculto `STAFF_LOGIN_PATH`, no `/login` de clientes.
+- Import ML: `MELI_ACCESS_TOKEN`; no scrapear; no copiar precio ML a listPrice sin confirmación.
+- Export ZIP: streaming + progreso en `ExportCatalogButton`; no es dump completo de DB.
+- Cámara packing: `camera=(self)` en Permissions-Policy.
+- No commit/push sin pedido explícito del usuario.
+- Al terminar un feature grande, actualizar `docs/HANDOFF.md` (fecha + hecho/pendiente).
